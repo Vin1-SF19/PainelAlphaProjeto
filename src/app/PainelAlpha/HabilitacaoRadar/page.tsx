@@ -8,7 +8,7 @@ import LogoutButton from "@/Components/LogoutUser";
 import { ModalDetalhesEmpresa } from "@/Components/ModalDetalhesEmpresa";
 import { useState, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
-import { deletarRegistrosBanco, registrarNovoArquivo, salvarConsultaIndividual, salvarDadosNoBanco, salvarPlanilhaCompleta } from "@/app/api/radar/route";
+import { deletarRegistrosBanco, registrarNovoArquivo, salvarConsultaIndividual, salvarDadosNoBanco, salvarPlanilhaCompleta } from "@/actions/RadarAction";
 import { toast } from "sonner";
 import React from "react";
 import { BarChart3 } from "lucide-react";

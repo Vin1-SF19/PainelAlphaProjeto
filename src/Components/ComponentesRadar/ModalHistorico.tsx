@@ -15,7 +15,7 @@ import {
     Square
 } from "lucide-react";
 import * as XLSX from "xlsx";
-import { excluirCnpjsEmLote } from "@/app/api/radar/route";
+import { excluirCnpjsEmLote } from "@/actions/RadarAction";
 import { toast } from "sonner";
 
 
