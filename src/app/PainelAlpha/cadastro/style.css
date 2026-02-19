@@ -1,0 +1,83 @@
+.painel-cadastro {
+    overflow: hidden;
+    background-image: url(../../../../public/Gemini_Generated_Image_nb8ptdnb8ptdnb8p.png);
+    background-repeat: no-repeat;
+    background-size: cover;
+    width: 100%;
+    height: 1070px;
+    
+    .ContainerUser {
+        margin: 20px;
+        padding: 5px;
+        width: 100%;
+        height: 100%;
+    }
+
+    .FormCadastro {
+        width: 600px;
+        color: white;
+        border-radius: 4%;
+        box-shadow: 2px 7px 16px 5px rgba(0,0,0,0.64);
+        font-weight: bold;
+        justify-content: center;
+        align-items: center;
+        align-content: center;
+        align-items: center;
+        scale: 1.2;
+        margin: 30px;
+        
+    }
+
+    .titles{
+        font-size: 35px;
+
+    }
+
+    .titles>p {
+        color: rgb(176, 176, 176);
+        font-size: 20px;
+        margin: 5px;
+    }
+
+
+    Label {
+        font-size: 15px;
+    }
+
+    Input::placeholder {
+        color: rgb(173, 172, 172);
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 15px;
+    }
+
+    .Usuario{
+        background-color: rgb(146, 146, 146);
+        width: 450px;
+        height: 100px;
+        float: right;
+        margin: 10px;
+        position: relative;
+        bottom: 80px;
+        border-radius: 8px;
+        transition: all .5s ease-in-out;
+        font-size: 30px;
+        justify-content: end;
+        font-family: Verdana, Geneva, Tahoma, sans-serif;
+    }
+    
+    .Usuario:hover{
+        background-color: rgb(117, 117, 117);
+        box-shadow: 1px 1px 1px black;
+
+    }
+
+    .UserList{
+        font-size: 25px;
+        font-weight: 600;
+        position: relative;
+        left: 400px;
+        width: 900px;
+        height: auto;
+    }
+
+}

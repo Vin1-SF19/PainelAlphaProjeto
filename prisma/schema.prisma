@@ -1,0 +1,90 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model usuarios {
+  id               Int        @id @default(autoincrement())
+  nome             String
+  usuario          String     @unique
+  email            String     @unique
+  senha            String
+  role             String     @default("User")
+  permissoes       String?
+  chamados_criados chamados[] @relation("Solicitante")
+}
+
+model chamados {
+  id          Int      @id @default(autoincrement())
+  titulo      String
+  descricao   String
+  categoria   String
+  status      String   @default("ABERTO")
+  prioridade  String   @default("MEDIA")
+  solucao     String?
+  usuarioId   Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  solicitante usuarios @relation("Solicitante", fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@index([status])
+}
+
+model consultas_radar {
+  id                Int             @id @default(autoincrement())
+  cnpj              String          @unique
+  razao_social      String?
+  nome_fantasia     String?
+  situacao_radar    String?
+  submodalidade     String?
+  data_situacao     DateTime?
+  municipio         String?
+  uf                String?
+  regime_tributario String?
+  capital_social    String?
+  data_constituicao DateTime?
+  contribuinte      String?
+  data_consulta     DateTime        @default(now())
+  fonte             String
+  json_completo     String
+  arquivo_id        Int?
+  data_opcao        DateTime?
+  optante_simples   Boolean?
+  arquivo           arquivos_radar? @relation(fields: [arquivo_id], references: [id], onDelete: Cascade)
+
+  @@index([cnpj])
+}
+
+model arquivos_radar {
+  id              Int               @id @default(autoincrement())
+  nome_arquivo    String            @unique
+  data_upload     DateTime          @default(now())
+  total_registros Int
+  registros       consultas_radar[]
+}
+
+model reservas {
+  id      Int       @id @default(autoincrement())
+  sala    String
+  usuario String
+  data    DateTime
+  inicio  DateTime
+  fim     DateTime?
+  status  String    @default("Agendado")
+}
+
+model documentos {
+  id           Int      @id @default(autoincrement())
+  titulo       String
+  descricao    String?
+  url          String
+  setor        String
+  tipo         String
+  data_criacao DateTime @default(now())
+}
