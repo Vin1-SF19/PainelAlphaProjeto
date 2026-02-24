@@ -82,7 +82,7 @@ model reservas {
 model documentos {
   id           Int      @id @default(autoincrement())
   titulo       String
-  descricao    String?
+  PastaArquivos    String?
   url          String
   setor        String
   tipo         String

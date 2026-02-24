@@ -18,13 +18,13 @@ import {
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { 
-  ShieldCheck, 
-  User, 
-  Mail, 
-  Lock, 
-  KeyRound, 
-  Briefcase, 
+import {
+  ShieldCheck,
+  User,
+  Mail,
+  Lock,
+  KeyRound,
+  Briefcase,
   Layers,
   Check
 } from "lucide-react";
@@ -41,7 +41,9 @@ const MODULOS_SISTEMA = [
   { id: "radar", label: "Coletor RADAR", desc: "Consultas" },
   { id: "chamados", label: "Chamados", desc: "Suporte TI" },
   { id: "Reservas", label: "Reservas", desc: "Salas de reunião" },
-  { id: "Documentos", label: "Documentos", desc: "Manuais e guias" }
+  { id: "Documentos", label: "Documentos", desc: "Manuais e guias" },
+  { id: "UpDocumentos", label: "UpDocumentos", desc: "Uploads de Arquivos" },
+  { id: "Historico", label: "Historico", desc: "Historico de Arquivos" }
 ];
 
 const SETORES_LISTA = [
@@ -58,7 +60,7 @@ export default function EditionUser({ open, onOpenChange, user, onSubmit }: Edit
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[520px] bg-slate-950 text-white border-white/5 shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] max-h-[90vh] overflow-y-auto custom-scrollbar">
-        
+
         <DialogHeader className="space-y-3">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600/10 border border-blue-500/20 shadow-inner">
@@ -67,7 +69,7 @@ export default function EditionUser({ open, onOpenChange, user, onSubmit }: Edit
             <div>
               <DialogTitle className="text-xl font-black uppercase tracking-tight">Editar Colaborador</DialogTitle>
               <DialogDescription className="text-slate-500 text-xs font-medium uppercase tracking-wider">
-              ID: {String(user?.id).substring(0, 8)}... • {user?.usuario}
+                ID: {String(user?.id).substring(0, 8)}... • {user?.usuario}
 
               </DialogDescription>
             </div>
@@ -76,19 +78,19 @@ export default function EditionUser({ open, onOpenChange, user, onSubmit }: Edit
 
         {user && (
           <form onSubmit={onSubmit} className="space-y-8 py-4">
-            
+
             {/* GRUPO 1: IDENTIFICAÇÃO */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-1">
                 <Layers size={14} className="text-blue-500" />
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Dados Cadastrais</span>
               </div>
-              
+
               <div className="grid gap-2">
                 <Label className="text-[10px] uppercase font-bold text-slate-400 ml-1">Nome Completo</Label>
                 <div className="relative">
-                   <Input name="usuario" defaultValue={user.nome} className="pl-10 bg-slate-900/50 border-white/5 h-11 focus:ring-2 focus:ring-blue-600/50 transition-all rounded-xl" />
-                   <User className="absolute left-3 top-3 text-slate-600" size={18} />
+                  <Input name="usuario" defaultValue={user.nome} className="pl-10 bg-slate-900/50 border-white/5 h-11 focus:ring-2 focus:ring-blue-600/50 transition-all rounded-xl" />
+                  <User className="absolute left-3 top-3 text-slate-600" size={18} />
                 </div>
               </div>
 
@@ -132,7 +134,7 @@ export default function EditionUser({ open, onOpenChange, user, onSubmit }: Edit
                       <span className="text-xs font-black uppercase tracking-tight text-slate-200">{modulo.label}</span>
                       <span className="text-[10px] text-slate-500 uppercase font-bold">{modulo.desc}</span>
                     </div>
-                    
+
                     <div className="relative flex items-center">
                       <input
                         type="checkbox"
@@ -150,13 +152,13 @@ export default function EditionUser({ open, onOpenChange, user, onSubmit }: Edit
 
             {/* GRUPO 3: SEGURANÇA */}
             <div className="pt-2 border-t border-white/5 space-y-4">
-               <div className="grid gap-2">
-                  <Label className="text-[10px] uppercase font-bold text-slate-400 ml-1">Nova Senha (Opcional)</Label>
-                  <div className="relative">
-                    <Input name="senha" type="password" placeholder="••••••••••••" className="pl-10 bg-slate-900/50 border-white/5 h-11 focus:ring-2 focus:ring-blue-600/50 rounded-xl" />
-                    <Lock className="absolute left-3 top-3 text-slate-600" size={18} />
-                  </div>
-               </div>
+              <div className="grid gap-2">
+                <Label className="text-[10px] uppercase font-bold text-slate-400 ml-1">Nova Senha (Opcional)</Label>
+                <div className="relative">
+                  <Input name="senha" type="password" placeholder="••••••••••••" className="pl-10 bg-slate-900/50 border-white/5 h-11 focus:ring-2 focus:ring-blue-600/50 rounded-xl" />
+                  <Lock className="absolute left-3 top-3 text-slate-600" size={18} />
+                </div>
+              </div>
             </div>
 
             <DialogFooter className="flex flex-col sm:flex-row gap-3 pt-4">

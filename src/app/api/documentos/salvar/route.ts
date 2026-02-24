@@ -7,12 +7,12 @@ const client = createClient({
 });
 
 export async function POST(req: Request) {
-  const { titulo, url, setor, tipo } = await req.json();
+  const { titulo, PastaArquivos, url, setor, tipo } = await req.json();
 
   try {
     await client.execute({
-      sql: "INSERT INTO documentos (titulo, url, setor, tipo) VALUES (?, ?, ?, ?)",
-      args: [titulo, url, setor, tipo]
+      sql: "INSERT INTO documentos (titulo, PastaArquivos, url, setor, tipo) VALUES (?, ?, ?, ?)",
+      args: [titulo, PastaArquivos, url, setor, tipo]
     });
     return NextResponse.json({ success: true });
   } catch (e) {

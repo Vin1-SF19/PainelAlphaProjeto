@@ -66,7 +66,7 @@ export default async function PainelAlpha({ user }: UserProps) {
             />
 
             <h3 className="text-xl font-bold text-white mb-3">
-              Coletor de Habilitação RADAR
+              Consulta RADAR em Lote
             </h3>
 
             <p className="text-gray-400 text-sm leading-relaxed mb-6">
@@ -175,7 +175,7 @@ export default async function PainelAlpha({ user }: UserProps) {
 
 
 
-        {/* Card DropDawn de documentos*/}
+        {/* Card documentos*/}
         <AbaDeAcesso
           permissaoRequerida="Documentos"
           userRole={session?.user?.role}
@@ -183,13 +183,13 @@ export default async function PainelAlpha({ user }: UserProps) {
         >
           <div className="group rounded-3xl border border-slate-700 bg-slate-900/70 p-6 shadow-lg transition-all hover:-translate-y-1 hover:shadow-blue-900/40">
             <img
-              src="../pasta.png"
+              src="../arquivo.png"
               alt="Usuários"
               className="w-12 mb-4 opacity-90"
             />
 
             <h3 className="text-xl font-bold text-white mb-3">
-              Sala de Documentos
+              POP - Processos e Normas
             </h3>
 
             <p className="text-gray-400 text-sm leading-relaxed mb-6">
@@ -204,9 +204,9 @@ export default async function PainelAlpha({ user }: UserProps) {
           </div>
         </AbaDeAcesso>
 
-  {/* Card Gerenciamento de arquivos*/}
+        {/* Card Gerenciamento de arquivos*/}
         <AbaDeAcesso
-          permissaoRequerida="Documentos"
+          permissaoRequerida="UpDocumentos"
           userRole={session?.user?.role}
           userPermissions={session?.user?.permissoes}
         >
@@ -218,7 +218,7 @@ export default async function PainelAlpha({ user }: UserProps) {
             />
 
             <h3 className="text-xl font-bold text-white mb-3">
-              Gerenciamento de Arquivos
+              UPload - POP
             </h3>
 
             <p className="text-gray-400 text-sm leading-relaxed mb-6">
@@ -226,6 +226,35 @@ export default async function PainelAlpha({ user }: UserProps) {
             </p>
 
             <Link href="/PainelAlpha/GerenciamentoArquivos">
+              <Button className="cursor-pointer w-full text-lg font-bold bg-blue-700 hover:bg-blue-500 transition-all shadow-md">
+                Acessar Arquivos
+              </Button>
+            </Link>
+          </div>
+        </AbaDeAcesso>
+
+        {/* Historico POP */}
+        <AbaDeAcesso
+          permissaoRequerida="Historico"
+          userRole={session?.user?.role}
+          userPermissions={session?.user?.permissoes}
+        >
+          <div className="group rounded-3xl border border-slate-700 bg-slate-900/70 p-6 shadow-lg transition-all hover:-translate-y-1 hover:shadow-blue-900/40">
+            <img
+              src="../historico.png"
+              alt="Usuários"
+              className="w-12 mb-4 opacity-90"
+            />
+
+            <h3 className="text-xl font-bold text-white mb-3">
+              Gerenciamento do POP
+            </h3>
+
+            <p className="text-gray-400 text-sm leading-relaxed mb-6">
+              Pagina dedicada para historico de arquivos
+            </p>
+
+            <Link href="/PainelAlpha/HistoricoArquivos">
               <Button className="cursor-pointer w-full text-lg font-bold bg-blue-700 hover:bg-blue-500 transition-all shadow-md">
                 Acessar Arquivos
               </Button>

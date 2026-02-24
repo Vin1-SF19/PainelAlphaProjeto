@@ -2,12 +2,12 @@
 import db from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
-export async function agendarSala(dados: { sala: string, usuario: string, data: string, inicio: string }) {
+export async function agendarSala(dados: { sala: string, usuario: string, data: string, inicio: string, fim: string }) {
   try {
-    const stringDataHora = `${dados.data}T${dados.inicio}:00`;
-    const dataHoraInicio = new Date(stringDataHora);
+    const dataHoraInicio = new Date(`${dados.data}T${dados.inicio}:00`);
+    const dataHoraFim = new Date(`${dados.data}T${dados.fim}:00`);
 
-    if (isNaN(dataHoraInicio.getTime())) {
+    if (isNaN(dataHoraInicio.getTime()) || isNaN(dataHoraFim.getTime())) {
       return { success: false, error: "Data ou hora inválida." };
     }
 
@@ -15,7 +15,9 @@ export async function agendarSala(dados: { sala: string, usuario: string, data: 
       where: {
         sala: dados.sala,
         status: "Agendado",
-        inicio: dataHoraInicio
+        OR: [
+          { inicio: { lt: dataHoraFim }, fim: { gt: dataHoraInicio } }
+        ]
       }
     });
 
@@ -27,6 +29,7 @@ export async function agendarSala(dados: { sala: string, usuario: string, data: 
         usuario: dados.usuario,
         data: new Date(dados.data),
         inicio: dataHoraInicio,
+        fim: dataHoraFim,
         status: "Agendado"
       }
     });
@@ -42,7 +45,7 @@ export async function agendarSala(dados: { sala: string, usuario: string, data: 
 export async function liberarSala(id: number) {
   await db.reservas.update({
     where: { id },
-    data: { fim: new Date(), status: "Concluído" }
+    data: { status: "Concluído" }
   });
   revalidatePath("/PainelAlpha/ReservaSalas");
 }
@@ -50,46 +53,35 @@ export async function liberarSala(id: number) {
 export async function cancelarReserva(id: any) {
   try {
     const idLimpo = Number(id);
-    
-    if (isNaN(idLimpo)) {
-      return { success: false, error: "ID inválido" };
-    }
+    if (isNaN(idLimpo)) return { success: false, error: "ID inválido" };
 
-    // Deleta do banco usando o ID numérico
-    await db.reservas.delete({
-      where: { id: idLimpo }
-    });
-
+    await db.reservas.delete({ where: { id: idLimpo } });
     revalidatePath("/PainelAlpha/ReservaSalas");
     return { success: true };
   } catch (error) {
-    console.error("ERRO AO DELETAR NO BANCO:", error);
     return { success: false, error: "Erro interno no servidor" };
   }
 }
-
 
 export async function buscarReservasAtivas() {
   return await db.reservas.findMany({
     where: { status: "Agendado" },
     orderBy: { inicio: 'asc' }
   });
-
-
 }
 
-
-export async function editarReserva(id: number, dados: { data: string, inicio: string, sala: string }) {
+export async function editarReserva(id: number, dados: { data: string, inicio: string, fim: string, sala: string }) {
   try {
-    const
+    const dataHoraInicio = new Date(`${dados.data}T${dados.inicio}:00`);
+    const dataHoraFim = new Date(`${dados.data}T${dados.fim}:00`);
 
- dataHoraInicio = new Date(`${dados.data}T${dados.inicio}:00`);
     await db.reservas.update({
       where: { id },
       data: {
         sala: dados.sala,
         data: new Date(dados.data),
         inicio: dataHoraInicio,
+        fim: dataHoraFim
       }
     });
     revalidatePath("/PainelAlpha/ReservaSalas");
@@ -103,12 +95,10 @@ export async function buscarHistoricoReservas() {
   try {
     return await db.reservas.findMany({
       where: { status: "Concluído" },
-      orderBy: { fim: 'desc' },
+      orderBy: { inicio: 'desc' },
       take: 10
     });
   } catch (error) {
     return [];
   }
 }
-
-

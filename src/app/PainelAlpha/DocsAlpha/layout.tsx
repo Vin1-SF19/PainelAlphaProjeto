@@ -16,4 +16,5 @@ export default function PainelLayout({
        {children}
     </div>
   );
+  
 }
