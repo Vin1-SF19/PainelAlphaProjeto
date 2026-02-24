@@ -43,6 +43,9 @@ export default function PaginaDocumentos() {
 
     const [pastaConfig, setPastaConfig] = useState<string | null>(null);
 
+    console.log("Role do usuário:", session?.user?.role);
+    console.log("Role uppercase:", roleUser);
+
 
 
 
@@ -356,81 +359,105 @@ export default function PaginaDocumentos() {
                                             `}}
                                         />
 
+
                                         {docSelecionado ? (
                                             <>
                                                 <div className="lg:col-span-8 bg-slate-900/40 rounded-[2rem] border border-white/5 overflow-hidden flex flex-col relative shadow-2xl h-[750px]">
-    <style dangerouslySetInnerHTML={{
-        __html: docSelecionado?.protecao === "ATIVO" ? `
-            * { -webkit-user-select: none !important; user-select: none !important; }
-            @media print { body { display: none !important; } }
-        ` : ""
-    }} />
+                                                    <style dangerouslySetInnerHTML={{
+                                                        __html: docSelecionado?.protecao === "ATIVO" ? `
+                    * { -webkit-user-select: none !important; user-select: none !important; }
+                    @media print { body { display: none !important; } }
+                ` : ""
+                                                    }} />
 
-    {docSelecionado ? (
-        <>
-            <div className="p-4 bg-black/60 border-b border-white/5 flex justify-between items-center px-8">
-                <div className="flex items-center gap-3">
-                    <Lock size={14} className={docSelecionado.protecao === "ATIVO" ? "text-blue-500" : "text-emerald-500"} />
-                    <span className={`text-[10px] font-black uppercase tracking-widest ${docSelecionado.protecao === "ATIVO" ? "text-blue-400" : "text-emerald-400"}`}>
-                        {docSelecionado.titulo}
-                    </span>
-                </div>
-                <div className="flex items-center gap-5">
-                    <div className={`flex items-center gap-2 text-[8px] font-black uppercase ${docSelecionado.protecao === "ATIVO" ? "text-red-500/40" : "text-emerald-500/60"}`}>
-                        {docSelecionado.protecao === "ATIVO" ? <><ShieldAlert size={12} /> Arquivo Restrito</> : <><Globe size={12} /> Arquivo Livre</>}
-                    </div>
-                </div>
-            </div>
+                                                    {docSelecionado ? (
+                                                        <>
+                                                            <div className="p-4 bg-black/60 border-b border-white/5 flex justify-between items-center px-8">
+                                                                <div className="flex items-center gap-3">
+                                                                    <Lock size={14} className={docSelecionado.protecao === "ATIVO" ? "text-blue-500" : "text-emerald-500"} />
+                                                                    <span className={`text-[10px] font-black uppercase tracking-widest ${docSelecionado.protecao === "ATIVO" ? "text-blue-400" : "text-emerald-400"}`}>
+                                                                        {docSelecionado.titulo}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex items-center gap-5">
+                                                                    <div className={`flex items-center gap-2 text-[8px] font-black uppercase ${docSelecionado.protecao === "ATIVO" ? "text-red-500/40" : "text-emerald-500/60"}`}>
+                                                                        {docSelecionado.protecao === "ATIVO" ? <><ShieldAlert size={12} /> Arquivo Restrito</> : <><Globe size={12} /> Arquivo Livre</>}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
 
-            <div className="flex-1 bg-white overflow-auto relative">
-                <iframe
-                    key={docSelecionado.id}
-                    src={docSelecionado.protecao === "ATIVO" 
-                        ? `${docSelecionado.url}#toolbar=0&navpanes=0&scrollbar=1` 
-                        : `${docSelecionado.url}#toolbar=1&navpanes=1&scrollbar=1`
-                    }
-                    className="w-full border-none"
-                    style={{
-                        height: '20000px',
-                        width: '100%',
-                        pointerEvents: docSelecionado.protecao === "ATIVO" ? 'none' : 'auto'
-                    }}
-                    title={docSelecionado.titulo}
-                />
-                
-                {docSelecionado.protecao === "ATIVO" && (
-                    <div 
-                        className="absolute inset-0"
-                        style={{ backgroundColor: 'transparent' }}
-                        onContextMenu={(e) => e.preventDefault()}
-                        onMouseDown={(e) => e.preventDefault()}
-                        onMouseUp={(e) => e.preventDefault()}
-                        onClick={(e) => e.preventDefault()}
-                    />
-                )}
-            </div>
+                                                            <div className="flex-1 bg-white overflow-auto relative">
+                                                                {docSelecionado.tipo === "VIDEO" ? (
+                                                                    <div className="w-full h-full flex items-center justify-center bg-black">
+                                                                        <video
+                                                                            controls
+                                                                            className="w-full h-auto max-h-full"
+                                                                            src={docSelecionado.url}
+                                                                            style={{
+                                                                                maxHeight: 'calc(750px - 120px)',
+                                                                                width: 'auto',
+                                                                                maxWidth: '100%'
+                                                                            }}
+                                                                        />
+                                                                        {docSelecionado.protecao === "ATIVO" && (
+                                                                            <div
+                                                                                className="absolute inset-0"
+                                                                                style={{ backgroundColor: 'transparent' }}
+                                                                                onContextMenu={(e) => e.preventDefault()}
+                                                                            />
+                                                                        )}
+                                                                    </div>
+                                                                ) : (
+                                                                    <>
+                                                                        <iframe
+                                                                            key={docSelecionado.id}
+                                                                            src={docSelecionado.protecao === "ATIVO"
+                                                                                ? `${docSelecionado.url}#toolbar=0&navpanes=0&scrollbar=1`
+                                                                                : `${docSelecionado.url}#toolbar=1&navpanes=1&scrollbar=1`
+                                                                            }
+                                                                            className="w-full border-none"
+                                                                            style={{
+                                                                                height: '20000px',
+                                                                                width: '100%',
+                                                                                pointerEvents: docSelecionado.protecao === "ATIVO" ? 'none' : 'auto'
+                                                                            }}
+                                                                            title={docSelecionado.titulo}
+                                                                        />
 
-            <div className="absolute bottom-6 right-6 z-10 bg-black/80 backdrop-blur-xl px-4 py-2 rounded-xl border border-white/10 flex items-center gap-3 shadow-2xl pointer-events-none">
-                <div className={`h-1.5 w-1.5 rounded-full ${docSelecionado.protecao === "ATIVO" ? "bg-red-500 animate-pulse" : "bg-emerald-500"}`}></div>
-                <p className="text-[7px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                    {docSelecionado.protecao === "ATIVO" ? "Cópia Bloqueada" : "Acesso Liberado"}
-                </p>
-            </div>
-        </>
-    ) : (
-        <div className="flex-1 flex flex-col items-center justify-center opacity-20">
-            <Eye size={80} className="mb-4" />
-            <p className="text-[12px] font-black uppercase tracking-[0.5em]">Aguardando Seleção</p>
-        </div>
-    )}
-</div>
+                                                                        {docSelecionado.protecao === "ATIVO" && (
+                                                                            <div
+                                                                                className="absolute inset-0"
+                                                                                style={{ backgroundColor: 'transparent' }}
+                                                                                onContextMenu={(e) => e.preventDefault()}
+                                                                                onMouseDown={(e) => e.preventDefault()}
+                                                                                onMouseUp={(e) => e.preventDefault()}
+                                                                                onClick={(e) => e.preventDefault()}
+                                                                            />
+                                                                        )}
+                                                                    </>
+                                                                )}
+                                                            </div>
 
-
-
-
+                                                            <div className="absolute bottom-6 right-6 z-10 bg-black/80 backdrop-blur-xl px-4 py-2 rounded-xl border border-white/10 flex items-center gap-3 shadow-2xl pointer-events-none">
+                                                                <div className={`h-1.5 w-1.5 rounded-full ${docSelecionado.protecao === "ATIVO" ? "bg-red-500 animate-pulse" : "bg-emerald-500"}`}></div>
+                                                                <p className="text-[7px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                                                                    {docSelecionado.protecao === "ATIVO" ? "Cópia Bloqueada" : "Acesso Liberado"}
+                                                                </p>
+                                                            </div>
+                                                        </>
+                                                    ) : (
+                                                        <div className="flex-1 flex flex-col items-center justify-center opacity-20">
+                                                            <Eye size={80} className="mb-4" />
+                                                            <p className="text-[12px] font-black uppercase tracking-[0.5em]">Aguardando Seleção</p>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </>
                                         ) : (
-                                            <div className="flex-1 flex flex-col items-center justify-center opacity-20"><Eye size={80} className="mb-4" /><p className="text-[12px] font-black uppercase tracking-[0.5em]">Aguardando Seleção</p></div>
+                                            <div className="flex-1 flex flex-col items-center justify-center opacity-20">
+                                                <Eye size={80} className="mb-4" />
+                                                <p className="text-[12px] font-black uppercase tracking-[0.5em]">Aguardando Seleção</p>
+                                            </div>
                                         )}
                                     </div>
 

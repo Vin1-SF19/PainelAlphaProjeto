@@ -80,19 +80,30 @@ export default function EditionUser({ open, onOpenChange, user, onSubmit }: Edit
           <form onSubmit={onSubmit} className="space-y-8 py-4">
 
             {/* GRUPO 1: IDENTIFICAÇÃO */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 mb-1">
-                <Layers size={14} className="text-blue-500" />
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Dados Cadastrais</span>
-              </div>
+            <div className="grid grid-cols-2 gap-4">
+  <div className="grid gap-2">
+    <Label className="text-[10px] uppercase font-bold text-slate-400 ml-1">Username</Label>
+    <div className="relative">
+      <Input name="usuario" defaultValue={user.usuario} className="pl-10 bg-slate-900/50 border-white/5 h-11 focus:ring-2 focus:ring-blue-600/50 rounded-xl" />
+      <KeyRound className="absolute left-3 top-3 text-slate-600" size={18} />
+    </div>
+  </div>
+  <div className="grid gap-2">
+    <Label className="text-[10px] uppercase font-bold text-slate-400 ml-1">E-mail</Label>
+    <div className="relative">
+      <Input name="email" defaultValue={user.email} className="pl-10 bg-slate-900/50 border-white/5 h-11 focus:ring-2 focus:ring-blue-600/50 rounded-xl" />
+      <Mail className="absolute left-3 top-3 text-slate-600" size={18} />
+    </div>
+  </div>
+</div>
 
-              <div className="grid gap-2">
-                <Label className="text-[10px] uppercase font-bold text-slate-400 ml-1">Nome Completo</Label>
-                <div className="relative">
-                  <Input name="usuario" defaultValue={user.nome} className="pl-10 bg-slate-900/50 border-white/5 h-11 focus:ring-2 focus:ring-blue-600/50 transition-all rounded-xl" />
-                  <User className="absolute left-3 top-3 text-slate-600" size={18} />
-                </div>
-              </div>
+<div className="grid gap-2">
+  <Label className="text-[10px] uppercase font-bold text-slate-400 ml-1">Nome Completo</Label>
+  <div className="relative">
+    <Input name="nome" defaultValue={user.nome} className="pl-10 bg-slate-900/50 border-white/5 h-11 focus:ring-2 focus:ring-blue-600/50 rounded-xl" />
+    <User className="absolute left-3 top-3 text-slate-600" size={18} />
+  </div>
+</div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
@@ -118,8 +129,6 @@ export default function EditionUser({ open, onOpenChange, user, onSubmit }: Edit
                   </Select>
                 </div>
               </div>
-            </div>
-
             {/* GRUPO 2: ACESSOS */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-1">
