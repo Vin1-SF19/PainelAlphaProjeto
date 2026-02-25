@@ -33,11 +33,33 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
 
-  session: { strategy: "jwt" },
+  session: {
+    strategy: "jwt",
+    maxAge: 60 * 60 * 24, // Expira em 24h se o navegador continuar aberto
+  },
+
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
+  },
+
+  jwt: {
+    maxAge:
+
+      60 * 60 * 24,
+  },
 
   callbacks: {
     async jwt({ token, user }) {
       // PRIMEIRO LOGIN
+      maxAge: 60 * 60 * 24
       if (user) {
         token.id = user.id;
         token.email = user.email;
