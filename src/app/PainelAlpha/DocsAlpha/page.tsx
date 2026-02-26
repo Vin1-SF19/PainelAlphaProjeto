@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { FileText, Eye, Search, ShieldCheck, Globe, ChevronRight, Folder, Trash2, ShieldAlert, Lock, Video, Settings, Star, ChevronDown, ChevronUp } from "lucide-react";
 import { BotaoVoltar } from "@/Components/BotaoVoltar";
 import { toast } from "sonner";
-import * as pdfjs from 'pdfjs-dist';
+export const dynamic = 'force-dynamic';
 
 
 interface Documento {

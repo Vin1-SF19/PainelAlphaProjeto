@@ -23,6 +23,8 @@ import ModalFiltros from './ModalCadastro/modalFiltros';
 import ModalLogAuditoria from './ModalCadastro/modalLogAuditoria';
 import { useSession } from "next-auth/react";
 
+export const dynamic = 'force-dynamic';
+
 
 
 export default function CadastroCliente() {
