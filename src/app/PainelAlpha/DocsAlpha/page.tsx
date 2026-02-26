@@ -72,28 +72,45 @@ export default function PaginaDocumentos() {
     }, [status]);
 
     useEffect(() => {
-        const handleSecurity = async (e: KeyboardEvent) => {
-            if ((e.ctrlKey && ['p', 'P', 's', 'S', 'u', 'U', 'c', 'C'].includes(e.key)) || e.key === 'F12' || e.key === 'PrintSc') {
-                e.preventDefault();
-                toast.error("SEGURANÇA ALPHA: ACESSO RESTRITO");
-            }
-
-            if (e.key === 'PrintScreen') {
-                await navigator.clipboard.writeText("ACESSO RESTRITO - ALPHA");
-                toast.error("CAPTURA DE TELA BLOQUEADA");
+        const blindScreen = () => {
+            document.body.style.filter = "blur(100px)";
+            document.body.style.opacity = "0";
+        };
+    
+        const restoreScreen = () => {
+            document.body.style.filter = "none";
+            document.body.style.opacity = "1";
+        };
+    
+        const handleSecurity = (e: KeyboardEvent) => {
+            if (e.key === 'PrintScreen' || e.keyCode === 44 || (e.metaKey && e.shiftKey)) {
+                blindScreen();
+                toast.error("SEGURANÇA ALPHA", {
+                    description: "CAPTURA BLOQUEADA: INFORMAÇÃO SIGILOSA",
+                    style: { background: '#450a0a', border: '2px solid #ff0000', color: '#fff' }
+                });
+                setTimeout(restoreScreen, 2000); 
             }
         };
-
-        const disableRightClick = (e: MouseEvent) => e.preventDefault();
-
+        const handleVisibility = () => {
+            if (document.visibilityState === 'hidden') blindScreen();
+            else restoreScreen();
+        };
+    
         window.addEventListener('keydown', handleSecurity);
-        window.addEventListener('contextmenu', disableRightClick);
-
+        window.addEventListener('blur', blindScreen);
+        window.addEventListener('focus', restoreScreen);
+        document.addEventListener('visibilitychange', handleVisibility);
+    
         return () => {
             window.removeEventListener('keydown', handleSecurity);
-            window.removeEventListener('contextmenu', disableRightClick);
+            window.removeEventListener('blur', blindScreen);
+            window.removeEventListener('focus', restoreScreen);
+            document.removeEventListener('visibilitychange', handleVisibility);
         };
     }, []);
+
+
 
     useEffect(() => {
         document.body.style.overflow = 'hidden';
@@ -211,7 +228,14 @@ export default function PaginaDocumentos() {
     if (loadingDocs) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-blue-500 font-black animate-pulse">SINCRONIZANDO ESTRUTURA...</div>;
 
     return (
+
         <>
+            <style dangerouslySetInnerHTML={{
+                __html: `
+            @media print { body { display: none !important; } }
+            .no-select { user-select: none; -webkit-user-drag: none; }
+          `}} />
+
             <div className="bg-slate-950 p-2">
                 <div className="bg-slate-950 w-50">
                     <BotaoVoltar />
@@ -467,21 +491,52 @@ export default function PaginaDocumentos() {
                             )}
 
                             {modalExcluir && (
-                                <div className="absolute inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-xl bg-black/60">
-                                    <div className="bg-slate-900 border border-white/10 p-8 rounded-[2.5rem] max-w-sm w-full shadow-2xl animate-in zoom-in duration-200">
-                                        <div className="flex flex-col items-center mb-6 text-center">
-                                            <ShieldAlert size={40} className="text-red-500 mb-4" />
-                                            <h2 className="text-[12px] font-black uppercase text-white tracking-widest">Segurança Alpha</h2>
-                                            <p className="text-[9px] text-slate-500 font-bold uppercase mt-2">O arquivo será movido para o histórico inativo.</p>
+                                <div className="fixed inset-0 z-[999] flex items-center justify-center p-6 backdrop-blur-2xl bg-black/90">
+
+                                    <div className="absolute inset-0 bg-red-900/5 animate-pulse" />
+
+                                    <div className="relative bg-slate-950 border-2 border-red-500/20 p-8 rounded-[3rem] max-w-sm w-full shadow-[0_0_50px_rgba(239,68,68,0.2)] animate-in zoom-in duration-300">
+
+                                        <div className="flex flex-col items-center mb-8 text-center">
+                                            <div className="p-4 bg-red-500/10 rounded-full mb-4 border border-red-500/20">
+                                                <ShieldAlert size={44} className="text-red-500 animate-bounce" />
+                                            </div>
+                                            <h2 className="text-[14px] font-black uppercase text-white tracking-[0.3em] italic">
+                                                AUTENTICAÇÃO <span className="text-red-500">MESTRA</span>
+                                            </h2>
+                                            <div className="h-1 w-12 bg-red-600 my-3 rounded-full" />
+                                            <p className="text-[10px] text-slate-500 font-black uppercase leading-relaxed tracking-tighter">
+                                                Ação crítica detectada. Insira a chave de segurança para mover ao histórico inativo.
+                                            </p>
                                         </div>
-                                        <input type="password" placeholder="SENHA MESTRA" value={senhaInput} onChange={e => setSenhaInput(e.target.value)} className="w-full bg-black border border-white/10 rounded-xl px-5 py-4 text-center tracking-[0.8em] text-white outline-none mb-4 focus:ring-2 focus:ring-red-600" />
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <button onClick={() => { setModalExcluir(false); setSenhaInput(""); }} className="py-3.5 bg-white/5 rounded-xl text-[9px] font-black uppercase">Cancelar</button>
-                                            <button onClick={handleExcluirLogico} className="py-3.5 bg-red-600 rounded-xl text-[9px] font-black uppercase shadow-lg shadow-red-900/40">Confirmar</button>
+
+                                        <input
+                                            type="password"
+                                            autoFocus
+                                            placeholder="••••••••"
+                                            value={senhaInput}
+                                            onChange={e => setSenhaInput(e.target.value)}
+                                            className="w-full bg-black border-2 border-white/5 rounded-[1.5rem] px-5 py-5 text-center tracking-[1em] text-white outline-none mb-6 focus:border-red-600 transition-all shadow-inner placeholder:tracking-normal placeholder:text-slate-800 font-mono"
+                                        />
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <button
+                                                onClick={() => { setModalExcluir(false); setSenhaInput(""); }}
+                                                className="py-4 bg-slate-900 hover:bg-slate-800 border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-400 transition-all"
+                                            >
+                                                Abortar
+                                            </button>
+                                            <button
+                                                onClick={handleExcluirLogico}
+                                                className="py-4 bg-red-600 hover:bg-red-500 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white shadow-xl shadow-red-900/40 transition-all active:scale-95"
+                                            >
+                                                Confirmar
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
                             )}
+
                         </div>
                     </div>
                 </div>
@@ -597,6 +652,15 @@ export default function PaginaDocumentos() {
                         </div>
                     </div>
                 )}
+
+                {/* MARCA D'ÁGUA DINÂMICA */}
+                <div className="fixed inset-0 z-0 pointer-events-none opacity-[0.03] overflow-hidden select-none flex flex-wrap gap-20 p-10 rotate-[-15deg]">
+                    {Array.from({ length: 50 }).map((_, i) => (
+                        <span key={i} className="text-white font-black text-2xl uppercase tracking-widest">
+                            {session?.user?.nome || "ACESSO RESTRITO ALPHA"}
+                        </span>
+                    ))}
+                </div>
 
 
             </div>

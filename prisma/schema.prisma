@@ -80,11 +80,86 @@ model reservas {
 }
 
 model documentos {
+  id            Int      @id @default(autoincrement())
+  titulo        String
+  PastaArquivos String?
+  url           String
+  setor         String
+  tipo          String
+  data_criacao  DateTime @default(now())
+}
+
+model clientes {
+  id                  Int       @id @default(autoincrement())
+  status              String    @default("Em Andamento")
+  cnpj                String    @unique
+  razaoSocial         String
+  nomeFantasia        String?
+  dataConstituicao    String?
+  uf                  String?
+  regimeTributario    String?
+  servicos            String?
+  analistaResponsavel String?
+  dataContratacao     DateTime  @default(now())
+  dataExito           DateTime?
+  ultimoCs            Int?      @default(0)
+  nps                 Int?      @default(0)
+  feedbackGoogle      Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  log_cs              log_cs[]
+  socios              socios[]
+  logFeedback     logFeedback[]
+  logAlteracao logAlteracao[]
+  nomeGoogle        String?   
+  
+
+  @@map("clientes")
+}
+
+model socios {
+  id        Int      @id @default(autoincrement())
+  nome      String
+  telefone  String?
+  obs       String?
+  clienteId Int
+  cliente   clientes @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@map("socios")
+}
+
+model log_cs {
   id           Int      @id @default(autoincrement())
-  titulo       String
-  PastaArquivos    String?
-  url          String
-  setor        String
-  tipo         String
-  data_criacao DateTime @default(now())
+  dataRegistro DateTime @default(now())
+  colaborador  String
+  sentimento   String
+  observacao   String?
+  clienteId    Int
+  clientes     clientes @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@map("log_cs")
+}
+
+model logFeedback {
+  id            Int      @id @default(autoincrement())
+  dataRegistro DateTime @default(now())
+  colaborador   String
+  sentimento    String
+  observacao    String?
+  clienteId    Int
+  clientes       clientes  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@map("logFeedback")
+}
+
+model logAlteracao {
+  id               Int      @id @default(autoincrement())
+  dataAlteracao   DateTime @default(now()) 
+  colaborador      String
+  acao             String  
+  dadosAnteriores String?  
+  clienteId       Int     
+  clientes          clientes @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@map("logAlteracao")
 }

@@ -13,7 +13,6 @@ export function AbaDeAcesso({ permissaoRequerida, children, userPermissions, use
   
   const temAcesso = 
   userRole === "Admin" ||
-    userRole === "CEO" || 
     userPermissions?.includes(permissaoRequerida);
 
   if (!temAcesso) {

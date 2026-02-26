@@ -43,7 +43,8 @@ const MODULOS_SISTEMA = [
   { id: "Reservas", label: "Reservas", desc: "Salas de reunião" },
   { id: "Documentos", label: "Documentos", desc: "Manuais e guias" },
   { id: "UpDocumentos", label: "UpDocumentos", desc: "Uploads de Arquivos" },
-  { id: "Historico", label: "Historico", desc: "Historico de Arquivos" }
+  { id: "Historico", label: "Historico", desc: "Historico de Arquivos" },
+  { id: "Cliente", label: "Cliente", desc: "Cadastro de Cliente" }
 ];
 
 const SETORES_LISTA = [
@@ -81,54 +82,54 @@ export default function EditionUser({ open, onOpenChange, user, onSubmit }: Edit
 
             {/* GRUPO 1: IDENTIFICAÇÃO */}
             <div className="grid grid-cols-2 gap-4">
-  <div className="grid gap-2">
-    <Label className="text-[10px] uppercase font-bold text-slate-400 ml-1">Username</Label>
-    <div className="relative">
-      <Input name="usuario" defaultValue={user.usuario} className="pl-10 bg-slate-900/50 border-white/5 h-11 focus:ring-2 focus:ring-blue-600/50 rounded-xl" />
-      <KeyRound className="absolute left-3 top-3 text-slate-600" size={18} />
-    </div>
-  </div>
-  <div className="grid gap-2">
-    <Label className="text-[10px] uppercase font-bold text-slate-400 ml-1">E-mail</Label>
-    <div className="relative">
-      <Input name="email" defaultValue={user.email} className="pl-10 bg-slate-900/50 border-white/5 h-11 focus:ring-2 focus:ring-blue-600/50 rounded-xl" />
-      <Mail className="absolute left-3 top-3 text-slate-600" size={18} />
-    </div>
-  </div>
-</div>
-
-<div className="grid gap-2">
-  <Label className="text-[10px] uppercase font-bold text-slate-400 ml-1">Nome Completo</Label>
-  <div className="relative">
-    <Input name="nome" defaultValue={user.nome} className="pl-10 bg-slate-900/50 border-white/5 h-11 focus:ring-2 focus:ring-blue-600/50 rounded-xl" />
-    <User className="absolute left-3 top-3 text-slate-600" size={18} />
-  </div>
-</div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label className="text-[10px] uppercase font-bold text-slate-400 ml-1">E-mail</Label>
-                  <div className="relative">
-                    <Input name="email" defaultValue={user.email} className="pl-10 bg-slate-900/50 border-white/5 h-11 focus:ring-2 focus:ring-blue-600/50 rounded-xl" />
-                    <Mail className="absolute left-3 top-3 text-slate-600" size={18} />
-                  </div>
-                </div>
-                <div className="grid gap-2">
-                  <Label className="text-[10px] uppercase font-bold text-slate-400 ml-1">Setor / Cargo</Label>
-                  <Select name="role" defaultValue={user.role || "User"}>
-                    <SelectTrigger className="bg-slate-900/50 border-white/5 h-11 rounded-xl focus:ring-2 focus:ring-blue-600/50">
-                      <SelectValue placeholder="Definir Setor" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-slate-950 border-white/10 text-white">
-                      {SETORES_LISTA.map((s) => (
-                        <SelectItem key={s.value} value={s.value} className="focus:bg-blue-600 focus:text-white transition-colors py-2.5">
-                          <span className="text-[10px] font-bold tracking-widest uppercase">{s.label}</span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <div className="grid gap-2">
+                <Label className="text-[10px] uppercase font-bold text-slate-400 ml-1">Username</Label>
+                <div className="relative">
+                  <Input name="usuario" defaultValue={user.usuario} className="pl-10 bg-slate-900/50 border-white/5 h-11 focus:ring-2 focus:ring-blue-600/50 rounded-xl" />
+                  <KeyRound className="absolute left-3 top-3 text-slate-600" size={18} />
                 </div>
               </div>
+              <div className="grid gap-2">
+                <Label className="text-[10px] uppercase font-bold text-slate-400 ml-1">E-mail</Label>
+                <div className="relative">
+                  <Input name="email" defaultValue={user.email} className="pl-10 bg-slate-900/50 border-white/5 h-11 focus:ring-2 focus:ring-blue-600/50 rounded-xl" />
+                  <Mail className="absolute left-3 top-3 text-slate-600" size={18} />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-2">
+              <Label className="text-[10px] uppercase font-bold text-slate-400 ml-1">Nome Completo</Label>
+              <div className="relative">
+                <Input name="nome" defaultValue={user.nome} className="pl-10 bg-slate-900/50 border-white/5 h-11 focus:ring-2 focus:ring-blue-600/50 rounded-xl" />
+                <User className="absolute left-3 top-3 text-slate-600" size={18} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label className="text-[10px] uppercase font-bold text-slate-400 ml-1">E-mail</Label>
+                <div className="relative">
+                  <Input name="email" defaultValue={user.email} className="pl-10 bg-slate-900/50 border-white/5 h-11 focus:ring-2 focus:ring-blue-600/50 rounded-xl" />
+                  <Mail className="absolute left-3 top-3 text-slate-600" size={18} />
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label className="text-[10px] uppercase font-bold text-slate-400 ml-1">Setor / Cargo</Label>
+                <Select name="role" defaultValue={user.role || "User"}>
+                  <SelectTrigger className="bg-slate-900/50 border-white/5 h-11 rounded-xl focus:ring-2 focus:ring-blue-600/50">
+                    <SelectValue placeholder="Definir Setor" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-950 border-white/10 text-white">
+                    {SETORES_LISTA.map((s) => (
+                      <SelectItem key={s.value} value={s.value} className="focus:bg-blue-600 focus:text-white transition-colors py-2.5">
+                        <span className="text-[10px] font-bold tracking-widest uppercase">{s.label}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             {/* GRUPO 2: ACESSOS */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-1">

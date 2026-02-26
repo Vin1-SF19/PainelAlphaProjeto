@@ -76,7 +76,7 @@ export default async function PainelAlpha({ user }: UserProps) {
 
             <Link href="./PainelAlpha/HabilitacaoRadar">
               <Button className="cursor-pointer w-full text-lg font-bold bg-blue-700 hover:bg-blue-500 transition-all shadow-md">
-                Acessar módulo
+                Acessar
               </Button>
             </Link>
           </div>
@@ -106,7 +106,7 @@ export default async function PainelAlpha({ user }: UserProps) {
 
             <Link href="./PainelAlpha/Chamados">
               <Button className="cursor-pointer w-full text-lg font-bold bg-blue-700 hover:bg-blue-500 transition-all shadow-md">
-                Central de chamados
+                Acessar
               </Button>
 
             </Link>
@@ -136,7 +136,7 @@ export default async function PainelAlpha({ user }: UserProps) {
 
             <Link href="/PainelAlpha/cadastro">
               <Button className="cursor-pointer w-full text-lg font-bold bg-blue-700 hover:bg-blue-500 transition-all shadow-md">
-                Gerenciar usuários
+                Acessar
               </Button>
             </Link>
           </div>
@@ -158,7 +158,7 @@ export default async function PainelAlpha({ user }: UserProps) {
             />
 
             <h3 className="text-xl font-bold text-white mb-3">
-              Reservas de Salas
+              Reservas  
             </h3>
 
             <p className="text-gray-400 text-sm leading-relaxed mb-6">
@@ -167,7 +167,7 @@ export default async function PainelAlpha({ user }: UserProps) {
 
             <Link href="/PainelAlpha/ReservaSalas">
               <Button className="cursor-pointer w-full text-lg font-bold bg-blue-700 hover:bg-blue-500 transition-all shadow-md">
-                Acessar Reservas
+                Acessar 
               </Button>
             </Link>
           </div>
@@ -198,7 +198,7 @@ export default async function PainelAlpha({ user }: UserProps) {
 
             <Link href="/PainelAlpha/DocsAlpha">
               <Button className="cursor-pointer w-full text-lg font-bold bg-blue-700 hover:bg-blue-500 transition-all shadow-md">
-                Acessar Documentos
+                Acessar 
               </Button>
             </Link>
           </div>
@@ -227,7 +227,7 @@ export default async function PainelAlpha({ user }: UserProps) {
 
             <Link href="/PainelAlpha/GerenciamentoArquivos">
               <Button className="cursor-pointer w-full text-lg font-bold bg-blue-700 hover:bg-blue-500 transition-all shadow-md">
-                Acessar Arquivos
+                Acessar 
               </Button>
             </Link>
           </div>
@@ -256,7 +256,36 @@ export default async function PainelAlpha({ user }: UserProps) {
 
             <Link href="/PainelAlpha/HistoricoArquivos">
               <Button className="cursor-pointer w-full text-lg font-bold bg-blue-700 hover:bg-blue-500 transition-all shadow-md">
-                Acessar Arquivos
+                Acessar 
+              </Button>
+            </Link>
+          </div>
+        </AbaDeAcesso>
+
+        {/* Cadastro de Cliente*/}
+        <AbaDeAcesso
+          permissaoRequerida="Cliente"
+          userRole={session?.user?.role}
+          userPermissions={session?.user?.permissoes}
+        >
+          <div className="group rounded-3xl border border-slate-700 bg-slate-900/70 p-6 shadow-lg transition-all hover:-translate-y-1 hover:shadow-blue-900/40">
+            <img
+              src="../local-na-rede-internet.png"
+              alt="Usuários"
+              className="w-12 mb-4 opacity-90"
+            />
+
+            <h3 className="text-xl font-bold text-white mb-3">
+              Cadastro de Clientes
+            </h3>
+
+            <p className="text-gray-400 text-sm leading-relaxed mb-6">
+              Pagina dedicada para Cadastrar NOVOS Clientes
+            </p>
+
+            <Link href="/PainelAlpha/CadastroClientes">
+              <Button className="cursor-pointer w-full text-lg font-bold bg-blue-700 hover:bg-blue-500 transition-all shadow-md">
+                Acessar
               </Button>
             </Link>
           </div>

@@ -1,21 +1,23 @@
 import { PrismaClient } from '@prisma/client'
 import { PrismaLibSQL } from '@prisma/adapter-libsql'
 
+const config = {
+  url: process.env.TURSO_DATABASE_URL!,
+  authToken: process.env.TURSO_AUTH_TOKEN!,
+};
 
+const adapter = new PrismaLibSQL(config as any); 
 
-declare global{
-    var Prisma: PrismaClient | undefined;
+const prismaClientSingleton = () => {
+  return new PrismaClient({ adapter })
 }
 
-const adapter = new PrismaLibSQL({
-  url: `${process.env.TURSO_DATABASE_URL}`,
-  authToken: `${process.env.TURSO_AUTH_TOKEN}`,
-})
-
-const db = globalThis.Prisma || new PrismaClient({ adapter })
-
-if(process.env.NODE_ENV !== 'production'){
-    globalThis.Prisma = db;
+declare global {
+  var prisma: undefined | ReturnType<typeof prismaClientSingleton>
 }
 
-export default db;
+const db = globalThis.prisma ?? prismaClientSingleton()
+
+export default db
+
+if (process.env.NODE_ENV !== 'production') globalThis.prisma = db

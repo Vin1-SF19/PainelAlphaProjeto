@@ -116,7 +116,7 @@ export default function CadastroUsuarios() {
           <div className="w-1/2 h-full p-6">
             <div className="w-200 h-full flex">
 
-              <div className="w-full h-[90vh] flex flex-col p-10 rounded-[2.5rem] bg-slate-950/40 backdrop-blur-2xl border border-white/10 shadow-2xl overflow-y-auto custom-scrollbar">
+              <div className="w-full h-200 flex flex-col p-10 rounded-[2.5rem] bg-slate-950/40 backdrop-blur-2xl border border-white/10 shadow-2xl overflow-y-auto custom-scrollbar">
 
                 <div className="space-y-6">
                   <div className="titles border-b border-white/5 pb-4">
@@ -126,7 +126,7 @@ export default function CadastroUsuarios() {
                     </p>
                   </div>
 
-                  <Form action={formAction} className="flex flex-col gap-6 items-start w-full">
+                  <Form action={formAction} className="flex flex-col gap-4 items-start w-full">
 
                     <div className="grid gap-2 w-full">
                       <Label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Nome Completo</Label>
@@ -159,7 +159,8 @@ export default function CadastroUsuarios() {
                           { id: "Reservas", label: "Reservas de Salas" },
                           { id: "Documentos", label: "Documentos" },
                           { id: "UpDocumentos", label: "Uploads" },
-                          { id: "Historico", label: "Histórico" }
+                          { id: "Historico", label: "Histórico" },
+                          { id: "Cliente", label: "Cadastro de Cliente"}
                         ].map((item) => (
                           <div key={item.id} className="flex items-center justify-between p-4 rounded-xl bg-black/20 border border-white/5 hover:bg-black/40 transition-all group">
                             <Label htmlFor={item.id} className="text-xs font-black uppercase tracking-tight cursor-pointer text-slate-400 group-hover:text-white leading-tight">
@@ -194,6 +195,7 @@ export default function CadastroUsuarios() {
                       Finalizar Cadastro
                     </Button>
                   </Form>
+
                 </div>
 
               </div>
@@ -202,7 +204,7 @@ export default function CadastroUsuarios() {
           </div>
 
           <div className="w-1/2 h-full p-6">
-            <div className="w-200 h-full flex">
+            <div className="w-200 h-200 flex">
 
               <Card className="w-full h-full border-white/10 bg-slate-950/40 backdrop-blur-2xl text-white rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden">
                 <CardHeader className="border-b border-white/5 p-10">
