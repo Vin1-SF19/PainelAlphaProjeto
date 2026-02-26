@@ -46,6 +46,10 @@ export default function PaginaDocumentos() {
 
     const [pastaConfig, setPastaConfig] = useState<string | null>(null);
 
+    const [ordemPastas, setOrdemPastas] = useState<string[]>([]);
+    const [isArrastando, setIsArrastando] = useState(false);
+
+
     console.log("Role do usuário:", session?.user?.role);
     console.log("Role uppercase:", roleUser);
 
@@ -75,11 +79,6 @@ export default function PaginaDocumentos() {
     }, [status]);
 
     useEffect(() => {
-        const blindScreen = () => {
-            if (document.activeElement?.classList.contains('documento-liberado')) return;
-            document.body.style.filter = "blur(100px)";
-            document.body.style.opacity = "0";
-        };
 
         const restoreScreen = () => {
             document.body.style.filter = "none";
@@ -94,7 +93,6 @@ export default function PaginaDocumentos() {
 
             if (isPrintKey || isForbiddenShortcut || isDevTools || isSystemCapture) {
                 e.preventDefault();
-                blindScreen();
 
                 try {
                     await navigator.clipboard.writeText("ACESSO RESTRITO ALPHA");
@@ -115,7 +113,6 @@ export default function PaginaDocumentos() {
                 if (document.activeElement?.classList.contains('documento-liberado')) {
                     restoreScreen();
                 } else {
-                    blindScreen();
                 }
             }, 150);
         };
@@ -153,6 +150,7 @@ export default function PaginaDocumentos() {
             document.documentElement.style.overflow = 'unset';
         };
     }, []);
+
 
 
 
@@ -254,6 +252,13 @@ export default function PaginaDocumentos() {
         }
     }, [docSelecionado]);
 
+    useEffect(() => {
+        const chaves = Object.keys(documentosAgrupados);
+        if (ordemPastas.length === 0 && chaves.length > 0) {
+            setOrdemPastas(chaves);
+        }
+    }, [documentosAgrupados]);
+
 
 
 
@@ -350,55 +355,80 @@ export default function PaginaDocumentos() {
 
 
                             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-2">
-                                {Object.entries(documentosAgrupados).map(([pasta, docs]) => (
-                                    <div key={pasta} className="space-y-1 group/pasta relative"> {/* Adicionado group/pasta aqui */}
+                                {(ordemPastas.length > 0 ? ordemPastas : Object.keys(documentosAgrupados)).map((pasta, index) => {
+                                    const docs = documentosAgrupados[pasta];
+                                    if (!docs) return null;
 
-                                        <div className="relative flex items-center">
-                                            <button
-                                                onClick={() => setPastasAbertas(p => ({ ...p, [pasta]: !p[pasta] }))}
-                                                className="w-full flex items-center justify-between p-3.5 rounded-xl bg-slate-950/40 border border-white/5 hover:bg-slate-900 transition-all"
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <Folder size={16} className={pastasAbertas[pasta] ? "text-blue-500" : "text-slate-600"} />
-                                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">{pasta}</span>
-                                                </div>
-                                                <ChevronRight size={14} className={`transition-transform duration-300 ${pastasAbertas[pasta] ? "rotate-90" : "mr-6"}`} />
-                                            </button>
+                                    return (
+                                        /* 2. CADA PASTA (AQUI SIM OS EVENTOS FUNCIONAM) */
+                                        <div
+                                            key={pasta}
+                                            draggable
+                                            onDragStart={(e) => {
+                                                setIsArrastando(true); // 🛡️ DESATIVA A TELA AZUL
+                                                if (ordemPastas.length === 0) setOrdemPastas(Object.keys(documentosAgrupados));
+                                                e.dataTransfer.setData("index", index.toString());
+                                            }}
+                                            onDragEnd={() => {
+                                                setIsArrastando(false); // 🔓 REATIVA A SEGURANÇA
+                                            }}
+                                            onDragOver={(e) => e.preventDefault()}
+                                            onDrop={(e) => {
+                                                setIsArrastando(false); // 🔓 GARANTE VOLTA AO NORMAL
+                                                const deIndex = parseInt(e.dataTransfer.getData("index"));
+                                                const paraIndex = index;
 
-                                            {/* BOTÃO DE ENGRENAGEM POSICIONADO À DIREITA DENTRO DA PASTA */}
+                                                const listaBase = ordemPastas.length > 0 ? [...ordemPastas] : Object.keys(documentosAgrupados);
+                                                const novaLista = [...listaBase];
+                                                const [itemRemovido] = novaLista.splice(deIndex, 1);
+                                                novaLista.splice(paraIndex, 0, itemRemovido);
 
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation(); // Impede de fechar/abrir a pasta ao clicar na engrenagem
-                                                    setPastaConfig(pasta);
-                                                }}
-                                                className=" mr-4 absolute right-10 opacity-0 group-hover/pasta:opacity-100 p-2 hover:bg-blue-600/20 rounded-lg transition-all text-slate-500 hover:text-blue-400 z-10"
-                                            >
-                                                <Settings size={14} />
-                                            </button>
+                                                setOrdemPastas(novaLista);
+                                                // Opcional: Action para salvar no Turso
+                                            }}
+                                            className="space-y-1 group/pasta relative cursor-grab active:cursor-grabbing"
+                                        >
+                                            {/* CONTEÚDO DA PASTA (BOTÃO) */}
+                                            <div className="relative flex items-center">
+                                                <button
+                                                    onClick={() => setPastasAbertas(p => ({ ...p, [pasta]: !p[pasta] }))}
+                                                    className="w-full flex items-center justify-between p-3.5 rounded-xl bg-slate-950/40 border border-white/5 hover:bg-slate-900 transition-all"
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <Folder size={16} className={pastasAbertas[pasta] ? "text-blue-500" : "text-slate-600"} />
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">{pasta}</span>
+                                                    </div>
+                                                    <ChevronRight size={14} className={`transition-transform duration-300 ${pastasAbertas[pasta] ? "rotate-90" : "mr-6"}`} />
+                                                </button>
 
-                                        </div>
-
-                                        {pastasAbertas[pasta] && (
-                                            <div className="ml-4 pl-4 border-l border-white/10 space-y-1 mt-1">
-                                                {docs.map(doc => (
-                                                    <button
-                                                        key={doc.id}
-                                                        onClick={() => setDocSelecionado(doc)}
-                                                        className={`w-full flex items-center gap-3 p-3 rounded-lg text-[9px] font-bold uppercase transition-all ${docSelecionado?.id === doc.id ? "bg-blue-600/20 text-blue-400 border border-blue-600/20" : "text-slate-500 hover:bg-white/5"}`}
-                                                    >
-                                                        {doc.tipo === "VIDEO" ? (
-                                                            <Video size={14} className={docSelecionado?.id === doc.id ? "text-blue-400" : "text-slate-500"} />
-                                                        ) : (
-                                                            <FileText size={14} className={docSelecionado?.id === doc.id ? "text-blue-400" : "text-slate-500"} />
-                                                        )}
-                                                        <span className="truncate">{doc.titulo}</span>
-                                                    </button>
-                                                ))}
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setPastaConfig(pasta);
+                                                    }}
+                                                    className="mr-4 absolute right-10 opacity-0 group-hover/pasta:opacity-100 p-2 hover:bg-blue-600/20 rounded-lg transition-all text-slate-500 hover:text-blue-400 z-10"
+                                                >
+                                                    <Settings size={14} />
+                                                </button>
                                             </div>
-                                        )}
-                                    </div>
-                                ))}
+
+                                            {/* ARQUIVOS INTERNOS */}
+                                            {pastasAbertas[pasta] && (
+                                                <div className="ml-4 pl-4 border-l border-white/10 space-y-1 mt-1">
+                                                    {docs.map(doc => (
+                                                        <button
+                                                            key={doc.id}
+                                                            onClick={() => setDocSelecionado(doc)}
+                                                            className={`w-full flex items-center gap-3 p-3 rounded-lg text-[9px] font-bold uppercase transition-all ${docSelecionado?.id === doc.id ? "bg-blue-600/20 text-blue-400" : "text-slate-500 hover:bg-white/5"}`}
+                                                        >
+                                                            <span className="truncate">{doc.titulo}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
 
                         </div>
