@@ -5,6 +5,9 @@ import { useSession } from "next-auth/react";
 import { FileText, Eye, Search, ShieldCheck, Globe, ChevronRight, Folder, Trash2, ShieldAlert, Lock, Video, Settings, Star, ChevronDown, ChevronUp } from "lucide-react";
 import { BotaoVoltar } from "@/Components/BotaoVoltar";
 import { toast } from "sonner";
+import AntiCapture from 'react-anticapture';
+
+
 export const dynamic = 'force-dynamic';
 
 
@@ -73,42 +76,71 @@ export default function PaginaDocumentos() {
 
     useEffect(() => {
         const blindScreen = () => {
+            if (document.activeElement?.classList.contains('documento-liberado')) return;
             document.body.style.filter = "blur(100px)";
             document.body.style.opacity = "0";
         };
-    
+
         const restoreScreen = () => {
             document.body.style.filter = "none";
             document.body.style.opacity = "1";
         };
-    
-        const handleSecurity = (e: KeyboardEvent) => {
-            if (e.key === 'PrintScreen' || e.keyCode === 44 || (e.metaKey && e.shiftKey)) {
+
+        const handleSecurity = async (e: KeyboardEvent) => {
+            const isPrintKey = e.key === 'PrintScreen' || e.keyCode === 44;
+            const isForbiddenShortcut = e.ctrlKey && ['p', 'P', 's', 'S', 'u', 'U', 'c', 'C', 'v', 'V', 'x', 'X'].includes(e.key);
+            const isDevTools = e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['i', 'I', 'j', 'J', 'c', 'C'].includes(e.key));
+            const isSystemCapture = (e.metaKey && e.shiftKey);
+
+            if (isPrintKey || isForbiddenShortcut || isDevTools || isSystemCapture) {
+                e.preventDefault();
                 blindScreen();
+
+                try {
+                    await navigator.clipboard.writeText("ACESSO RESTRITO ALPHA");
+                } catch (err) { }
+
                 toast.error("SEGURANÇA ALPHA", {
-                    description: "CAPTURA BLOQUEADA: INFORMAÇÃO SIGILOSA",
+                    description: "AÇÃO BLOQUEADA: CONTEÚDO RESTRITO",
+                    duration: 4000,
                     style: { background: '#450a0a', border: '2px solid #ff0000', color: '#fff' }
                 });
-                setTimeout(restoreScreen, 2000); 
+
+                setTimeout(restoreScreen, 2000);
             }
         };
-        const handleVisibility = () => {
-            if (document.visibilityState === 'hidden') blindScreen();
-            else restoreScreen();
+
+        const handleBlur = () => {
+            setTimeout(() => {
+                if (document.activeElement?.classList.contains('documento-liberado')) {
+                    restoreScreen();
+                } else {
+                    blindScreen();
+                }
+            }, 150);
         };
-    
+
+        const disableRightClick = (e: MouseEvent) => e.preventDefault();
+
         window.addEventListener('keydown', handleSecurity);
-        window.addEventListener('blur', blindScreen);
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'PrintScreen' || e.keyCode === 44) handleSecurity(e);
+        });
+        window.addEventListener('blur', handleBlur);
         window.addEventListener('focus', restoreScreen);
-        document.addEventListener('visibilitychange', handleVisibility);
-    
+        window.addEventListener('contextmenu', disableRightClick);
+
         return () => {
             window.removeEventListener('keydown', handleSecurity);
-            window.removeEventListener('blur', blindScreen);
+            window.removeEventListener('blur', handleBlur);
             window.removeEventListener('focus', restoreScreen);
-            document.removeEventListener('visibilitychange', handleVisibility);
+            window.removeEventListener('contextmenu', disableRightClick);
         };
     }, []);
+
+
+
+
 
 
 
@@ -433,20 +465,30 @@ export default function PaginaDocumentos() {
                                                                     </div>
                                                                 ) : (
                                                                     <>
-                                                                        <iframe
-                                                                            key={docSelecionado.id}
-                                                                            src={docSelecionado.protecao === "ATIVO"
-                                                                                ? `${docSelecionado.url}#toolbar=0&navpanes=0&scrollbar=1`
-                                                                                : `${docSelecionado.url}#toolbar=1&navpanes=1&scrollbar=1`
-                                                                            }
-                                                                            className="w-full border-none"
-                                                                            style={{
-                                                                                height: '20000px',
-                                                                                width: '100%',
-                                                                                pointerEvents: docSelecionado.protecao === "ATIVO" ? 'none' : 'auto'
-                                                                            }}
-                                                                            title={docSelecionado.titulo}
-                                                                        />
+                                                                        <AntiCapture
+                                                                            screenshotPrevent={true}
+                                                                            clipboardPrevent={true}
+                                                                            devtoolsPrevent={true}
+                                                                            userSelect={false}
+                                                                        >
+
+                                                                            <iframe
+                                                                                key={docSelecionado.id}
+                                                                                src={docSelecionado.protecao ===
+
+                                                                                    "ATIVO"
+                                                                                    ? `${docSelecionado.url}#toolbar=0&navpanes=0&scrollbar=1`
+                                                                                    : `${docSelecionado.url}#toolbar=1&navpanes=1&scrollbar=1`
+                                                                                }
+                                                                                className={`w-full border-none ${docSelecionado.protecao !== "ATIVO" ? 'documento-liberado' : ''}`}
+                                                                                style={{
+                                                                                    height: '20000px',
+                                                                                    width: '100%',
+                                                                                    pointerEvents: docSelecionado.protecao === "ATIVO" ? 'none' : 'auto'
+                                                                                }}
+                                                                                title={docSelecionado.titulo}
+                                                                            />
+                                                                        </AntiCapture>
 
                                                                         {docSelecionado.protecao === "ATIVO" && (
                                                                             <div
