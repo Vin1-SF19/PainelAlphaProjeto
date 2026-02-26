@@ -3,11 +3,14 @@
 import loginAction from "@/lib/loginAction";
 import Form from "next/form";
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
+import ModalRecuperarSenha from "./RecuperarSenha/page";
 
 export default function LoginForm() {
 
   const [state, formAction, isPedding] = useActionState(loginAction, null);
+  const [isModalSenhaAberto, setIsModalSenhaAberto] = useState(false);
+
 
 
   function Recover() {
@@ -57,12 +60,13 @@ export default function LoginForm() {
             </label>
 
             <div className="text-sm">
-              <Link
-                href="/RecuperarSenha" 
-                className="font-semibold text-indigo-400 hover:text-indigo-300"
+              <button
+                type="button"
+                onClick={() => setIsModalSenhaAberto(true)}
+                className="cursor-pointer text-[10px] font-black text-slate-500 uppercase hover:text-indigo-500 transition-colors"
               >
-                Esqueceu Sua senha?
-              </Link>
+                Esqueci minha senha
+              </button>
             </div>
 
           </div>
@@ -90,6 +94,11 @@ export default function LoginForm() {
         </div>
 
       </Form>
+
+      <ModalRecuperarSenha 
+    isOpen={isModalSenhaAberto} 
+    onClose={() => setIsModalSenhaAberto(false)} 
+/>
     </>
   );
 }

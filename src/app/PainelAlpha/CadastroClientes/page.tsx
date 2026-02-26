@@ -47,8 +47,7 @@ export default function CadastroCliente() {
     const [modalLogAberto, setModalLogAberto] = useState(false);
     const [clienteParaLog, setClienteParaLog] = useState<any>(null);
 
-    const [estaAbrindoArquivo, setEstaAbrindoArquivo] = useState(false);
-
+    
 
     const abrirLog = (cliente: any) => {
         setClienteParaLog(cliente);

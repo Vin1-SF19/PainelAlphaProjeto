@@ -17,6 +17,9 @@ model usuarios {
   role             String     @default("User")
   permissoes       String?
   chamados_criados chamados[] @relation("Solicitante")
+
+  reset_token   String?
+  reset_expires DateTime?
 }
 
 model chamados {
@@ -90,9 +93,9 @@ model documentos {
 }
 
 model clientes {
-  id                  Int       @id @default(autoincrement())
-  status              String    @default("Em Andamento")
-  cnpj                String    @unique
+  id                  Int            @id @default(autoincrement())
+  status              String         @default("Em Andamento")
+  cnpj                String         @unique
   razaoSocial         String
   nomeFantasia        String?
   dataConstituicao    String?
@@ -100,19 +103,18 @@ model clientes {
   regimeTributario    String?
   servicos            String?
   analistaResponsavel String?
-  dataContratacao     DateTime  @default(now())
+  dataContratacao     DateTime       @default(now())
   dataExito           DateTime?
-  ultimoCs            Int?      @default(0)
-  nps                 Int?      @default(0)
-  feedbackGoogle      Boolean   @default(false)
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  ultimoCs            Int?           @default(0)
+  nps                 Int?           @default(0)
+  feedbackGoogle      Boolean        @default(false)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
   log_cs              log_cs[]
   socios              socios[]
-  logFeedback     logFeedback[]
-  logAlteracao logAlteracao[]
-  nomeGoogle        String?   
-  
+  logFeedback         logFeedback[]
+  logAlteracao        logAlteracao[]
+  nomeGoogle          String?
 
   @@map("clientes")
 }
@@ -141,25 +143,25 @@ model log_cs {
 }
 
 model logFeedback {
-  id            Int      @id @default(autoincrement())
+  id           Int      @id @default(autoincrement())
   dataRegistro DateTime @default(now())
-  colaborador   String
-  sentimento    String
-  observacao    String?
+  colaborador  String
+  sentimento   String
+  observacao   String?
   clienteId    Int
-  clientes       clientes  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  clientes     clientes @relation(fields: [clienteId], references: [id], onDelete: Cascade)
 
   @@map("logFeedback")
 }
 
 model logAlteracao {
-  id               Int      @id @default(autoincrement())
-  dataAlteracao   DateTime @default(now()) 
-  colaborador      String
-  acao             String  
-  dadosAnteriores String?  
-  clienteId       Int     
-  clientes          clientes @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  id              Int      @id @default(autoincrement())
+  dataAlteracao   DateTime @default(now())
+  colaborador     String
+  acao            String
+  dadosAnteriores String?
+  clienteId       Int
+  clientes        clientes @relation(fields: [clienteId], references: [id], onDelete: Cascade)
 
   @@map("logAlteracao")
 }
