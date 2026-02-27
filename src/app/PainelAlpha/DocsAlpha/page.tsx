@@ -6,6 +6,7 @@ import { FileText, Eye, Search, ShieldCheck, Globe, ChevronRight, Folder, Trash2
 import { BotaoVoltar } from "@/Components/BotaoVoltar";
 import { toast } from "sonner";
 import AntiCapture from 'react-anticapture';
+import { buscarOrdemPastas, salvarOrdemPastas } from "@/actions/OrdemPastas";
 
 
 export const dynamic = 'force-dynamic';
@@ -35,9 +36,9 @@ export default function PaginaDocumentos() {
     const [docSelecionado, setDocSelecionado] = useState<Documento | null>(null);
     const [busca, setBusca] = useState("");
     const [loadingDocs, setLoadingDocs] = useState(true);
-    const [pastasAbertas, setPastasAbertas] = useState<Record<string, boolean>>({});
     const [modalExcluir, setModalExcluir] = useState(false);
     const [senhaInput, setSenhaInput] = useState("");
+
 
     const roleUser = session?.user?.role?.toUpperCase().trim() || "USER";
 
@@ -48,12 +49,7 @@ export default function PaginaDocumentos() {
 
     const [ordemPastas, setOrdemPastas] = useState<string[]>([]);
     const [isArrastando, setIsArrastando] = useState(false);
-
-
-    console.log("Role do usuário:", session?.user?.role);
-    console.log("Role uppercase:", roleUser);
-
-
+    const [pastasAbertas, setPastasAbertas] = useState<Record<string, boolean>>({});
 
 
 
@@ -68,6 +64,7 @@ export default function PaginaDocumentos() {
 
 
     const [hasWindow, setHasWindow] = useState(false);
+    const [ficharioAtivo, setFicharioAtivo] = useState("Financeiro");
 
     useEffect(() => {
         setHasWindow(true);
@@ -254,11 +251,42 @@ export default function PaginaDocumentos() {
 
     useEffect(() => {
         const chaves = Object.keys(documentosAgrupados);
-        if (ordemPastas.length === 0 && chaves.length > 0) {
-            setOrdemPastas(chaves);
-        }
+        setOrdemPastas(chaves);
     }, [documentosAgrupados]);
 
+    useEffect(() => {
+        setOrdemPastas([]);
+    }, [setorAtivo]);
+
+    useEffect(() => {
+        const sincronizarOrdem = async () => {
+            const ordemSalva: string[] | null = await buscarOrdemPastas(ficharioAtivo);
+            const pastasExistentes = Object.keys(documentosAgrupados);
+    
+            if (ordemSalva && Array.isArray(ordemSalva)) {
+                const ordemFiltrada = ordemSalva.filter((p: string) => pastasExistentes.includes(p));
+                const novasPastas = pastasExistentes.filter((p: string) => !ordemSalva.includes(p));
+                
+                setOrdemPastas([...ordemFiltrada, ...novasPastas]);
+            } else {
+                setOrdemPastas(pastasExistentes);
+            }
+        };
+    
+        if (ficharioAtivo) sincronizarOrdem();
+    }, [ficharioAtivo, documentosAgrupados]);
+    
+    
+
+    
+    useEffect(() => {
+        const carregarPostas = async () => {
+            const ordem = await buscarOrdemPastas(ficharioAtivo);
+            setOrdemPastas(ordem || Object.keys(documentosAgrupados));
+        };
+        carregarPostas();
+    }, [ficharioAtivo]); 
+    
 
 
 
@@ -365,16 +393,16 @@ export default function PaginaDocumentos() {
                                             key={pasta}
                                             draggable
                                             onDragStart={(e) => {
-                                                setIsArrastando(true); // 🛡️ DESATIVA A TELA AZUL
+                                                setIsArrastando(true);
                                                 if (ordemPastas.length === 0) setOrdemPastas(Object.keys(documentosAgrupados));
                                                 e.dataTransfer.setData("index", index.toString());
                                             }}
                                             onDragEnd={() => {
-                                                setIsArrastando(false); // 🔓 REATIVA A SEGURANÇA
+                                                setIsArrastando(false);
                                             }}
                                             onDragOver={(e) => e.preventDefault()}
-                                            onDrop={(e) => {
-                                                setIsArrastando(false); // 🔓 GARANTE VOLTA AO NORMAL
+                                            onDrop={async (e) => {
+                                                setIsArrastando(false);
                                                 const deIndex = parseInt(e.dataTransfer.getData("index"));
                                                 const paraIndex = index;
 
@@ -384,14 +412,23 @@ export default function PaginaDocumentos() {
                                                 novaLista.splice(paraIndex, 0, itemRemovido);
 
                                                 setOrdemPastas(novaLista);
-                                                // Opcional: Action para salvar no Turso
+
+                                                const res = await salvarOrdemPastas(ficharioAtivo, novaLista);
+
+                                                if (res.success) {
+                                                    toast.success("Ordem das pastas salva!");
+                                                } else {
+                                                    toast.error("Erro ao persistir ordem no banco.");
+                                                }
                                             }}
+
+
                                             className="space-y-1 group/pasta relative cursor-grab active:cursor-grabbing"
                                         >
-                                            {/* CONTEÚDO DA PASTA (BOTÃO) */}
+                                            {/* CONTEÚDO DA PASTA*/}
                                             <div className="relative flex items-center">
                                                 <button
-                                                    onClick={() => setPastasAbertas(p => ({ ...p, [pasta]: !p[pasta] }))}
+                                                    onClick={() => setPastasAbertas((p: any) => ({ ...p, [pasta]: !p[pasta] }))}
                                                     className="w-full flex items-center justify-between p-3.5 rounded-xl bg-slate-950/40 border border-white/5 hover:bg-slate-900 transition-all"
                                                 >
                                                     <div className="flex items-center gap-3">

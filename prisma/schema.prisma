@@ -103,13 +103,13 @@ model clientes {
   regimeTributario    String?
   servicos            String?
   analistaResponsavel String?
-  dataContratacao     DateTime       @default(now())
-  dataExito           DateTime?
+  dataContratacao     String?
+  dataExito           String?
   ultimoCs            Int?           @default(0)
-  nps                 Int?           @default(0)
+  nps                 Int?          
   feedbackGoogle      Boolean        @default(false)
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
+  createdAt           String     @default("")
+  updatedAt           String     @default("")
   log_cs              log_cs[]
   socios              socios[]
   logFeedback         logFeedback[]
@@ -164,4 +164,13 @@ model logAlteracao {
   clientes        clientes @relation(fields: [clienteId], references: [id], onDelete: Cascade)
 
   @@map("logAlteracao")
+}
+
+
+model ordemPastas {
+  id        Int     @id @default(autoincrement())
+  setor     String  @unique
+  ordem     String  
+  createdAt String?  
+  updatedAt String?
 }

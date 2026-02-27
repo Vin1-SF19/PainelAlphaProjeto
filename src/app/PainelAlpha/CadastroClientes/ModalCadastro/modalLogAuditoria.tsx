@@ -17,31 +17,38 @@ export default function ModalLogAuditoria({ isOpen, onClose, cliente, aoSalvar }
     const calcularMudancas = (dadosAntigosJSON: string, clienteAtual: any) => {
         try {
             const antigo = JSON.parse(dadosAntigosJSON);
-
             const camposParaIgnorar = [
                 'id', 'createdAt', 'updatedAt', 'clienteId', 'cliente_id',
-                'data_alteracao', 'data_registro', 'dataContratacao',
-                'data_contratacao', 'dataConstituicao', 'data_constituicao'
+                'data_alteracao', 'data_registro', 'log_cs', 'logFeedback', 'logAlteracao', 'socios'
             ];
+
+            const formatarSeData = (valor: any) => {
+                if (!valor) return "---";
+                const regexISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
+                if (typeof valor === 'string' && regexISO.test(valor)) {
+                    const data = new Date(valor);
+                    return !isNaN(data.getTime()) ? data.toLocaleDateString('pt-BR') : valor;
+                }
+                return String(valor);
+            };
 
             return Object.keys(antigo)
                 .filter(key => {
                     if (camposParaIgnorar.includes(key)) return false;
-
                     const vAntigo = String(antigo[key] || "").trim();
                     const vAtual = String(clienteAtual[key] || "").trim();
-
                     return vAntigo !== vAtual;
                 })
                 .map(key => ({
-                    campo: key,
-                    valorAntigo: antigo[key],
-                    valorAtual: clienteAtual[key]
+                    campo: key.replace(/([A-Z])/g, ' $1').trim().toUpperCase(),
+                    valorAntigo: formatarSeData(antigo[key]),
+                    valorAtual: formatarSeData(clienteAtual[key])
                 }));
         } catch (e) {
             return [];
         }
     };
+
 
 
     const handleRestaurar = async (dadosAntigosJSON: string) => {
@@ -124,38 +131,38 @@ export default function ModalLogAuditoria({ isOpen, onClose, cliente, aoSalvar }
                                         </button>
                                     </div>
 
-                                    {/* MUDANÇAS */}
-                                    {/* GRID DE MUDANÇAS - ESTILO COMPARAÇÃO LIMPA */}
                                     <div className="grid grid-cols-1 gap-4">
                                         {mudancas.length > 0 ? mudancas.map((item, idx) => (
                                             <div key={idx} className="bg-slate-950/80 border border-white/5 rounded-2xl overflow-hidden shadow-inner">
-                                                {/* TÍTULO DO CAMPO */}
-                                                <div className="px-4 py-2 bg-white/5 border-b border-white/5 flex justify-between items-center">
-                                                    <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">
-                                                        {item.campo.replace(/([A-Z])/g, ' $1')}
-                                                    </span>
-                                                    <div className="h-1 w-1 rounded-full bg-indigo-500 animate-pulse" />
-                                                </div>
-
-                                                {/* LADO A LADO: ANTES E DEPOIS */}
-                                                <div className="grid grid-cols-2 divide-x divide-white/5">
-                                                    {/* VALOR ANTERIOR (ESQUERDA) */}
-                                                    <div className="p-4 space-y-1 bg-rose-500/[0.02]">
-                                                        <p className="text-[8px] font-black text-rose-500/50 uppercase tracking-widest">Anterior</p>
-                                                        <p className="text-xs font-medium text-rose-400/80 break-words leading-relaxed">
-                                                            {String(item.valorAntigo || "—")}
-                                                        </p>
-                                                    </div>
-
-                                                    {/* VALOR ATUAL (DIREITA) */}
-                                                    <div className="p-4 space-y-1 bg-emerald-500/[0.02]">
-                                                        <p className="text-[8px] font-black text-emerald-500/50 uppercase tracking-widest">Atual</p>
-                                                        <p className="text-xs font-bold text-emerald-400 break-words leading-relaxed">
-                                                            {String(item.valorAtual || "—")}
-                                                        </p>
-                                                    </div>
+    
+                                            <div className="px-5 py-2.5 bg-indigo-500/[0.03] border-b border-white/5 flex justify-between items-center">
+                                                <span className="text-[9px] font-black text-indigo-400/80 uppercase tracking-[0.3em] italic">
+                                                    {item.campo}
+                                                </span>
+                                                <div className="flex gap-1">
+                                                    <div className="h-1 w-1 rounded-full bg-indigo-500/50" />
+                                                    <div className="h-1 w-1 rounded-full bg-indigo-500/20" />
                                                 </div>
                                             </div>
+                                        
+                                            <div className="grid grid-cols-2 divide-x divide-white/5">
+                                            
+                                                <div className="p-4 space-y-1.5 bg-rose-500/[0.01]">
+                                                    <p className="text-[7px] font-black text-rose-500/40 uppercase tracking-[0.2em]">De:</p>
+                                                    <p className="text-[11px] font-medium text-slate-400 break-words leading-relaxed italic">
+                                                        {String(item.valorAntigo || "—")}
+                                                    </p>
+                                                </div>
+                                        
+                                                <div className="p-4 space-y-1.5 bg-emerald-500/[0.01]">
+                                                    <p className="text-[7px] font-black text-emerald-500/40 uppercase tracking-[0.2em]">Para:</p>
+                                                    <p className="text-[11px] font-bold text-emerald-400 break-words leading-relaxed">
+                                                        {String(item.valorAtual || "—")}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
                                         )) : (
                                             <div className="flex items-center gap-3 p-4 bg-slate-900/20 rounded-2xl border border-dashed border-white/10 opacity-40">
                                                 <ShieldAlert size={14} />

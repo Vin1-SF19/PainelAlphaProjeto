@@ -47,7 +47,7 @@ export default function CadastroCliente() {
     const [modalLogAberto, setModalLogAberto] = useState(false);
     const [clienteParaLog, setClienteParaLog] = useState<any>(null);
 
-    
+
 
     const abrirLog = (cliente: any) => {
         setClienteParaLog(cliente);
@@ -147,18 +147,47 @@ export default function CadastroCliente() {
                         </button>
 
                         <div className="px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl flex items-center gap-3 shadow-inner">
-                            <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Média NPS</span>
-                            <span className="text-emerald-400 font-black text-sm">
-                                {clientes.length > 0
-                                    ? (clientes.reduce((acc, curr) => acc + (curr.nps || 0), 0) / clientes.length).toFixed(1)
-                                    : "0.0"}
+                            <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Índice NPS</span>
+                            <span className={`
+                                    font-black text-sm
+                                    ${(() => {
+                                    const respondentes = clientes.filter(c => c.nps !== null && c.nps !== undefined);
+                                    const total = respondentes.length;
+
+                                    if (total === 0) return "text-slate-500";
+
+                                    const promotores = respondentes.filter(c => c.nps >= 9).length;
+                                    const detratores = respondentes.filter(c => c.nps <= 6).length;
+
+                                    const score = ((promotores - detratores) / total) * 100;
+
+                                    if (score >= 75) return "text-emerald-400";
+                                    if (score >= 50) return "text-green-400";
+                                    if (score >= 0) return "text-yellow-400";
+                                    return "text-red-400";
+                                })()}
+    `}>
+                                {(() => {
+                                    const respondentes = clientes.filter(c => c.nps !== null && c.nps !== undefined);
+                                    const total = respondentes.length;
+
+                                    if (total === 0) return "---";
+
+                                    const promotores = respondentes.filter(c => c.nps >= 9).length;
+                                    const detratores = respondentes.filter(c => c.nps <= 6).length;
+
+                                    const score = ((promotores - detratores) / total) * 100;
+
+                                    return score.toFixed(1);
+                                })()}
                             </span>
                         </div>
 
+
+
                     </div>
                 </div>
-
-                {/* TABELA CUSTOMIZADA */}
+                
                 <div className="bg-slate-900/30 border border-white/5 rounded-[2rem] overflow-hidden shadow-2xl">
                     <div className="overflow-x-auto custom-scrollbar">
                         <table className="w-full text-left border-separate border-spacing-0">
@@ -188,7 +217,7 @@ export default function CadastroCliente() {
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-2">
                                                     <span className={`h-2 w-2 rounded-full shadow-[0_0_8px] ${c.status === 'Deferido' ? 'bg-emerald-500 shadow-emerald-500' :
-                                                        c.status === 'Cancelado' ? 'bg-rose-500 shadow-rose-500' :
+                                                        (c.status === 'Cancelado - Indeferimento' || c.status === 'Cancelado - Troca de Empresa') ? 'bg-rose-500 shadow-rose-500' :
                                                             c.status === 'Stand By' ? 'bg-amber-500 shadow-amber-500' :
                                                                 'bg-blue-500 shadow-blue-500'
                                                         }`} />
@@ -197,6 +226,7 @@ export default function CadastroCliente() {
                                                     </span>
                                                 </div>
                                             </td>
+
 
                                             {/* RAZÃO SOCIAL */}
                                             <td className="px-6 py-4">
@@ -220,18 +250,41 @@ export default function CadastroCliente() {
                                             <td className="px-6 py-4 text-center border-x border-white/[0.02]">
                                                 <span className="text-[11px] font-mono text-slate-400">
                                                     {c.dataContratacao ? (
-                                                        new Date(new Date(c.dataContratacao).getTime() + new Date(c.dataContratacao).getTimezoneOffset() * 60000)
-                                                            .toLocaleDateString('pt-BR')
-                                                    ) : "00/00/0000"}
+                                                        (() => {
+                                                            const d = new Date(c.dataContratacao);
+
+                                                            if (isNaN(d.getTime())) return c.dataContratacao;
+
+                                                            return d.toLocaleDateString('pt-BR', {
+                                                                day: '2-digit',
+                                                                month: '2-digit',
+                                                                year: 'numeric',
+                                                                timeZone: 'UTC'
+                                                            });
+                                                        })()
+                                                    ) : (
+                                                        <span className="opacity-20 italic">00/00/0000</span>
+                                                    )}
                                                 </span>
                                             </td>
 
+
+
                                             {/* DATA EXITO  */}
                                             <td className="px-6 py-4 text-center">
-                                                <span className="text-[10px] font-black text-slate-700 uppercase tracking-tighter italic">
-                                                    {c.dataExito ? new Date(c.dataExito).toLocaleDateString('pt-BR') : "Aguardando"}
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter italic">
+                                                    {c.dataExito ? (
+                                                        (() => {
+                                                            const d = new Date(c.dataExito);
+                                                            const dataCorrigida = new Date(d.getTime() + d.getTimezoneOffset() * 60000);
+                                                            return dataCorrigida.toLocaleDateString('pt-BR');
+                                                        })()
+                                                    ) : (
+                                                        <span className="text-slate-800 opacity-40">Aguardando</span>
+                                                    )}
                                                 </span>
                                             </td>
+
 
                                             {/* ÚLTIMO CS */}
                                             <td className="px-6 py-4 text-center">

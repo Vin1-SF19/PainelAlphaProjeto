@@ -3,8 +3,6 @@ import db from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
 export async function CadastrarCliente(dados: any, socios: any[]) {
-  console.log("TABELAS QUE O PRISMA ENXERGA:", Object.keys(db).filter(key => !key.startsWith('_')));
-
   try {
     const res = await db.clientes.create({
       data: {
@@ -16,8 +14,10 @@ export async function CadastrarCliente(dados: any, socios: any[]) {
         regimeTributario: dados.regimeTributario || "",
         servicos: Array.isArray(dados.servicos) ? dados.servicos.join(", ") : dados.servicos,
         analistaResponsavel: dados.analistaResponsavel || "",
-        dataContratacao: new Date(dados.dataContratacao),
-
+        dataContratacao: dados.dataContratacao ? new Date(dados.dataContratacao).toISOString() : null,
+        dataExito: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         socios: {
           create: socios.map(s => ({
             nome: s.nome,
@@ -31,18 +31,12 @@ export async function CadastrarCliente(dados: any, socios: any[]) {
     revalidatePath("/PainelAlpha/CadastroClientes");
     return { success: true };
   } catch (error: any) {
-
-    console.error("--- ERRO NO PRISMA/TURSO ---");
-    console.error("Mensagem:", error.message);
-    console.error("Código:", error.code);
-    console.error("Meta:", error.meta);
-
+    console.error("ERRO CADASTRO:", error.message);
     if (error.code === 'P2002') return { success: false, error: "CNPJ já existe!" };
-
-
-    return { success: false, error: `Erro: ${error.message.substring(0, 50)}...` };
+    return { success: false, error: "Erro na base de dados. Verifique os campos." };
   }
 }
+
 
 export async function buscarClientes() {
   try {
@@ -104,7 +98,7 @@ export async function atualizarDadosGestao(clienteId: number, dados: any) {
 export async function salvarLogFeedback(clienteId: number, dados: any) {
   try {
     const colaborador = dados.colaborador || "Analista";
-    const sentimento = dados.sentimento || "na";
+    const sentimento = dados.sentimento || "N/A";
     const observacao = dados.observacao || "";
 
     await db.$executeRawUnsafe(
@@ -137,18 +131,31 @@ export async function salvarAlteracoesGestao(clienteId: number, novosDados: any,
         clienteId: clienteId,
         colaborador: colaborador,
         acao: "Edição de Dados",
-        dadosAnteriores: JSON.stringify(estadoAntesDaMudanca) 
+        dadosAnteriores: JSON.stringify(estadoAntesDaMudanca)
       }
     });
+
+    const dataFormatadaExito =
+      novosDados.status === "Deferido"
+        ? (novosDados.dataExito ?? null)
+        : null;
+
+
 
     await db.clientes.update({
       where: { id: clienteId },
       data: {
+        cnpj: novosDados.cnpj?.replace(/\D/g, ""),
+        razaoSocial: novosDados.razaoSocial,
+        nomeFantasia: novosDados.nomeFantasia,
+        dataConstituicao: novosDados.dataConstituicao,
+        regimeTributario: novosDados.regimeTributario,
+        uf: novosDados.uf,
         status: novosDados.status,
-        nps: Number(novosDados.nps),
+        nps: (novosDados.nps === "" || novosDados.nps === null) ? null : Number(novosDados.nps),
         feedbackGoogle: novosDados.feedbackGoogle,
         nomeGoogle: novosDados.nomeGoogle,
-        dataExito: novosDados.status === "Deferido" ? new Date() : estadoAntesDaMudanca.dataExito
+        dataExito: dataFormatadaExito,
       }
     });
 
@@ -161,28 +168,33 @@ export async function salvarAlteracoesGestao(clienteId: number, novosDados: any,
 }
 
 
+
 export async function restaurarVersaoCliente(clienteId: number, jsonAntigo: string, colaborador: string) {
   try {
     const dadosBrutos = JSON.parse(jsonAntigo);
 
-    const { 
-        id, 
-        createdAt, 
-        updatedAt, 
-        log_cs, 
-        logFeedback, 
-        logAlteracao, 
-        socios, 
-        ...dadosLimpos 
+    const {
+      id,
+      createdAt,
+      updatedAt,
+      log_cs,
+      logFeedback,
+      logAlteracao,
+      socios,
+      ...dadosLimpos
     } = dadosBrutos;
+
+    if (dadosLimpos.dataContratacao) dadosLimpos.dataContratacao = new Date(dadosLimpos.dataContratacao).toISOString();
+    if (dadosLimpos.dataExito) dadosLimpos.dataExito = new Date(dadosLimpos.dataExito).toISOString();
+    if (dadosLimpos.dataConstituicao) dadosLimpos.dataConstituicao = new Date(dadosLimpos.dataConstituicao).toISOString();
 
     const estadoAtualParaLog = await db.clientes.findUnique({ where: { id: clienteId } });
 
     await db.clientes.update({
       where: { id: clienteId },
       data: {
-        ...dadosLimpos, 
-        logAlteracao: { 
+        ...dadosLimpos,
+        logAlteracao: {
           create: {
             colaborador: colaborador,
             acao: "Restauração de Backup",
@@ -195,7 +207,51 @@ export async function restaurarVersaoCliente(clienteId: number, jsonAntigo: stri
     revalidatePath("/PainelAlpha/CadastroClientes");
     return { success: true };
   } catch (error: any) {
-    console.error("ERRO CRÍTICO NO RESTORE:", error.message);
+    console.error("ERRO NO RESTORE:", error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function salvarAlteracoesGeral(clienteId: number, dadosNovos: any, colaborador: string) {
+  try {
+    const estadoAnterior = await db.clientes.findUnique({ where: { id: clienteId } });
+
+    await db.clientes.update({
+      where: { id: clienteId },
+      data: {
+        // --- CAMPOS QUE NÃO ESTAVAM SALVANDO ---
+        analistaResponsavel: dadosNovos.analistaResponsavel, 
+        dataContratacao: dadosNovos.dataContratacao ? new Date(dadosNovos.dataContratacao).toISOString() : null,
+
+        // --- RESTANTE DOS CAMPOS ---
+        status: dadosNovos.status,
+        nps: (dadosNovos.nps === "" || dadosNovos.nps === null) ? null : Number(dadosNovos.nps),
+        feedbackGoogle: dadosNovos.feedbackGoogle,
+        nomeGoogle: dadosNovos.nomeGoogle,
+        cnpj: dadosNovos.cnpj?.replace(/\D/g, ""),
+        razaoSocial: dadosNovos.razaoSocial,
+        nomeFantasia: dadosNovos.nomeFantasia,
+        dataConstituicao: dadosNovos.dataConstituicao,
+        regimeTributario: dadosNovos.regimeTributario,
+        uf: dadosNovos.uf,
+        dataExito: dadosNovos.dataExito ? new Date(dadosNovos.dataExito).toISOString() : (dadosNovos.status === "Deferido" ? new Date().toISOString() : null),
+        updatedAt: new Date().toISOString(),
+      }
+    });
+
+    await db.logAlteracao.create({
+      data: {
+        clienteId: clienteId,
+        colaborador: colaborador,
+        acao: "Edição Geral de Dados",
+        dadosAnteriores: JSON.stringify(estadoAnterior)
+      }
+    });
+
+    revalidatePath("/PainelAlpha/CadastroClientes");
+    return { success: true };
+  } catch (error: any) {
+    console.error("ERRO NO UPDATE:", error.message);
     return { success: false, error: error.message };
   }
 }
@@ -203,7 +259,22 @@ export async function restaurarVersaoCliente(clienteId: number, jsonAntigo: stri
 
 
 
+export async function adicionarSocio(clienteId: number, dadosSocio: { nome: string; telefone?: string; obs?: string }) {
+  try {
+    const novoSocio = await db.socios.create({
+      data: {
+        clienteId: clienteId,
+        nome: dadosSocio.nome,
+        telefone: dadosSocio.telefone || "",
+        obs: dadosSocio.obs || ""
+      }
+    });
 
-
+    revalidatePath("/PainelAlpha/CadastroClientes");
+    return { success: true, data: novoSocio };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
 
 

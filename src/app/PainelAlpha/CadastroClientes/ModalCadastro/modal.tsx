@@ -34,7 +34,7 @@ export default function ModalCadastroCliente({ isOpen, onClose }: { isOpen: bool
     ]);
 
     // 2. VARIÁVEIS DE LISTA
-    const listaServicos = ["Habilitação RADAR - 50K", "Habilitação RADAR - 150K", "Habilitação RADAR - ILIMITADO", "TTD 409", "Recuperação AFRMM", "Outras Recuperaçoes Tributarias"];
+    const listaServicos = ["Habilitação RADAR - 50K", "Revisão RADAR - 150K", "Revisão RADAR - ILIMITADO", "TTD 409", "Recuperação AFRMM", "Outras Recuperaçoes Tributarias"];
     const listaAnalistas = ["Vitor", "Maria", "Kaline", "Marcelo"];
 
     // 3. FUNÇÕES

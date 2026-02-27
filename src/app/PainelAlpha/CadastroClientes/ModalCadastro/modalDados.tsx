@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { X, Plus, ThumbsUp, ThumbsDown, Minus, Calendar, User, MessageSquare, Save, Star, Search, CheckCircle2, TrendingUp } from "lucide-react";
-import { salvarAlteracoesGestao, salvarLogCS, salvarLogFeedback } from '@/actions/Clientes';
+import { X, Plus, ThumbsUp, ThumbsDown, Minus, Calendar, User, MessageSquare, Save, Star, Search, CheckCircle2, TrendingUp, LockOpen, Edit3, Check } from "lucide-react";
+import { adicionarSocio, salvarAlteracoesGeral, salvarAlteracoesGestao, salvarLogCS, salvarLogFeedback } from '@/actions/Clientes';
 import { toast } from 'sonner';
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -18,17 +18,44 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
     const [obsCS, setObsCS] = useState("");
     const [enviandoCS, setEnviandoCS] = useState(false);
 
-    const [nps, setNps] = useState(cliente?.nps || 0);
+    const [nps, setNps] = useState<number | null>(cliente?.nps ?? null);
     const [feedbackSim, setFeedbackSim] = useState(cliente?.feedbackGoogle ?? false);
     const [nomeFeedback, setNomeFeedback] = useState("");
     const [showNovoFeedback, setShowNovoFeedback] = useState(false);
 
     const [listaLogsFeedback, setListaLogsFeedback] = useState<any[]>(cliente?.logFeedback ?? []);
+    const [editandoDados, setEditandoDados] = useState(false);
+
+    const [dataContratacao, setDataContratacao] = useState(cliente?.dataContratacao || "");
+
+    const [analistaResponsavel, setAnalistaResponsavel] = useState(cliente?.analistaResponsavel || "");
 
 
-    const [listaLogsCS, setListaLogsCS] = useState(cliente?.log_cs || []);
+
 
     const [obsFeedback, setObsFeedback] = useState("");
+
+
+    const [cnpj, setCnpj] = useState(cliente?.cnpj || "");
+    const [razaoSocial, setRazaoSocial] = useState(cliente?.razaoSocial || "");
+    const [nomeFantasia, setNomeFantasia] = useState(cliente?.nomeFantasia || "");
+    const [dataConstituicao, setDataConstituicao] = useState(cliente?.dataConstituicao || "");
+    const [regimeTributario, setRegimeTributario] = useState(cliente?.regimeTributario || "");
+    const [uf, setUf] = useState(cliente?.uf || "");
+    const [dataExitoManual, setDataExitoManual] = useState(
+        cliente?.dataExito
+            ? new Date(cliente.dataExito).toISOString().split("T")[0]
+            : ""
+    );
+
+
+    const [listaLogsCS, setListaLogsCS] = useState<any[]>([]);
+
+    const [listaSocios, setListaSocios] = useState<any[]>([]);
+    const [showNovoSocio, setShowNovoSocio] = useState(false);
+    const [novoSocio, setNovoSocio] = useState({ nome: "", telefone: "", obs: "" });
+
+
 
     const isTextoValido = (texto: string) => texto.length >= 10 && texto.length <= 140;
 
@@ -62,6 +89,55 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
         setEnviandoCS(false);
     };
 
+    useEffect(() => {
+        if (isOpen && cliente?.socios) {
+            setListaSocios(cliente.socios);
+        }
+        return () => {
+            setListaSocios([]);
+            setShowNovoSocio(false);
+        };
+    }, [cliente?.id, isOpen]);
+
+    const handleAdicionarSocio = async () => {
+        if (!novoSocio.nome) return toast.error("Nome é obrigatório");
+
+        const res = await adicionarSocio(cliente.id, novoSocio);
+
+        if (res.success) {
+            toast.success("Sócio adicionado!");
+
+            const socioRender = {
+                id: Math.random(),
+                ...novoSocio
+            };
+
+            setListaSocios(prev => [...prev, socioRender]);
+            setNovoSocio({ nome: "", telefone: "", obs: "" });
+            setShowNovoSocio(false);
+
+            if (aoSalvar) await aoSalvar();
+        }
+    };
+
+
+    useEffect(() => {
+        if (status === "Deferido" && !dataExitoManual) {
+            setDataExitoManual(new Date().toISOString().split('T')[0]);
+        }
+    }, [status]);
+
+    useEffect(() => {
+        if (cliente) {
+            setCnpj(cliente.cnpj);
+            setRazaoSocial(cliente.razaoSocial);
+            setNomeFantasia(cliente.nomeFantasia || "");
+            setDataConstituicao(cliente.dataConstituicao || "");
+            setRegimeTributario(cliente.regimeTributario || "");
+            setUf(cliente.uf || "");
+            setEditandoDados(false);
+        }
+    }, [cliente]);
 
 
     useEffect(() => {
@@ -71,13 +147,46 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
     }, [cliente]);
 
     useEffect(() => {
+        if (isOpen && cliente?.id) {
+            const logsDoCliente = [...(cliente.log_cs || [])].sort((a, b) => {
+                const dataA = new Date(a.data_registro || a.createdAt).getTime();
+                const dataB = new Date(b.data_registro || b.createdAt).getTime();
+                return dataB - dataA;
+            });
+            setListaLogsCS(logsDoCliente);
+        }
+        return () => setListaLogsCS([]);
+    }, [cliente?.id, isOpen]);
+
+
+    useEffect(() => {
         if (cliente) {
             setStatus(cliente.status || "Em Andamento");
             setNps(cliente.nps || 0);
             setFeedbackSim(cliente.feedbackGoogle || false);
             setNomeFeedback(cliente.nomeGoogle || "");
+            setDataContratacao(cliente.dataContratacao || "");
         }
-    }, [cliente, isOpen]); 
+    }, [cliente, isOpen]);
+
+    useEffect(() => {
+        if (cliente && isOpen) {
+            setAnalistaResponsavel(cliente.analistaResponsavel || "");
+            setDataContratacao(cliente.dataContratacao || "");
+
+            setCnpj(cliente.cnpj || "");
+            setRazaoSocial(cliente.razaoSocial || "");
+            setNomeFantasia(cliente.nomeFantasia || "");
+            setDataConstituicao(cliente.dataConstituicao || "");
+            setRegimeTributario(cliente.regimeTributario || "");
+            setUf(cliente.uf || "");
+
+            setEditandoDados(false);
+        }
+    }, [cliente, isOpen]);
+
+
+
 
 
     const getStatusColor = (s: string) => {
@@ -94,10 +203,11 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
         if (!sentimentoFeedback || obsFeedback.length < 10) return;
 
         const novoLog = {
+            id: Math.random(),
+            data_registro: new Date().toISOString(),
             colaborador: session?.user?.nome || "Analista",
             sentimento: sentimentoFeedback,
             observacao: obsFeedback,
-            data_registro: new Date().toISOString()
         };
 
         const res = await salvarLogFeedback(cliente.id, novoLog);
@@ -114,23 +224,35 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
 
 
     const handleSalvarGeral = async () => {
-        const res = await salvarAlteracoesGestao(
+        const res = await salvarAlteracoesGeral(
             cliente.id,
             {
-                status,
-                nps,
+                analistaResponsavel: analistaResponsavel, 
+                dataContratacao: dataContratacao, 
+                status: status,
+                nps: nps,
                 feedbackGoogle: feedbackSim,
-                nomeGoogle: nomeFeedback
+                nomeGoogle: nomeFeedback,
+                dataExito: dataExitoManual,
+                cnpj: cnpj,
+                razaoSocial: razaoSocial,
+                nomeFantasia: nomeFantasia,
+                dataConstituicao: dataConstituicao,
+                regimeTributario: regimeTributario,
+                uf: uf
             },
             session?.user?.nome || "Analista"
         );
-
+    
         if (res.success) {
-            toast.success("Alterações salvas e log registrado!");
+            toast.success("DADOS ATUALIZADOS COM SUCESSO");
+            setEditandoDados(false);
             if (aoSalvar) await aoSalvar();
             onClose();
         }
     };
+    
+
 
 
     if (!isOpen || !cliente) return null;
@@ -147,82 +269,205 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                         </h2>
                         <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mt-1">Gestão de Operação e CS</p>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-slate-400"><X size={24} /></button>
+                    <div className="flex gap-4">
+                        <button
+                            onClick={() => setEditandoDados(!editandoDados)}
+                            className={`cursor-pointer flex items-center gap-2 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all border ${editandoDados
+                                ? "bg-amber-500/20 text-amber-500 border-amber-500/50"
+                                : "bg-slate-800 text-slate-400 border-white/5 hover:bg-slate-700"
+                                }`}
+                        >
+                            {editandoDados ? <><LockOpen size={12} /> Edição Liberada</> : <><Edit3 size={12} /> Editar Dados</>}
+                        </button>
+                        <button onClick={onClose} className="cursor-pointer p-2 hover:bg-white/5 rounded-full text-slate-400"><X size={24} /></button>
+                    </div>
                 </div>
 
                 <div className="p-8 space-y-10">
 
-                    {/* SEÇÃO 1: IGUAL AO CADASTRO (BLOQUEADO) */}
-                    <section className="grid grid-cols-1 md:grid-cols-12 gap-5 opacity-80">
+                    {/* SEÇÃO 1: IGUAL AO CADASTRO */}
+                    <section className={`grid grid-cols-1 md:grid-cols-12 gap-5 transition-all ${editandoDados ? "opacity-100" : "opacity-70"}`}>
                         <div className="md:col-span-4 space-y-1">
                             <label className="text-[9px] font-black uppercase text-slate-500 ml-1">CNPJ</label>
-                            <input disabled value={cliente.cnpj} className="w-full bg-slate-900/50 border border-white/5 rounded-xl py-3 px-4 text-sm text-slate-400" />
+                            <input
+                                disabled={!editandoDados}
+                                value={cnpj}
+                                onChange={(e) => setCnpj(e.target.value)}
+                                className={`w-full bg-slate-900/50 border rounded-xl py-3 px-4 text-sm transition-all ${editandoDados ? "border-indigo-500/50 text-white" : "border-white/5 text-slate-400"}`}
+                            />
                         </div>
                         <div className="md:col-span-8 space-y-1">
                             <label className="text-[9px] font-black uppercase text-slate-500 ml-1">Razão Social</label>
-                            <input disabled value={cliente.razaoSocial} className="w-full bg-slate-900/50 border border-white/5 rounded-xl py-3 px-4 text-sm text-slate-400" />
+                            <input
+                                disabled={!editandoDados}
+                                value={razaoSocial}
+                                onChange={(e) => setRazaoSocial(e.target.value)}
+                                className={`w-full bg-slate-900/50 border rounded-xl py-3 px-4 text-sm transition-all ${editandoDados ? "border-indigo-500/50 text-white" : "border-white/5 text-slate-400"}`}
+                            />
                         </div>
                         <div className="md:col-span-6 space-y-1">
                             <label className="text-[9px] font-black uppercase text-slate-500 ml-1">Nome Fantasia</label>
-                            <input disabled value={cliente.nomeFantasia || "---"} className="w-full bg-slate-900/50 border border-white/5 rounded-xl py-3 px-4 text-sm text-slate-400" />
+                            <input
+                                disabled={!editandoDados}
+                                value={nomeFantasia}
+                                onChange={(e) => setNomeFantasia(e.target.value)}
+                                className={`w-full bg-slate-900/50 border rounded-xl py-3 px-4 text-sm transition-all ${editandoDados ? "border-indigo-500/50 text-white" : "border-white/5 text-slate-400"}`}
+                            />
                         </div>
                         <div className="md:col-span-3 space-y-1">
                             <label className="text-[9px] font-black uppercase text-slate-500 ml-1">Data Constituição</label>
-                            <input disabled value={cliente.dataConstituicao || "---"} className="w-full bg-slate-900/50 border border-white/5 rounded-xl py-3 px-4 text-sm text-slate-400" />
+                            <input
+                                disabled={!editandoDados}
+                                value={dataConstituicao}
+                                onChange={(e) => setDataConstituicao(e.target.value)}
+                                className={`w-full bg-slate-900/50 border rounded-xl py-3 px-4 text-sm transition-all ${editandoDados ? "border-indigo-500/50 text-white" : "border-white/5 text-slate-400"}`}
+                            />
                         </div>
                         <div className="md:col-span-3 space-y-1">
-                            <label className="text-[9px] font-black uppercase text-slate-500 ml-1">Regime / UF</label>
-                            <input disabled value={`${cliente.regimeTributario} - ${cliente.uf}`} className="w-full bg-slate-900/50 border border-white/5 rounded-xl py-3 px-4 text-sm text-slate-400" />
+                            <label className="text-[9px] font-black uppercase text-slate-500 ml-1">Regime</label>
+                            <input
+                                disabled={!editandoDados}
+                                value={regimeTributario}
+                                onChange={(e) => setRegimeTributario(e.target.value)}
+                                className={`w-full bg-slate-900/50 border rounded-xl py-3 px-4 text-sm transition-all ${editandoDados ? "border-indigo-500/50 text-white" : "border-white/5 text-slate-400"}`}
+                            />
+                        </div>
+                        <div className="md:col-span-3 space-y-1">
+                            <label className="text-[9px] font-black uppercase text-slate-500 ml-1">UF</label>
+                            <input
+                                disabled={!editandoDados}
+                                value={uf}
+                                onChange={(e) => setUf(e.target.value)}
+                                className={`w-full bg-slate-900/50 border rounded-xl py-3 px-4 text-sm transition-all ${editandoDados ? "border-indigo-500/50 text-white" : "border-white/5 text-slate-400"}`}
+                            />
                         </div>
                     </section>
 
-                    {/* SEÇÃO 2: STATUS E DATAS (MODIFICÁVEL) */}
+
                     <section className="grid grid-cols-1 md:grid-cols-4 gap-6 pt-6 border-t border-white/5">
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase text-indigo-400 ml-1">Status Atual</label>
+                            <label className="text-[10px] font-black uppercase text-indigo-400 ml-1 tracking-widest">Status Atual</label>
                             <select
                                 value={status}
                                 onChange={(e) => setStatus(e.target.value)}
-                                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-white focus:border-indigo-500 outline-none"
+                                className="cursor-pointer w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-white focus:border-indigo-500 outline-none transition-all hover:bg-black"
                             >
                                 <option value="Em Andamento">Em Andamento</option>
                                 <option value="Deferido">Deferido</option>
                                 <option value="Stand By">Stand By</option>
-                                <option value="Cancelado">Cancelado</option>
+                                <option value="Cancelado - Indeferimento">Cancelado - Indeferimento</option>
+                                <option value="Cancelado - Troca de Empresa">Cancelado - Troca de Empresa</option>
                             </select>
                         </div>
+
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Data Contratação</label>
-                            <div className="bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm text-white">
-                                {new Date(cliente.dataContratacao).toLocaleDateString('pt-BR')}
-                            </div>
+                            <label className="text-[10px] font-black uppercase text-slate-500 ml-1 tracking-widest">Data Contratação</label>
+                            {editandoDados ? (
+                                <input
+                                    type="date"
+                                    value={dataContratacao ? new Date(dataContratacao).toISOString().split('T')[0] : ""}
+                                    onChange={(e) => setDataContratacao(e.target.value)}
+                                    className="w-full bg-indigo-500/5 border border-indigo-500/20 p-2.5 rounded-xl text-sm font-bold text-indigo-400 outline-none cursor-pointer appearance-none"
+                                    style={{ colorScheme: 'dark' }}
+                                />
+                            ) : (
+                                <div className="bg-slate-900/30 border border-slate-800/50 p-3 rounded-xl text-sm text-slate-400 font-mono">
+                                    {cliente.dataContratacao ? new Date(cliente.dataContratacao).toLocaleDateString('pt-BR') : "---"}
+                                </div>
+                            )}
                         </div>
+
+                        {/* DATA ÊXITO */}
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Data de Êxito</label>
-                            <div className={`p-3 rounded-xl border text-sm font-bold ${status === "Deferido" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 animate-pulse" : "bg-slate-950 border-slate-800 text-slate-700"}`}>
-                                {status === "Deferido" ? new Date().toLocaleDateString('pt-BR') : "Aguardando Deferimento"}
-                            </div>
+                            <label className="text-[10px] font-black uppercase text-slate-500 ml-1 tracking-widest">Data de Êxito</label>
+                            {status === "Deferido" ? (
+                                <input
+                                    type="date"
+                                    value={dataExitoManual ? new Date(dataExitoManual).toISOString().split('T')[0] : ""}
+                                    onChange={(e) => setDataExitoManual(e.target.value)}
+                                    className="w-full bg-emerald-500/5 border border-emerald-500/20 p-2.5 rounded-xl text-sm font-bold text-emerald-400 outline-none cursor-pointer"
+                                    style={{ colorScheme: 'dark' }}
+                                />
+                            ) : (
+                                <div className="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs text-slate-700 font-bold uppercase italic tracking-tighter">
+                                    Aguardando Deferimento
+                                </div>
+                            )}
                         </div>
+
+                        {/* ANALISTA RESPONSÁVEL*/}
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Analista Responsável</label>
-                            <div className="bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm text-indigo-400 font-bold uppercase tracking-tighter">
-                                {cliente.analistaResponsavel}
-                            </div>
+                            <label className="text-[10px] font-black uppercase text-slate-500 ml-1 tracking-widest">Analista Responsável</label>
+                            {editandoDados ? (
+                                <input
+                                    type="text"
+                                    value={analistaResponsavel}
+                                    onChange={(e) => setAnalistaResponsavel(e.target.value)} 
+                                    placeholder="NOME DO ANALISTA"
+                                    className="w-full bg-indigo-500/5 border border-indigo-500/20 p-3 rounded-xl text-sm font-bold text-indigo-400 outline-none placeholder:text-indigo-900/30 transition-all focus:border-indigo-500"
+                                />
+                            ) : (
+                                <div className="bg-slate-900/30 border border-slate-800/50 p-3 rounded-xl text-sm text-indigo-400/70 font-black uppercase tracking-tighter truncate italic">
+                                    {cliente.analistaResponsavel || "Não Atribuído"}
+                                </div>
+                            )}
                         </div>
+
+
                     </section>
 
-                    {/* SEÇÃO 3: SÓCIOS (O que o banco vai carregar) */}
-                    <section className="space-y-4 pt-6 border-t border-white/5">
-                        <div
 
-                            className="flex items-center gap-2">
-                            <div className="h-4 w-1 bg-indigo-500 rounded-full" />
-                            <h3 className="text-xs font-black uppercase text-slate-500 tracking-[0.2em]">
-                                Quadro de Sócios / Responsáveis
-                            </h3>
+
+                    {/* SEÇÃO 3: SÓCIOS */}
+                    <section className="space-y-4 pt-6 border-t border-white/5">
+                        <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                                <div className="h-4 w-1 bg-indigo-500 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
+                                <h3 className="text-xs font-black uppercase text-slate-500 tracking-[0.2em]">
+                                    Quadro de Sócios / Responsáveis
+                                </h3>
+                            </div>
+                            <button
+                                onClick={() => setShowNovoSocio(!showNovoSocio)}
+                                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95"
+                            >
+                                {showNovoSocio ? "Cancelar" : <><Plus size={14} /> Novo Sócio</>}
+                            </button>
                         </div>
 
-                        <div className="bg-slate-950/50 border border-white/5 rounded-2xl overflow-hidden shadow-inner">
+                        {/* FORMULÁRIO PARA ADICIONAR SÓCIO - RENDERIZA NA HORA */}
+                        {showNovoSocio && (
+                            <div className="p-4 bg-slate-900/50 border border-indigo-500/20 rounded-2xl grid grid-cols-1 md:grid-cols-3 gap-4 animate-in fade-in zoom-in duration-300">
+                                <input
+                                    placeholder="NOME DO SÓCIO"
+                                    value={novoSocio.nome}
+                                    onChange={e => setNovoSocio({ ...novoSocio, nome: e.target.value.toUpperCase() })}
+                                    className="bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-indigo-500 transition-all"
+                                />
+                                <input
+                                    placeholder="TELEFONE (WHATSAPP)"
+                                    value={novoSocio.telefone}
+                                    onChange={e => setNovoSocio({ ...novoSocio, telefone: e.target.value })}
+                                    className="bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-indigo-500 transition-all"
+                                />
+                                <div className="flex gap-2">
+                                    <input
+                                        placeholder="OBSERVAÇÃO"
+                                        value={novoSocio.obs}
+                                        onChange={e => setNovoSocio({ ...novoSocio, obs: e.target.value })}
+                                        className="flex-1 bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-indigo-500 transition-all"
+                                    />
+                                    <button
+                                        onClick={handleAdicionarSocio}
+                                        className="p-3 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-white transition-colors"
+                                    >
+                                        <Check size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="bg-slate-950/50 border border-white/5 rounded-[2rem] overflow-hidden shadow-inner">
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-white/5 text-[10px] font-black uppercase text-slate-500 tracking-widest">
@@ -232,29 +477,42 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
-                                    {cliente.socios && cliente.socios.length > 0 ? (
-                                        cliente.socios.map((s: any, i: number) => (
-                                            <tr key={i} className="hover:bg-white/[0.02] transition-colors">
+                                    {listaSocios.length > 0 ? (
+                                        listaSocios.map((s: any, i: number) => (
+                                            <tr key={s.id || i} className="hover:bg-white/[0.02] transition-colors group">
                                                 <td className="px-6 py-4">
-                                                    <span className="text-sm font-bold text-white uppercase tracking-tight">
+                                                    <span className="text-sm font-bold text-white uppercase tracking-tight group-hover:text-indigo-400 transition-colors">
                                                         {s.nome}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <span className="text-xs font-mono text-indigo-400">
-                                                        {s.telefone || "(00) 00000-0000"}
-                                                    </span>
+                                                    {s.telefone ? (
+                                                        <a
+                                                            href={`https://wa.me/${s.telefone.replace(/\D/g, '')}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-xs font-mono text-indigo-400 hover:text-green-400 hover:bg-green-500/10 px-2 py-1 rounded-lg transition-all duration-200 inline-flex items-center gap-1"
+                                                            title="Abrir WhatsApp"
+                                                        >
+                                                            <span>📱</span>
+                                                            {s.telefone}
+                                                        </a>
+                                                    ) : (
+                                                        <span className="text-xs font-mono text-indigo-400">
+                                                            (00) 00000-0000
+                                                        </span>
+                                                    )}
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <span className="text-xs text-slate-400 italic">
-                                                        {s.obs || "Nenhuma observação registrada"}
+                                                    <span className="text-[11px] text-slate-500 italic leading-relaxed block max-w-xs truncate" title={s.obs}>
+                                                        {s.obs || "---"}
                                                     </span>
                                                 </td>
                                             </tr>
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={3} className="px-6 py-12 text-center text-slate-700 text-xs font-bold uppercase tracking-widest italic">
+                                            <td colSpan={3} className="px-6 py-16 text-center text-slate-800 text-[10px] font-black uppercase tracking-[0.3em] italic opacity-40">
                                                 Nenhum sócio vinculado a este CNPJ
                                             </td>
                                         </tr>
@@ -264,6 +522,7 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                         </div>
                     </section>
 
+
                     {/* SEÇÃO CUSTOMER SUCCESS */}
                     <section className="space-y-6 pt-6 border-t border-white/5">
                         <div className="flex justify-between items-center">
@@ -272,14 +531,14 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                             </h3>
                             <button
                                 onClick={() => setShowNovoCS(true)}
-                                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-900/20"
+                                className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-900/20 active:scale-95"
                             >
                                 <Plus size={14} /> Novo CS
                             </button>
                         </div>
 
-                        <div className="bg-slate-950/50 border border-white/5 rounded-2xl overflow-hidden">
-                            <table className="w-full text-left">
+                        <div className="bg-slate-950/50 border border-white/5 rounded-2xl overflow-hidden shadow-inner">
+                            <table className="w-full text-left border-collapse">
                                 <thead className="bg-white/5 text-[10px] font-black uppercase text-slate-500 tracking-widest">
                                     <tr>
                                         <th className="px-6 py-4">Data</th>
@@ -290,59 +549,115 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
                                     {listaLogsCS && listaLogsCS.length > 0 ? (
-                                        listaLogsCS.map((log: any, i: number) => (
-                                            <tr key={log.id || i} className="hover:bg-white/[0.02] transition-colors">
-                                                <td className="px-6 py-4 text-[10px] font-mono text-slate-500">
-                                                    {new Date(log.data_registro || log.dataRegistro).toLocaleDateString('pt-BR')}
+                                        listaLogsCS.map((log: any, index: number) => (
+                                            <tr
+                                                key={`${cliente?.id}-${log.id || index}`}
+                                                className="hover:bg-white/[0.02] transition-colors group"
+                                            >
+                                                <td className="px-6 py-4 text-[11px] font-black text-blue-300 tracking-tighter">
+                                                    {(() => {
+                                                        const dataRaw = log.data_registro || log.dataRegistro || log.createdAt;
+                                                        if (!dataRaw) return "---";
+
+                                                        const d = new Date(dataRaw);
+                                                        if (isNaN(d.getTime())) {
+                                                            return dataRaw.split('T')[0].split('-').reverse().join('/');
+                                                        }
+
+                                                        return d.toLocaleDateString('pt-BR');
+                                                    })()}
                                                 </td>
+
                                                 <td className="px-6 py-4 text-xs font-bold text-white uppercase tracking-tighter">
-                                                    {log.colaborador}
+                                                    {log.colaborador || "---"}
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
-                                                    {log.sentimento === "pos" && <ThumbsUp size={16} className="text-emerald-500 mx-auto" />}
-                                                    {log.sentimento === "neg" && <ThumbsDown size={16} className="text-rose-500 mx-auto" />}
-                                                    {log.sentimento === "na" && <Minus size={16} className="text-slate-500 mx-auto" />}
+                                                    <div className="flex justify-center scale-110">
+                                                        {log.sentimento === "pos" && <ThumbsUp size={14} className="text-emerald-500 drop-shadow-[0_0_5px_rgba(16,185,129,0.3)]" />}
+                                                        {log.sentimento === "neg" && <ThumbsDown size={14} className="text-rose-500 drop-shadow-[0_0_5px_rgba(244,63,94,0.3)]" />}
+                                                        {log.sentimento === "na" && <Minus size={14} className="text-slate-500" />}
+                                                    </div>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <p className="text-[11px] text-slate-400 italic max-w-xs truncate" title={log.observacao}>
+                                                    <p className="text-[11px] text-slate-400 italic max-w-xs truncate hover:text-white transition-colors cursor-help" title={log.observacao}>
                                                         {log.observacao || "---"}
                                                     </p>
                                                 </td>
                                             </tr>
                                         ))
                                     ) : (
-                                        <tr className="text-slate-700 italic text-[11px]">
-                                            <td colSpan={4} className="p-10 text-center uppercase font-black tracking-[0.3em] opacity-20">
-                                                Nenhum registro de CS
+                                        <tr>
+                                            <td colSpan={4} className="p-12 text-center text-[10px] uppercase font-black tracking-[0.4em] opacity-20 italic">
+                                                Nenhum histórico de CS detectado
                                             </td>
                                         </tr>
                                     )}
                                 </tbody>
-
-
-
                             </table>
                         </div>
 
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-amber-500/10 rounded-lg"><Star className="text-amber-500 w-5 h-5" /></div>
-                            <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest">Nota - NPS</h3>
+                        {/*  NPS  */}
+                        <div className={`grid grid-cols-1 md:grid-cols-12 gap-6 items-center bg-gradient-to-br from-slate-900/40 to-black p-6 rounded-[2.5rem] border transition-all duration-500 relative overflow-hidden group ${status === "Deferido" ? "border-white/5 opacity-100" : "border-white/0 opacity-30 grayscale pointer-events-none"
+                            }`}>
+                            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+                                <Star size={80} />
+                            </div>
+
+                            {/* Ícone e Títulos */}
+                            <div className="md:col-span-4 flex items-center gap-4">
+                                <div className={`p-3 rounded-2xl border transition-all duration-500 ${status === "Deferido" && nps !== null && nps >= 9 ? "bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]" :
+                                    status === "Deferido" && nps !== null && nps >= 7 ? "bg-amber-500/10 border-amber-500/20" :
+                                        status === "Deferido" && nps !== null && nps > 0 ? "bg-rose-500/10 border-rose-500/20" : "bg-slate-800/50 border-white/5"
+                                    }`}>
+                                    <Star className={`${status === "Deferido" && nps !== null && nps >= 9 ? "text-emerald-500" :
+                                        status === "Deferido" && nps !== null && nps >= 7 ? "text-amber-500" :
+                                            status === "Deferido" && nps !== null && nps > 0 ? "text-rose-500" : "text-slate-600"
+                                        } w-5 h-5 transition-colors`} />
+                                </div>
+                                <div>
+                                    <h3 className="text-[11px] font-black uppercase text-slate-200 tracking-[0.15em]">Métrica NPS</h3>
+                                    <p className="text-[9px] text-slate-500 uppercase font-bold italic mt-0.5 tracking-tighter">
+                                        {status === "Deferido" ? "Percepção de Valor e Fidelidade" : "Disponível após Deferimento"}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Select de Nota */}
+                            <div className="md:col-span-3">
+                                <select
+                                    disabled={status !== "Deferido"}
+                                    value={nps ?? ""}
+                                    onChange={(e) => setNps(e.target.value === "" ? null : Number(e.target.value))}
+                                    className="w-full bg-black/60 border border-white/10 rounded-2xl py-4 px-5 text-sm text-amber-500 font-black outline-none focus:border-amber-500/50 transition-all hover:bg-black cursor-pointer shadow-inner appearance-none disabled:cursor-not-allowed"
+                                >
+                                    <option value="" className="text-slate-700">NOTAS BLOQUEADAS</option>
+                                    {[...Array(11)].map((_, i) => (
+                                        <option key={i} value={i} className="bg-slate-900 text-amber-500 font-bold">
+                                            {i} - {i >= 9 ? 'Promotor' : i >= 7 ? 'Neutro' : 'Detrator'}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Réguas de Cores */}
+                            <div className="md:col-span-5 flex flex-col justify-center space-y-3">
+                                <div className="flex justify-between text-[8px] font-black uppercase tracking-widest px-1">
+                                    <span className={status === "Deferido" && nps !== null && nps > 0 && nps <= 6 ? "text-rose-500" : "text-slate-600"}>Detrator</span>
+                                    <span className={status === "Deferido" && nps !== null && nps >= 7 && nps <= 8 ? "text-amber-500" : "text-slate-600"}>Neutro</span>
+                                    <span className={status === "Deferido" && nps !== null && nps >= 9 ? "text-emerald-500" : "text-slate-600"}>Promotor</span>
+                                </div>
+
+                                <div className="h-2 w-full bg-slate-800/50 rounded-full overflow-hidden flex p-0.5 border border-white/5 shadow-inner">
+                                    <div className={`h-full rounded-l-full transition-all duration-700 ${status === "Deferido" && nps !== null && nps > 0 && nps <= 6 ? "w-[63%] bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.4)]" : "w-[63%] bg-rose-500/10"}`} />
+                                    <div className={`h-full transition-all duration-700 ${status === "Deferido" && nps !== null && nps >= 7 && nps <= 8 ? "w-[18%] bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.4)]" : "w-[18%] bg-amber-500/10"}`} />
+                                    <div className={`h-full rounded-r-full transition-all duration-700 ${status === "Deferido" && nps !== null && nps >= 9 ? "w-[19%] bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]" : "w-[19%] bg-emerald-500/10"}`} />
+                                </div>
+                            </div>
                         </div>
-                        <div className="md:col-span-1">
-                            <select
-                                value={nps}
-                                onChange={(e) => setNps(Number(e.target.value))}
-                                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-amber-500 font-black outline-none focus:border-amber-500"
-                            >
-                                {[...Array(11)].map((_, i) => (
-                                    <option key={i} value={i}>{i}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="md:col-span-2 text-[10px] text-slate-600 uppercase font-bold italic">
-                            * 0-6 Detratores | 7-8 Neutros | 9-10 Promotores
-                        </div>
+
                     </section>
+
+
 
                     {/* SEÇÃO 6: FEEDBACK GOOGLE */}
                     <section className="space-y-6 pt-8 border-t border-white/5">
@@ -353,9 +668,9 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                             </div>
                             <button
                                 onClick={() => setShowNovoFeedback(true)}
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
+                                className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
                             >
-                                <Plus size={14} /> + Pedido
+                                <Plus size={14} />FeedBack
                             </button>
                         </div>
 
@@ -441,8 +756,9 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                 {/* BOTÃO SALVAR GERAL */}
                 <div className="p-8 border-t border-white/5 flex justify-end">
                     <button
+                        type="button"
                         onClick={handleSalvarGeral}
-                        className="flex items-center gap-2 px-10 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all">
+                        className="cursor-pointer flex items-center gap-2 px-10 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all">
                         <Save size={18} /> Salvar Alterações
                     </button>
                 </div>
@@ -453,7 +769,7 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                         <div className="bg-slate-900 border border-white/10 w-full max-w-md rounded-[2rem] p-8 shadow-3xl animate-in zoom-in-95 duration-200">
                             <div className="flex justify-between items-center mb-6">
                                 <h4 className="text-lg font-black text-white uppercase">Novo <span className="text-emerald-500">CS</span></h4>
-                                <button onClick={() => setShowNovoCS(false)}><X size={20} className="text-slate-500" /></button>
+                                <button onClick={() => setShowNovoCS(false)}><X size={20} className="cursor-pointer text-slate-500" /></button>
                             </div>
 
                             <div className="space-y-6">
@@ -491,7 +807,7 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                                         {/* POSITIVO */}
                                         <button
                                             onClick={() => setFeedbackCS("pos")}
-                                            className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${feedbackCS === "pos" ? "bg-emerald-500/20 border-emerald-500 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]" : "bg-slate-950 border-white/5 text-slate-600 hover:text-white"}`}
+                                            className={`cursor-pointer flex-1 flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${feedbackCS === "pos" ? "bg-emerald-500/20 border-emerald-500 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]" : "bg-slate-950 border-white/5 text-slate-600 hover:text-white"}`}
                                         >
                                             <ThumbsUp size={24} /> <span className="text-[9px] font-black uppercase">Positivo</span>
                                         </button>
@@ -499,7 +815,7 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                                         {/* NEGATIVO */}
                                         <button
                                             onClick={() => setFeedbackCS("neg")}
-                                            className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${feedbackCS === "neg" ? "bg-rose-500/20 border-rose-500 text-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.2)]" : "bg-slate-950 border-white/5 text-slate-600 hover:text-white"}`}
+                                            className={`cursor-pointer flex-1 flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${feedbackCS === "neg" ? "bg-rose-500/20 border-rose-500 text-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.2)]" : "bg-slate-950 border-white/5 text-slate-600 hover:text-white"}`}
                                         >
                                             <ThumbsDown size={24} /> <span className="text-[9px] font-black uppercase">Negativo</span>
                                         </button>
@@ -507,7 +823,7 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                                         {/* N/A - SEM RESPOSTA */}
                                         <button
                                             onClick={() => setFeedbackCS("na")}
-                                            className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${feedbackCS === "na" ? "bg-slate-700 border-white/30 text-white" : "bg-slate-950 border-white/5 text-slate-600 hover:text-white"}`}
+                                            className={`cursor-pointer flex-1 flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${feedbackCS === "na" ? "bg-slate-700 border-white/30 text-white" : "bg-slate-950 border-white/5 text-slate-600 hover:text-white"}`}
                                         >
                                             <Minus size={24} /> <span className="text-[9px] font-black uppercase">N/A (Sem Resposta)</span>
                                         </button>
@@ -525,7 +841,7 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
 
                                                 null);
                                         }}
-                                        className="flex-1 py-4 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                                        className="cursor-pointer flex-1 py-4 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
                                     >
                                         Cancelar
                                     </button>
@@ -535,7 +851,7 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
 
                                         onClick={handleSalvarCS}
                                         disabled={!isTextoValido(obsCS) || !feedbackCS}
-                                        className="flex-1 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-900/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="cursor-pointer flex-1 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-900/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {enviandoCS ? "Salvando..." : "Salvar CS"}
                                     </button>
@@ -556,11 +872,11 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                                 <div className="p-2 bg-blue-500/20 rounded-xl"><TrendingUp className="text-blue-400 w-5 h-5" /></div>
                                 <h4 className="text-xl font-black text-white uppercase italic tracking-tighter">Solicitar <span className="text-blue-500">Google</span></h4>
                             </div>
-                            <button onClick={() => { setShowNovoFeedback(false); setObsFeedback(""); setSentimentoFeedback(null); }} className="text-slate-500 hover:text-white"><X size={24} /></button>
+                            <button onClick={() => { setShowNovoFeedback(false); setObsFeedback(""); setSentimentoFeedback(null); }} className="cursor-pointer text-slate-500 hover:text-white"><X size={24} /></button>
                         </div>
 
                         <div className="space-y-8">
-                            {/* BOTÕES DE SENTIMENTO (IGUAL AO CS) */}
+                            {/* BOTÕES DE SENTIMENTO */}
                             <div className="space-y-3">
                                 <label className="text-[10px] font-black uppercase text-slate-500 block text-center tracking-widest">Sentimento do Cliente</label>
                                 <div className="flex justify-between gap-3">
@@ -572,7 +888,7 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                                         <button
                                             key={btn.id}
                                             onClick={() => setSentimentoFeedback(btn.id as any)}
-                                            className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all duration-300 
+                                            className={`cursor-pointer flex-1 flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all duration-300 
                                                 ${sentimentoFeedback === btn.id
                                                     ? `bg-${btn.color}-500/10 border-${btn.color}-500 text-${btn.color}-400 shadow-lg`
                                                     : 'bg-slate-950 border-white/5 text-slate-600 hover:border-white/10'}`}
@@ -596,17 +912,17 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                                     value={obsFeedback}
                                     onChange={(e) => setObsFeedback(e.target.value)}
                                     className={`w-full bg-slate-950 border-2 rounded-2xl p-4 text-sm text-white min-h-[100px] outline-none transition-all
-              ${obsFeedback.length > 0 && !isTextoValido(obsFeedback) ? 'border-rose-500/30' : 'border-slate-800 focus:border-blue-500'}`}
+                                    ${obsFeedback.length > 0 && !isTextoValido(obsFeedback) ? 'border-rose-500/30' : 'border-slate-800 focus:border-blue-500'}`}
                                     placeholder="Por que está solicitando este feedback?..."
                                 />
                             </div>
 
                             <div className="flex gap-4">
-                                <button onClick={() => setShowNovoFeedback(false)} className="flex-1 py-4 bg-slate-900 text-slate-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-colors">Cancelar</button>
+                                <button onClick={() => setShowNovoFeedback(false)} className="cursor-pointer flex-1 py-4 bg-slate-900 text-slate-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-colors">Cancelar</button>
                                 <button
                                     onClick={handleSalvarFeedback}
                                     disabled={!isTextoValido(obsFeedback) || !sentimentoFeedback}
-                                    className="flex-1 py-4 bg-blue-600 disabled:bg-slate-800/50 disabled:text-slate-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-blue-900/20 active:scale-95 transition-all"
+                                    className="cursor-pointer flex-1 py-4 bg-blue-600 disabled:bg-slate-800/50 disabled:text-slate-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-blue-900/20 active:scale-95 transition-all"
                                 >
                                     Confirmar Pedido
                                 </button>
