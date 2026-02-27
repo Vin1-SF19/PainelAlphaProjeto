@@ -148,46 +148,41 @@ export default function CadastroCliente() {
 
                         <div className="px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl flex items-center gap-3 shadow-inner">
                             <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Índice NPS</span>
-                            <span className={`
-                                    font-black text-sm
-                                    ${(() => {
-                                    const respondentes = clientes.filter(c => c.nps !== null && c.nps !== undefined);
-                                    const total = respondentes.length;
+                            {(() => {
+                                const respondentes = clientes.filter(c =>
+                                    c.nps !== null &&
+                                    c.nps !== undefined &&
+                                    c.nps !== "" &&
+                                    !isNaN(Number(c.nps))
+                                );
 
-                                    if (total === 0) return "text-slate-500";
+                                const total = respondentes.length;
 
-                                    const promotores = respondentes.filter(c => c.nps >= 9).length;
-                                    const detratores = respondentes.filter(c => c.nps <= 6).length;
+                                if (total === 0) return <span className="font-black text-sm text-slate-700">---</span>;
 
-                                    const score = ((promotores - detratores) / total) * 100;
+                                const promotores = respondentes.filter(c => Number(c.nps) >= 9).length;
+                                const detratores = respondentes.filter(c => Number(c.nps) <= 6).length;
 
-                                    if (score >= 75) return "text-emerald-400";
-                                    if (score >= 50) return "text-green-400";
-                                    if (score >= 0) return "text-yellow-400";
-                                    return "text-red-400";
-                                })()}
-    `}>
-                                {(() => {
-                                    const respondentes = clientes.filter(c => c.nps !== null && c.nps !== undefined);
-                                    const total = respondentes.length;
+                                const score = ((promotores - detratores) / total) * 100;
 
-                                    if (total === 0) return "---";
+                                const corNPS = score >= 75 ? "text-emerald-400" :
+                                    score >= 50 ? "text-amber-400" :
+                                        score >= 0 ? "text-orange-400" : "text-rose-500";
 
-                                    const promotores = respondentes.filter(c => c.nps >= 9).length;
-                                    const detratores = respondentes.filter(c => c.nps <= 6).length;
-
-                                    const score = ((promotores - detratores) / total) * 100;
-
-                                    return score.toFixed(1);
-                                })()}
-                            </span>
+                                return (
+                                    <span className={`font-black text-sm ${corNPS}`}>
+                                        {score > 0 ? "+" : ""}{score.toFixed(1)}%
+                                    </span>
+                                );
+                            })()}
                         </div>
+
 
 
 
                     </div>
                 </div>
-                
+
                 <div className="bg-slate-900/30 border border-white/5 rounded-[2rem] overflow-hidden shadow-2xl">
                     <div className="overflow-x-auto custom-scrollbar">
                         <table className="w-full text-left border-separate border-spacing-0">
