@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { FileText, Eye, Search, ShieldCheck, Globe, ChevronRight, Folder, Trash2, ShieldAlert, Lock, Video, Settings, Star, ChevronDown, ChevronUp } from "lucide-react";
+import { FileText, Eye, Search, ShieldCheck, Globe, ChevronRight, Folder, Trash2, ShieldAlert, Lock, Video, Settings, Star, ChevronDown, ChevronUp, GripVertical, Edit3, Check, X } from "lucide-react";
 import { BotaoVoltar } from "@/Components/BotaoVoltar";
 import { toast } from "sonner";
 import AntiCapture from 'react-anticapture';
 import { buscarOrdemPastas, salvarOrdemPastas } from "@/actions/OrdemPastas";
+import { renomearPasta } from "@/actions/RenamePastas";
 
 
 export const dynamic = 'force-dynamic';
@@ -60,7 +61,7 @@ export default function PaginaDocumentos() {
         }
     };
 
-    const [ordem, setOrdem] = useState<"PADRAO" | "recentes" | "az" | "za">("recentes");
+    const [ordem, setOrdem] = useState<"PADRAO" | "recentes" | "az" | "za">("PADRAO");
 
 
     const [hasWindow, setHasWindow] = useState(false);
@@ -227,9 +228,32 @@ export default function PaginaDocumentos() {
         });
 
         return agrupados;
-    }, [documentos, setorAtivo, busca, isAdmin, rh, roleUser, ordem]); // Adicionado rh e isAdmin aqui
+    }, [documentos, setorAtivo, busca, isAdmin, rh, roleUser, ordem]);
 
 
+    const [editandoNomePasta, setEditandoNomePasta] = useState<string | null>(null);
+    const [novoNomeInput, setNovoNomeInput] = useState("");
+
+
+
+    const handleSalvarNovoNome = async (nomeAntigo: string) => {
+
+        console.log("ENVIANDO PARA ACTION:", { ficharioAtivo, nomeAntigo, novoNomeInput });
+        const res = await renomearPasta(ficharioAtivo, nomeAntigo, novoNomeInput);
+
+
+        if (res.success && res.count! > 0) {
+            toast.success(`Pasta renomeada! ${res.count} arquivos movidos.`);
+            setPastaConfig(null);
+            setEditandoNomePasta(null);
+            await carregarDocumentos();
+        } else if (res.success && res.count === 0) {
+            toast.warning("Nenhum arquivo encontrado com esse nome de pasta.");
+            setEditandoNomePasta(null);
+        } else {
+            toast.error("Erro técnico ao salvar.");
+        }
+    };
 
 
     const pastasOrdenadas = useMemo(() => {
@@ -262,31 +286,31 @@ export default function PaginaDocumentos() {
         const sincronizarOrdem = async () => {
             const ordemSalva: string[] | null = await buscarOrdemPastas(ficharioAtivo);
             const pastasExistentes = Object.keys(documentosAgrupados);
-    
+
             if (ordemSalva && Array.isArray(ordemSalva)) {
                 const ordemFiltrada = ordemSalva.filter((p: string) => pastasExistentes.includes(p));
                 const novasPastas = pastasExistentes.filter((p: string) => !ordemSalva.includes(p));
-                
+
                 setOrdemPastas([...ordemFiltrada, ...novasPastas]);
             } else {
                 setOrdemPastas(pastasExistentes);
             }
         };
-    
+
         if (ficharioAtivo) sincronizarOrdem();
     }, [ficharioAtivo, documentosAgrupados]);
-    
-    
 
-    
+
+
+
     useEffect(() => {
         const carregarPostas = async () => {
             const ordem = await buscarOrdemPastas(ficharioAtivo);
             setOrdemPastas(ordem || Object.keys(documentosAgrupados));
         };
         carregarPostas();
-    }, [ficharioAtivo]); 
-    
+    }, [ficharioAtivo]);
+
 
 
 
@@ -301,11 +325,7 @@ export default function PaginaDocumentos() {
             .no-select { user-select: none; -webkit-user-drag: none; }
           `}} />
 
-            <div className="bg-slate-950 p-2">
-                <div className="bg-slate-950 w-50">
-                    <BotaoVoltar />
-                </div>
-            </div>
+
             <div className="min-h-screen bg-slate-950 text-white p-4 md:p-8 select-none">
 
                 <style jsx global>{`
@@ -328,7 +348,7 @@ export default function PaginaDocumentos() {
                                 </div>
                             </div>
                         </div>
-                        <div className="flex flex-wrap justify-center gap-2">
+                        <div className="flex flex-wrap justify-center gap-6">
                             {SETORES.map(s => {
                                 const podeVer = isAdmin || s === "REGRAS GERAIS" || roleUser === s || rh;
                                 if (!podeVer) return null;
@@ -339,13 +359,15 @@ export default function PaginaDocumentos() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-[800px]">
-                        <div className="lg:col-span-4 bg-slate-900/40 rounded-[2rem] border border-white/5 p-6 flex flex-col backdrop-blur-md">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-[700px]">
+
+                        <div className="lg:col-span-4 bg-slate-900/40 rounded-[2rem] border border-white/5 p-6 flex flex-col backdrop-blur-md h-[calc(90vh-120px)] sticky top-24">
                             <div className="relative mb-4">
                                 <Search className="absolute left-4 top-3.5 text-slate-600" size={16} />
                                 <input
                                     type="text"
                                     placeholder="BUSCAR..."
+                                    autoComplete="off"
                                     value={busca}
                                     onChange={(e) => setBusca(e.target.value)}
                                     className="w-full bg-black/40 border border-white/5 rounded-xl py-3.5 pl-12 text-[10px] font-bold uppercase outline-none focus:ring-1 focus:ring-blue-600/50"
@@ -382,13 +404,12 @@ export default function PaginaDocumentos() {
                             </div>
 
 
-                            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-2">
+                            <div className="flex-1 h-full min-h-0 overflow-y-auto pr-2 custom-scrollbar space-y-2">
                                 {(ordemPastas.length > 0 ? ordemPastas : Object.keys(documentosAgrupados)).map((pasta, index) => {
                                     const docs = documentosAgrupados[pasta];
                                     if (!docs) return null;
 
                                     return (
-                                        /* 2. CADA PASTA (AQUI SIM OS EVENTOS FUNCIONAM) */
                                         <div
                                             key={pasta}
                                             draggable
@@ -488,9 +509,9 @@ export default function PaginaDocumentos() {
                                                 <div className="lg:col-span-8 bg-slate-900/40 rounded-[2rem] border border-white/5 overflow-hidden flex flex-col relative shadow-2xl h-[750px]">
                                                     <style dangerouslySetInnerHTML={{
                                                         __html: docSelecionado?.protecao === "ATIVO" ? `
-                    * { -webkit-user-select: none !important; user-select: none !important; }
-                    @media print { body { display: none !important; } }
-                ` : ""
+                                                        * { -webkit-user-select: none !important; user-select: none !important; }
+                                                        @media print { body { display: none !important; } }
+                                                    ` : ""
                                                     }} />
 
                                                     {docSelecionado ? (
@@ -621,6 +642,7 @@ export default function PaginaDocumentos() {
 
                                         <input
                                             type="password"
+                                            autoComplete="new-password"
                                             autoFocus
                                             placeholder="••••••••"
                                             value={senhaInput}
@@ -652,16 +674,94 @@ export default function PaginaDocumentos() {
                 {pastaConfig && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/95 backdrop-blur-md">
                         <div className="bg-slate-900 border border-white/10 w-full max-w-2xl rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in duration-200">
-                            <header className="flex flex-col items-center mb-8 text-center">
+                            <header className="flex flex-col items-center mb-8 text-center w-full">
                                 <div className="h-1.5 w-16 bg-blue-600 rounded-full mb-6"></div>
-                                <h2 className="text-xl font-black uppercase tracking-tighter text-white">Configurar Pasta: {pastaConfig}</h2>
-                                <p className="text-[10px] text-slate-500 font-bold uppercase mt-2 tracking-widest">Organize a ordem e edite os títulos abaixo</p>
+
+                                <div className="flex items-center justify-center gap-3 w-full">
+                                    {editandoNomePasta === pastaConfig ? (
+                                        <div className="flex items-center gap-2 bg-black/40 border border-blue-500/50 rounded-2xl p-2 w-full max-w-md animate-in slide-in-from-top-1">
+                                            <input
+                                                autoFocus
+                                                value={novoNomeInput}
+                                                onChange={(e) => setNovoNomeInput(e.target.value.toUpperCase())}
+                                                onKeyDown={(e) => e.key === "Enter" && handleSalvarNovoNome(pastaConfig)}
+                                                className="flex-1 bg-transparent border-none text-lg font-black uppercase text-white px-4 outline-none"
+                                            />
+                                            <button
+                                                onClick={() => handleSalvarNovoNome(pastaConfig)}
+                                                className="p-3 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-white transition-colors"
+                                            >
+                                                <Check size={18} />
+                                            </button>
+                                            <button
+                                                onClick={() => setEditandoNomePasta(null)}
+                                                className="p-3 bg-white/5 hover:bg-white/10 rounded-xl text-slate-400"
+                                            >
+                                                <X size={18} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <h2 className="text-xl font-black uppercase tracking-tighter text-white">
+                                                Configurar Pasta: {pastaConfig}
+                                            </h2>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setEditandoNomePasta(pastaConfig);
+                                                    setNovoNomeInput(pastaConfig);
+                                                }}
+                                                className="p-2.5 bg-white/5 hover:bg-blue-600/20 rounded-full text-slate-500 hover:text-blue-400 transition-all border border-white/5"
+                                            >
+                                                <Edit3 size={18} />
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+
+                                {!editandoNomePasta && (
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase mt-4 tracking-widest">
+                                        Arraste os itens ou use as setas para organizar
+                                    </p>
+                                )}
                             </header>
 
                             <div className="space-y-3 max-h-[450px] overflow-y-auto pr-4 custom-scrollbar">
                                 {documentosAgrupados[pastaConfig]?.map((doc, index) => (
-                                    <div key={doc.id} className="flex items-center gap-4 p-4 bg-black/40 border border-white/5 rounded-2xl hover:border-blue-500/30 transition-all group">
-                                        <div className="flex flex-col gap-1">
+                                    <div
+                                        key={doc.id}
+                                        draggable
+                                        onDragStart={(e) => {
+                                            e.dataTransfer.setData("index", index.toString());
+                                            e.currentTarget.classList.add("opacity-40", "scale-95");
+                                        }}
+                                        onDragEnd={(e) => {
+                                            e.currentTarget.classList.remove("opacity-40", "scale-95");
+                                        }}
+                                        onDragOver={(e) => e.preventDefault()}
+                                        onDrop={(e) => {
+                                            e.preventDefault();
+                                            const deIndex = parseInt(e.dataTransfer.getData("index"));
+                                            const paraIndex = index;
+
+                                            if (deIndex === paraIndex) return;
+
+                                            const listaDaPasta = [...documentosAgrupados[pastaConfig!]];
+                                            const [itemRemovido] = listaDaPasta.splice(deIndex, 1);
+                                            listaDaPasta.splice(paraIndex, 0, itemRemovido);
+
+                                            const novosDocs = documentos.map(d => {
+                                                const idxInPasta = listaDaPasta.findIndex(item => item.id === d.id);
+                                                return idxInPasta !== -1 ? { ...d, ordem_manual: idxInPasta } : d;
+                                            });
+
+                                            setDocumentos(novosDocs);
+                                            setOrdem("PADRAO");
+                                        }}
+                                        className="flex items-center gap-4 p-4 bg-black/40 border border-white/5 rounded-2xl hover:border-blue-500/30 transition-all group cursor-grab active:cursor-grabbing"
+                                    >
+                                        <div className="flex flex-col gap-1 opacity-20 group-hover:opacity-100 transition-opacity">
                                             <button
                                                 onClick={() => {
                                                     const listaDaPasta = [...documentosAgrupados[pastaConfig!]];
@@ -698,8 +798,6 @@ export default function PaginaDocumentos() {
                                             >
                                                 <ChevronDown size={16} />
                                             </button>
-
-
                                         </div>
 
                                         <div className="flex-1">
@@ -709,20 +807,21 @@ export default function PaginaDocumentos() {
                                                     const novoTitulo = e.target.value.toUpperCase();
                                                     setDocumentos(prev => prev.map(d => d.id === doc.id ? { ...d, titulo: novoTitulo } : d));
                                                 }}
-                                                className="w-full bg-transparent border-none text-xs font-black uppercase text-slate-200 outline-none focus:text-blue-400 transition-colors"
+                                                className="w-full bg-transparent border-none text-xs font-black uppercase text-slate-200 outline-none focus:text-blue-400 transition-colors cursor-text"
                                             />
                                         </div>
+
                                         <button
                                             onClick={() => setModalExcluir(true)}
-                                            className="cursor-pointer px-4 py-2 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white rounded-xl transition-all text-[9px] font-black uppercase border border-red-600/20 flex items-center gap-2 relative z-[70]"
+                                            className="px-4 py-2 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white rounded-xl transition-all text-[9px] font-black uppercase border border-red-600/20 flex items-center gap-2"
                                         >
                                             <Trash2 size={14} /> Desativar
                                         </button>
-                                        <div className="text-[10px] font-black text-blue-600 opacity-30 group-hover:opacity-100">
+
+                                        <div className="text-[10px] font-black text-blue-600 opacity-30 group-hover:opacity-100 flex items-center gap-2">
+                                            <GripVertical size={14} className="text-slate-700" />
                                             #{index + 1}
-
                                         </div>
-
                                     </div>
                                 ))}
                             </div>
@@ -755,12 +854,14 @@ export default function PaginaDocumentos() {
                                     }}
                                     className="py-5 bg-blue-600 text-white rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-blue-500 shadow-xl shadow-blue-900/40 transition-all"
                                 >
-                                    Salvar Mudanças
+                                    {loadingDocs ? "Salvando..." : "Salvar Alterações"}
                                 </button>
                             </div>
                         </div>
                     </div>
                 )}
+
+
 
                 {/* MARCA D'ÁGUA DINÂMICA */}
                 <div className="fixed inset-0 z-0 pointer-events-none opacity-[0.03] overflow-hidden select-none flex flex-wrap gap-20 p-10 rotate-[-15deg]">

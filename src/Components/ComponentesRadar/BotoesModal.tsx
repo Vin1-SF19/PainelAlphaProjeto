@@ -38,6 +38,9 @@ const MODAL_CONFIG = {
     },
 } as const;
 
+
+
+
 type AcaoModal = "limpar" | "exportar" | "reconsultar" | "duplicado" | null;
 type ModalAberto = "historico" | null;
 
@@ -80,6 +83,7 @@ type Props = {
             "todos" | "DEFERIDA" | "NÃO HABILITADA" | "SUSPENSA"
         >
     >;
+    onAbrirReconsulta: () => void;
 };
 
 export default function ModalButtons({
@@ -110,12 +114,14 @@ export default function ModalButtons({
     onDeletarDoBanco,
     totalSelecionados,
     filtroSituacao,
-    setFiltroSituacao
+    setFiltroSituacao,
+    onAbrirReconsulta,
 }: Props) {
     const [acaoModal, setAcaoModal] = useState<AcaoModal>(null);
     const [modalAberto, setModalAberto] = useState<ModalAberto>(null);
     const [nomeArquivo, setNomeArquivo] = useState("consulta_radar");
     const [enabled, setEnabled] = useState(true);
+    
 
     function fecharTudo() {
         setAcaoModal(null);
@@ -168,12 +174,15 @@ export default function ModalButtons({
 
 
 
+
+
     type SubmodalidadeType = "todos" | "LIMITADA (ATÉ US$ 50.000)" | "LIMITADA (ATÉ US$ 150.000)" | "ILIMITADA";
     const [filtroSubmodalidade, setFiltroSubmodalidade] = useState<SubmodalidadeType>("todos");
 
     const empresasFiltradas = empresas.filter(e => {
 
         if (filtroSubmodalidade === "todos") return true;
+
 
         const sub = e.submodalidade?.toString() || "";
         if (filtroSubmodalidade === "LIMITADA (ATÉ US$ 50.000)") return sub.includes("50.000");
@@ -201,12 +210,12 @@ export default function ModalButtons({
                 </button>
 
                 <button
-                    className="btn-secondary flex items-center gap-2 whitespace-nowrap"
-                    onClick={() => setAcaoModal("reconsultar")}
+                    className="btn-secondary flex items-center gap-2"
+                    onClick={onAbrirReconsulta} 
                     disabled={processando}
                 >
                     <RefreshCw className={processando ? "animate-spin" : ""} size={16} />
-                    {processando ? "Processando..." : "Reconsultar erros"}
+                    {processando ? "Processando..." : "Reconsultar"}
                 </button>
 
                 <button

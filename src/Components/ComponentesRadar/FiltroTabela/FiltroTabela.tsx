@@ -15,12 +15,12 @@ import {
 type Props = {
     ordem: "asc" | "desc" | null;
     ordemData: "recentes" | "antigos" | null;
-    filtroStatus: "todos" | "erro" | "sucesso";
+    filtroStatus: "todos" | "erro" | "sucesso" | "NÃO LOCALIZADO";
     filtroSituacao: "todos" | "DEFERIDA" | "NÃO HABILITADA" | "SUSPENSA";
 
     setOrdem: (v: "asc" | "desc" | null) => void;
     setOrdemData: (v: "recentes" | "antigos" | null) => void;
-    setFiltroStatus: (v: "todos" | "erro" | "sucesso") => void;
+    setFiltroStatus: (v: "todos" | "erro" | "sucesso" | "NÃO LOCALIZADO") => void;
 
     setFiltroSituacao: React.Dispatch<
         React.SetStateAction<

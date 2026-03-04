@@ -12,6 +12,8 @@ import { deletarRegistrosBanco, registrarNovoArquivo, salvarConsultaIndividual, 
 import { toast } from "sonner";
 import React from "react";
 import { BarChart3 } from "lucide-react";
+import { prepararReconsultaLote } from "@/app/api/Reconsulta/ReconsultaRadar";
+import ModalOpcoesReconsulta from "@/Components/ComponentesRadar/BotaoReconsulta/BotaoReconsulta";
 
 export default function HabilitacaoRadar() {
 
@@ -32,6 +34,24 @@ export default function HabilitacaoRadar() {
   const [filtroSituacao, setFiltroSituacao] = useState<
     "todos" | "DEFERIDA" | "NÃO HABILITADA" | "SUSPENSA"
   >("todos");
+
+  const [showModalReconsulta, setShowModalReconsulta] = useState(false);
+
+  const executarLimpezaEReconsulta = async (tipo: 'ERROS' | 'NAO_HABILITADOS') => {
+    setProcessando(true);
+    setShowModalReconsulta(false);
+
+    const res = await prepararReconsultaLote(tipo);
+
+    if (res.success) {
+      toast.success(`${res.count} registros limpos. Iniciando reconsulta...`);
+
+    } else {
+      toast.error("Falha ao limpar registros.");
+    }
+    setProcessando(false);
+  };
+
 
 
 
@@ -382,73 +402,53 @@ export default function HabilitacaoRadar() {
 
 
   const handleReconsultarErros = async () => {
-    const listaAlvo = empresas.filter(e =>
-      !e.razaoSocial ||
-      e.situacao === "ERRO" ||
-      e.situacao === "" ||
-      !e.situacao
-    );
+    setShowModalReconsulta(false);
+
+    const listaAlvo = empresas.filter(e => {
+      const s = (e.situacao || "").toUpperCase().trim();
+      return !e.razaoSocial || s === "" || s === "ERRO" || s === "PENDENTE RADAR" || s === "ERRO NA CONSULTA";
+    });
 
     if (listaAlvo.length === 0) {
-      toast.info("Nenhum registro para reconsultar.");
+      toast.info("Nenhum erro pendente para processar.");
       return;
     }
 
     setProcessando(true);
     setLoading(true);
-    cancelarProcessamento.current = false;
     setTotalLote(listaAlvo.length);
     setProcessadas(0);
+    cancelarProcessamento.current = false;
 
     for (let i = 0; i < listaAlvo.length; i++) {
       if (cancelarProcessamento.current) break;
 
       const emp = listaAlvo[i];
-      const cnpjLimpo = String(emp.cnpj).replace(/\D/g, "").padStart(14, "0").substring(0, 14);
-      let sucesso = false;
+      const cnpjLimpo = String(emp.cnpj).replace(/\D/g, "").padStart(14, "0");
+      let sucessoOuFinal = false;
       let tentativa = 0;
-      const maxTentativas = 10;
 
-      while (!sucesso && tentativa < maxTentativas && !cancelarProcessamento.current) {
-        setStatusLote(`Processando ${i + 1}/${listaAlvo.length} (Tentativa ${tentativa + 1}): ${cnpjLimpo}`);
+      while (!sucessoOuFinal && tentativa < 10) {
+        setStatusLote(`Processando ${i + 1}/${listaAlvo.length} (Tentativa ${tentativa + 1}/10): ${cnpjLimpo}`);
 
         try {
-          const res = await fetch(
-            `/api/ConsultaCompleta?cnpj=${cnpjLimpo}&forcar=true&t=${Date.now()}`,
-            { cache: "no-store" }
-          );
+          const res = await fetch(`/api/ConsultaCompleta?cnpj=${cnpjLimpo}&forcar=true&t=${Date.now()}`, {
+            cache: 'no-store'
+          });
 
-          if (!res.ok) throw new Error(`Status ${res.status}`);
-
+          if (!res.ok) throw new Error("Erro na API");
           const api = await res.json();
 
-          const novoDado: EmpresaRadar = {
-            ...emp,
-            dataConsulta: formatarData(new Date()),
-            cnpj: cnpjLimpo,
-            contribuinte: api.contribuinte || "N/A",
-            situacao: api.situacao || api.situacao_radar || "ERRO",
-            dataSituacao: formatarData(api.dataSituacao || api.data_situacao),
-            submodalidade: api.submodalidade || "N/A",
-            razaoSocial: api.razaoSocial || api.razao_social || "NÃO ENCONTRADO",
-            nomeFantasia: api.nomeFantasia || api.nome_fantasia || "N/A",
-            municipio: api.municipio || "N/A",
-            uf: api.uf || "N/A",
-            dataConstituicao: formatarData(api.dataConstituicao || api.data_constituicao),
-            regimeTributario: api.regimeTributario || api.regime_tributario || "N/A",
-            data_opcao: formatarData(api.data_opcao) || "N/A",
-            capitalSocial: api.capitalSocial || api.capital_social || "N/A",
-            salvo: true
-          };
-
-          setEmpresas(prev => prev.map(e => e.cnpj === emp.cnpj ? novoDado : e));
-          sucesso = true;
-
+          if (api.salvo !== false) {
+            setEmpresas(prev => prev.map(e => e.cnpj === emp.cnpj ? { ...e, ...api } : e));
+            sucessoOuFinal = true;
+          } else {
+            throw new Error("Dados ainda incompletos");
+          }
         } catch (err) {
           tentativa++;
-          console.error(`Falha tentativa ${tentativa} para ${cnpjLimpo}:`, err);
-          if (tentativa < maxTentativas) {
-            await new Promise(r => setTimeout(r, 5000));
+          if (tentativa < 10) {
+            await new Promise(r => setTimeout(r, 25000));
           }
         }
       }
@@ -459,8 +459,15 @@ export default function HabilitacaoRadar() {
 
     setProcessando(false);
     setLoading(false);
-    setStatusLote("Reconsulta finalizada!");
+    setStatusLote("Processamento finalizado!");
+    toast.success("Reconsulta concluída!");
   };
+
+
+
+
+
+
 
   const formatarDataExibicao = (valor: any) => {
     if (!valor) return "N/A";
@@ -581,6 +588,67 @@ export default function HabilitacaoRadar() {
   };
 
 
+  const iniciarProcessamentoAutomatico = async () => {
+    setProcessando(true);
+
+    const pendentes = empresas.filter(emp =>
+      !emp.razaoSocial ||
+      emp.razaoSocial === "" ||
+      emp.razaoSocial === "NÃO ENCONTRADO" ||
+      emp.situacao === "ERRO" ||
+      emp.situacao === "NÃO LOCALIZADO - RECONSULTAR"
+    );
+
+    if (pendentes.length === 0) {
+      toast.info("Nenhum registro pendente para consulta.");
+      setProcessando(false);
+      return;
+    }
+
+    toast.success(`Iniciando consulta de ${pendentes.length} registros...`);
+
+    for (const emp of pendentes) {
+      if (cancelarProcessamento.current) break;
+
+      try {
+        const cnpjLimpo = String(emp.cnpj).replace(/\D/g, "").padStart(14, "0");
+
+        const res = await fetch(`/api/ConsultaCompleta?cnpj=${cnpjLimpo}&forcar=true&t=${Date.now()}`, {
+          cache: 'no-store'
+        });
+
+        if (res.ok) {
+          const api = await res.json();
+
+          const novoDado = {
+            ...emp,
+            razaoSocial: api.razaoSocial || api.razao_social,
+            situacao: api.situacao || api.situacao_radar,
+            dataSituacao: api.dataSituacao,
+            submodalidade: api.submodalidade,
+            nomeFantasia: api.nomeFantasia,
+            uf: api.uf,
+            municipio: api.municipio,
+            salvo: true
+          };
+
+          setEmpresas(prev => prev.map(e => e.cnpj === emp.cnpj ? novoDado : e));
+        }
+
+        await new Promise(r => setTimeout(r, 3000));
+
+      } catch (e) {
+        console.error(`Erro ao consultar ${emp.cnpj}:`, e);
+      }
+    }
+
+    setProcessando(false);
+    toast.success("Processamento concluído!");
+  };
+
+
+
+
 
 
 
@@ -625,10 +693,23 @@ export default function HabilitacaoRadar() {
 
     if (filtroSubmodalidade !== "todos") {
       resultado = resultado.filter(e => {
-        const sub = (e.submodalidade || "").toString().toUpperCase();
-        if (filtroSubmodalidade === "LIMITADA (ATÉ US$ 50.000)") return sub.includes("50.000");
-        if (filtroSubmodalidade === "LIMITADA (ATÉ US$ 150.000)") return sub.includes("150.000");
-        if (filtroSubmodalidade === "ILIMITADA") return sub.includes("ILIMITADA");
+        const sub = (e.submodalidade || "")
+          .toString()
+          .toUpperCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/\./g, "")
+          .replace(/,/g, "");
+
+        if (filtroSubmodalidade === "LIMITADA (ATÉ US$ 50.000)")
+          return sub.includes("50000");
+
+        if (filtroSubmodalidade === "LIMITADA (ATÉ US$ 150.000)")
+          return sub.includes("150000");
+
+        if (filtroSubmodalidade === "ILIMITADA")
+          return sub.includes("ILIMITADA");
+
         return true;
       });
     }
@@ -715,27 +796,6 @@ export default function HabilitacaoRadar() {
     }
     setLoading(false);
   };
-
-
-
-
-  const empresasFiltradas = empresas.filter(e => {
-    const condicaoSituacao = filtroSituacao === "todos" ||
-      e.situacao?.toUpperCase() === filtroSituacao.toUpperCase();
-
-    let condicaoSub = true;
-    const valorSub = (e.submodalidade || "").toString().toUpperCase();
-
-    if (filtroSubmodalidade === "LIMITADA (ATÉ US$ 50.000)") condicaoSub = valorSub.includes("50.000");
-    else if (filtroSubmodalidade === "LIMITADA (ATÉ US$ 150.000)") condicaoSub = valorSub.includes("150.000");
-    else if (filtroSubmodalidade === "ILIMITADA") condicaoSub = valorSub.includes("ILIMITADA");
-
-    return condicaoSituacao && condicaoSub;
-  });
-
-
-
-
 
 
   return (
@@ -837,10 +897,10 @@ export default function HabilitacaoRadar() {
 
           <ImportarPlanilha
             onImportar={handleImportarLote}
-            processando={processando} // Passa o estado de ocupado
+            processando={processando}
             onCancelar={() => {
-              cancelarProcessamento.current = true; // Ativa a interrupção real
-              setProcessando(false); // Reseta a UI na hora
+              cancelarProcessamento.current = true;
+              setProcessando(false);
               setStatusLote("Operação cancelada.");
             }}
             statusLote={statusLote}
@@ -975,18 +1035,13 @@ export default function HabilitacaoRadar() {
                   ></span>
                 </p>
 
-                <h2
-                  className={`text-lg font-black transition-colors duration-500 ${infosimples
-                    ? infosimples.saldo < 100
-                      ? "text-rose-400"
-                      : infosimples.saldo < 200
-                        ? "text-yellow-400"
-                        : "text-emerald-400"
-                    : "text-emerald-400"
-                    }`}
-                >
-                  {infosimples ? `R$ ${infosimples.saldo.toFixed(2)}` : "..."}
+                <h2 className={`text-xl font-black tracking-tighter ${!infosimples?.saldo ? "text-rose-500 animate-pulse" : "text-white"
+                  }`}>
+                  {infosimples?.saldo !== undefined
+                    ? `R$ ${Number(infosimples.saldo).toFixed(2)}`
+                    : "SEM CONEXÃO"}
                 </h2>
+
 
                 <span className="text-[9px] text-gray-500">
                   Atualiza automaticamente
@@ -1068,10 +1123,15 @@ export default function HabilitacaoRadar() {
         setOrdem={setOrdem}
         setOrdemData={setOrdemData}
         totalSelecionados={selecionados.size}
+        onAbrirReconsulta={() => setShowModalReconsulta(true)}
       />
 
 
-
+      <ModalOpcoesReconsulta
+        isOpen={showModalReconsulta}
+        onClose={() => setShowModalReconsulta(false)}
+        onExecutar={handleReconsultarErros}
+      />
 
 
 

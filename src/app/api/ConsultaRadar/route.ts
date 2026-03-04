@@ -48,24 +48,35 @@ export async function GET(req: Request) {
     const dados =
       Array.isArray(raw) ? raw[0] : raw?.[0] || raw || null;
 
-    return NextResponse.json({
-      contribuinte:
-        dados?.contribuinte ||
-        dados?.nome_contribuinte ||
-        "",
-      situacao:
-        dados?.situacao ||
-        dados?.situacao_habilitacao ||
-        "",
-      dataSituacao:
-        dados?.data_situacao ||
-        dados?.situacao_data ||
-        "",
-      submodalidade:
-        dados?.submodalidade ||
-        dados?.submodalidade_texto ||
-        "",
-    });
+      console.log("DADOS CRUS DA API RADAR:", JSON.stringify(dados, null, 2));
+
+      return NextResponse.json({
+        contribuinte:
+          dados?.contribuinte ||
+          dados?.nome_contribuinte ||
+          dados?.razao_social ||
+          dados?.nome ||
+          
+      
+      "",
+        situacao:
+          dados?.situacao ||
+          dados?.situacao_habilitacao ||
+          dados?.descricao_situacao ||
+          dados?.status ||
+          "NÃO LOCALIZADO",
+        dataSituacao:
+          dados?.data_situacao ||
+          dados?.situacao_data ||
+          dados?.data_evento ||
+          dados?.data ||
+          "",
+        submodalidade:
+          dados?.submodalidade ||
+          dados?.submodalidade_texto ||
+          dados?.modalidade ||
+          "N/A",
+      });
   } catch (err) {
     console.error("RADAR ERROR:", err);
     return NextResponse.json(

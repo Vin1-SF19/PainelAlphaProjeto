@@ -40,10 +40,10 @@ export async function salvarDadosNoBanco(empresas: any[], arquivoId?: number) {
   try {
     let novos = 0;
     let existentes = 0;
+    const resultadosProcessados: any[] = []; 
 
     const promessas = empresas.map(async (emp) => {
       const cnpjLimpo = String(emp.cnpj || "").replace(/\D/g, "").padStart(14, "0").substring(0, 14);
-
       if (!cnpjLimpo || cnpjLimpo.length < 14) return null;
 
       const registro = await db.consultas_radar.findUnique({
@@ -52,52 +52,54 @@ export async function salvarDadosNoBanco(empresas: any[], arquivoId?: number) {
       });
 
       const jaTemDadosReais = !!(registro && registro.razao_social && registro.razao_social !== "" && registro.razao_social !== "NÃO ENCONTRADO");
-
-      if (jaTemDadosReais) {
-        existentes++;
-      } else {
-        if (!registro) novos++;
-      }
+      if (jaTemDadosReais) existentes++; else if (!registro) novos++;
 
       const isApenasCnpj = !emp.razaoSocial && !emp.razao_social;
+      if (isApenasCnpj && jaTemDadosReais) return;
 
-      if (isApenasCnpj && jaTemDadosReais) {
-        return;
-      }
+      const formatar = (v: any) => {
+        const d = parseDateBR(v);
+        return d ? d.toISOString() : null;
+      };
 
       const payload = {
-        razao_social: emp.razaoSocial || emp.razao_social || (isApenasCnpj ? "" : "NÃO ENCONTRADO"),
-        nome_fantasia: emp.nomeFantasia || emp.nome_fantasia || "",
+        razao_social: (emp.razaoSocial || emp.razao_social || (isApenasCnpj ? "" : "NÃO ENCONTRADO")).toUpperCase(),
+        nome_fantasia: (emp.nomeFantasia || emp.nome_fantasia || "").toUpperCase(),
         situacao_radar: emp.situacao || emp.situacao_radar || (isApenasCnpj ? "" : "ERRO"),
         submodalidade: emp.submodalidade || "",
-        data_situacao: parseDateBR(emp.dataSituacao || emp.data_situacao),
-        municipio: emp.municipio || "",
-        uf: emp.uf || "",
-        data_constituicao: parseDateBR(emp.dataConstituicao || emp.data_constituicao),
+        data_situacao: formatar(emp.dataSituacao || emp.data_situacao),
+        municipio: (emp.municipio || "").toUpperCase(),
+        uf: (emp.uf || "").toUpperCase(),
+        data_constituicao: formatar(emp.dataConstituicao || emp.data_constituicao),
         regime_tributario: emp.regimeTributario || emp.regime_tributario || "",
         capital_social: String(emp.capitalSocial || emp.capital_social || ""),
         contribuinte: emp.contribuinte || "",
-        data_opcao: parseDateBR(emp.data_opcao || emp.DataSimples),
+        data_opcao: formatar(emp.data_opcao || emp.DataSimples),
         arquivo_id: arquivoId || null,
         fonte: isApenasCnpj ? "Importação CNPJ" : "Importação Completa",
         json_completo: JSON.stringify(emp),
-        data_consulta: parseDateBR(emp.dataConsulta || emp.data_consulta) || new Date(),
+        data_consulta: formatar(emp.dataConsulta || emp.data_consulta) || new Date().toISOString(),
       };
 
-      return db.consultas_radar.upsert({
+      const resultado = await db.consultas_radar.upsert({
         where: { cnpj: cnpjLimpo },
         update: payload,
         create: { cnpj: cnpjLimpo, ...payload }
       });
+
+      resultadosProcessados.push(resultado);
+      return resultado;
     });
 
     await Promise.all(promessas);
     revalidatePath("/PainelAlpha/ConsultarRadar");
-    return { success: true, novos, existentes };
+    
+    return { success: true, novos, existentes, data: resultadosProcessados };
   } catch (error: any) {
     return { success: false, novos: 0, existentes: 0, error: error.message };
   }
 }
+
 
 export async function salvarPlanilhaCompleta(empresas: any[], nomeDoArquivo: string, arquivoIdExistente?: number) {
   if (!empresas || empresas.length === 0) return { success: false };
@@ -134,35 +136,43 @@ export async function salvarConsultaIndividual(empresa: any) {
       return { success: false, error: "Dados incompletos" };
     }
 
+    const formatarData = (v: any) => {
+        const d = parseDateBR(v);
+        return d ? d.toISOString() : null;
+    };
+
     const payload = {
-      razao_social: empresa.razaoSocial || empresa.razao_social || "",
-      nome_fantasia: empresa.nomeFantasia || empresa.nome_fantasia || "",
+      razao_social: (empresa.razaoSocial || empresa.razao_social || "").toUpperCase(),
+      nome_fantasia: (empresa.nomeFantasia || empresa.nome_fantasia || "").toUpperCase(),
       situacao_radar: empresa.situacao || "",
       submodalidade: empresa.submodalidade || "",
-      data_situacao: parseDateBR(empresa.dataSituacao || empresa.data_situacao),
-      municipio: empresa.municipio || "",
-      uf: empresa.uf || "",
-      data_constituicao: parseDateBR(empresa.dataConstituicao || empresa.data_constituicao),
+      data_situacao: formatarData(empresa.dataSituacao || empresa.data_situacao),
+      municipio: (empresa.municipio || "").toUpperCase(),
+      uf: (empresa.uf || "").toUpperCase(),
+      data_constituicao: formatarData(empresa.dataConstituicao || empresa.data_constituicao),
       regime_tributario: empresa.regimeTributario || "",
       capital_social: String(empresa.capitalSocial || ""),
       contribuinte: empresa.contribuinte || "",
-      data_opcao: parseDateBR(empresa.data_opcao || empresa.DataSimples),
+      data_opcao: formatarData(empresa.data_opcao || empresa.DataSimples),
       json_completo: JSON.stringify(empresa),
-      data_consulta: parseDateBR(empresa.dataConsulta) || new Date()
+      data_consulta: formatarData(empresa.dataConsulta) || new Date().toISOString()
     };
 
-    await db.consultas_radar.upsert({
+    const registroAtualizado = await db.consultas_radar.upsert({
       where: { cnpj: cnpjLimpo },
       update: payload,
       create: { cnpj: cnpjLimpo, fonte: "Consulta API Automática", ...payload },
     });
 
     revalidatePath("/PainelAlpha/ConsultarRadar");
-    return { success: true };
-  } catch (error) {
-    return { success: false };
+    
+    return { success: true, data: registroAtualizado };
+  } catch (error: any) {
+    console.error("Erro ao salvar consulta:", error.message);
+    return { success: false, error: error.message };
   }
 }
+
 
 export async function deletarRegistrosBanco(cnpjs: string[]) {
   try {
@@ -187,3 +197,23 @@ export async function excluirCnpjsEmLote(ids: number[]) {
     return { success: false };
   }
 }
+
+export async function prepararReconsultaLote(tipo: 'ERROS' | 'NAO_HABILITADOS') {
+  try {
+    const condicao = tipo === 'ERROS' 
+      ? { situacao_radar: { in: ["ERRO", "ERRO NA API", "NÃO LOCALIZADO", "PENDENTE RADAR", "ERRO NA CONSULTA", ""] } }
+      : { situacao_radar: { in: ["NÃO HABILITADA"] } };
+
+    const deletados = await db.consultas_radar.deleteMany({
+      where: condicao
+    });
+
+    revalidatePath("/PainelAlpha/ConsultarRadar");
+    return { success: true, count: deletados.count };
+  } catch (error) {
+    return { success: false };
+  }
+}
+
+
+
