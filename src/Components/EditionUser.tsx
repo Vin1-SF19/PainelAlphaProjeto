@@ -172,10 +172,10 @@ export default function EditionUser({ open, onOpenChange, user, onSubmit }: Edit
             </div>
 
             <DialogFooter className="flex flex-col sm:flex-row gap-3 pt-4">
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="flex-1 h-12 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white hover:bg-white/5 rounded-xl border border-transparent hover:border-white/10">
+              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="cursor-pointer flex-1 h-12 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white hover:bg-white/5 rounded-xl border border-transparent hover:border-white/10">
                 Descartar
               </Button>
-              <Button type="submit" className="flex-[2] h-12 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl shadow-xl shadow-blue-900/40 transition-all active:scale-95">
+              <Button type="submit" className="cursor-pointer flex-[2] h-12 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl shadow-xl shadow-blue-900/40 transition-all active:scale-95">
                 Atualizar Perfil
               </Button>
             </DialogFooter>

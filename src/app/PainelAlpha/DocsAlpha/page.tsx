@@ -165,28 +165,38 @@ export default function PaginaDocumentos() {
         }
     }
 
+    const [docParaExcluir, setDocParaExcluir] = useState<any>(null);
+
+
     const handleExcluirLogico = async () => {
         if (senhaInput !== SENHA_MESTRA) return toast.error("Senha Administrativa Incorreta!");
-
+        
+        if (!docParaExcluir?.id) return toast.error("Nenhum documento alvo identificado!");
+    
         try {
+            const idParaExcluir = docParaExcluir.id;
+    
             const res = await fetch(`/api/documentos`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: docSelecionado?.id, status: 'INATIVO' })
+                body: JSON.stringify({ id: idParaExcluir, status: 'INATIVO' })
             });
-
+    
             if (!res.ok) throw new Error("Falha na resposta do servidor");
-
-            setDocumentos(prev => prev.filter(d => d.id !== docSelecionado?.id));
-            setDocSelecionado(null);
+    
+            setDocumentos(prev => prev.filter(d => d.id !== idParaExcluir));
+            
+            setDocParaExcluir(null); 
             setModalExcluir(false);
             setSenhaInput("");
             toast.success("Documento desativado com sucesso!");
         } catch (err) {
-            console.error("Erro de Sincronização:", err);
             toast.error("Erro ao sincronizar com o banco de dados.");
+            setSenhaInput("");
         }
     };
+    
+
 
 
     const documentosAgrupados = useMemo(() => {
@@ -812,8 +822,11 @@ export default function PaginaDocumentos() {
                                         </div>
 
                                         <button
-                                            onClick={() => setModalExcluir(true)}
-                                            className="px-4 py-2 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white rounded-xl transition-all text-[9px] font-black uppercase border border-red-600/20 flex items-center gap-2"
+                                            onClick={() => {
+                                                setDocParaExcluir(doc); 
+                                                setModalExcluir(true);
+                                            }}
+                                            className="cursor-pointer px-4 py-2 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white rounded-xl transition-all text-[9px] font-black uppercase border border-red-600/20 flex items-center gap-2 relative z-[70]"
                                         >
                                             <Trash2 size={14} /> Desativar
                                         </button>

@@ -1,18 +1,28 @@
-// src/Components/FiltroChamados.tsx
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import { LayoutDashboard, AlertCircle, Clock, CheckCircle2 } from "lucide-react";
 
-export function FiltroChamados() {
+export function FiltroChamadosCards({ 
+  total, 
+  abertos, 
+  emCurso, 
+  finalizados 
+}: { 
+  total: number; 
+  abertos: number; 
+  emCurso: number; 
+  finalizados: number; 
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const statusAtual = searchParams.get("status") || "TODOS";
 
-  const filtros = [
-    { label: "Todos", value: "TODOS" },
-    { label: "Abertos", value: "ABERTO" },
-    { label: "Em curso", value: "EM_ATENDIMENTO" },
-    { label: "Concluídos", value: "CONCLUIDO" },
+  const cards = [
+    { label: "Volume Total", value: "TODOS", count: total, color: "blue", icon: LayoutDashboard },
+    { label: "Pendentes", value: "ABERTO", count: abertos, color: "amber", icon: AlertCircle },
+    { label: "Em Resposta", value: "EM_ATENDIMENTO", count: emCurso, color: "purple", icon: Clock },
+    { label: "Concluídos", value: "CONCLUIDO", count: finalizados, color: "emerald", icon: CheckCircle2 },
   ];
 
   const handleFiltro = (valor: string) => {
@@ -21,25 +31,40 @@ export function FiltroChamados() {
     router.push(`?${params.toString()}`, { scroll: false });
   };
 
+  const styles: any = {
+    blue: { border: "border-blue-500/20", active: "bg-blue-600/20 border-blue-500 shadow-[0_0_25px_rgba(59,130,246,0.3)] ring-1 ring-blue-500", text: "text-blue-400" },
+    amber: { border: "border-amber-500/20", active: "bg-amber-600/20 border-amber-500 shadow-[0_0_25px_rgba(245,158,11,0.3)] ring-1 ring-amber-500", text: "text-amber-400" },
+    purple: { border: "border-purple-500/20", active: "bg-purple-600/20 border-purple-500 shadow-[0_0_25px_rgba(168,85,247,0.3)] ring-1 ring-purple-500", text: "text-purple-400" },
+    emerald: { border: "border-emerald-500/20", active: "bg-emerald-600/20 border-emerald-500 shadow-[0_0_25px_rgba(16,185,129,0.3)] ring-1 ring-emerald-500", text: "text-emerald-400" }
+  };
+
   return (
-    <div className="flex p-1.5 bg-slate-900/80 border border-white/5 backdrop-blur-xl rounded-2xl shadow-inner">
-      {filtros.map((f) => {
-        const ativo = statusAtual === f.value;
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full mb-10">
+      {cards.map((card) => {
+        const ativo = statusAtual === card.value;
+        const Icon = card.icon;
+        const style = styles[card.color];
+
         return (
           <button
-            key={f.value}
-            onClick={() => handleFiltro(f.value)}
-            className={` cursor-pointer
-              relative px-5 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all duration-300
-              ${ativo 
-                ? "text-white bg-blue-600 shadow-[0_0_20px_rgba(37,99,235,0.4)]" 
-                : "text-slate-500 hover:text-slate-300 hover:bg-white/5"}
-            `}
+            key={card.value}
+            onClick={() => handleFiltro(card.value)}
+            className={`relative p-8 rounded-[2.5rem] border backdrop-blur-xl flex items-center justify-between transition-all duration-300 group active:scale-95 cursor-pointer overflow-hidden ${ativo ? style.active : `bg-slate-900/20 ${style.border} hover:border-white/20`}`}
           >
-            {f.label}
-            {ativo && (
-               <span className="absolute-bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-blue-400 rounded-full shadow-[0_0_10px_#60a5fa]" />
-            )}
+            <div className="relative z-10">
+              <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-2 transition-colors ${ativo ? "text-white" : "text-slate-500 group-hover:text-slate-300"}`}>
+                {card.label}
+              </p>
+              <div className="flex items-baseline gap-2">
+                <h4 className="text-4xl font-black text-white tracking-tighter italic">
+                  {card.count}
+                </h4>
+              </div>
+            </div>
+
+            <div className={`p-4 rounded-2xl border transition-all duration-500 relative z-10 ${ativo ? "bg-white/10 border-white/20 scale-110 rotate-6 text-white" : `bg-white/5 border-white/5 group-hover:scale-110 ${style.text}`}`}>
+              <Icon size={20} />
+            </div>
           </button>
         );
       })}

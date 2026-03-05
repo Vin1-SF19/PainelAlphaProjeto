@@ -52,8 +52,8 @@ type Props = {
     processando: boolean;
     empresas: any[];
     selecionados: Set<string>;
-    ordem: "asc" | "desc" | null;
-    ordemData: "recentes" | "antigos" | null;
+    ordem:"todos" | "asc" | "desc" | null;
+    ordemData: "todos" | "recentes" | "antigos" | null;
     empresasExibidas: any[];
     handleAlternarOrdemNome: () => void;
     handleAlternarOrdemData: () => void;
@@ -64,8 +64,8 @@ type Props = {
     loading: boolean;
     totalEmpresas: number;
 
-    setOrdem: (v: "asc" | "desc" | null) => void;
-    setOrdemData: (v: "recentes" | "antigos" | null) => void;
+    setOrdem: (v: "todos" | "asc" | "desc" | null) => void;
+    setOrdemData: (v: "todos" | "recentes" | "antigos" | null) => void;
 
     onSalvarBanco: (nome: string) => Promise<any>;
 
@@ -77,13 +77,21 @@ type Props = {
 
     totalSelecionados: number;
 
-    filtroSituacao: "todos" | "DEFERIDA" | "NÃO HABILITADA" | "SUSPENSA";
+    filtroSituacao: "todos" | "DEFERIDA" | "NÃO HABILITADA" | "SUSPENSA" | "SEM STATUS";
     setFiltroSituacao: React.Dispatch<
         React.SetStateAction<
-            "todos" | "DEFERIDA" | "NÃO HABILITADA" | "SUSPENSA"
+            "todos" | "DEFERIDA" | "NÃO HABILITADA" | "SUSPENSA" | "SEM STATUS"
         >
     >;
     onAbrirReconsulta: () => void;
+
+    filtroSubmodalidade: "todos" | "LIMITADA (ATÉ US$ 50.000)" | "LIMITADA (ATÉ US$ 150.000)" | "ILIMITADA";
+    setFiltroSubmodalidade: React.Dispatch<
+        React.SetStateAction<
+            "todos" | "LIMITADA (ATÉ US$ 50.000)" | "LIMITADA (ATÉ US$ 150.000)" | "ILIMITADA"
+        >
+    >;
+
 };
 
 export default function ModalButtons({
@@ -116,12 +124,14 @@ export default function ModalButtons({
     filtroSituacao,
     setFiltroSituacao,
     onAbrirReconsulta,
+    filtroSubmodalidade,
+    setFiltroSubmodalidade
 }: Props) {
     const [acaoModal, setAcaoModal] = useState<AcaoModal>(null);
     const [modalAberto, setModalAberto] = useState<ModalAberto>(null);
     const [nomeArquivo, setNomeArquivo] = useState("consulta_radar");
     const [enabled, setEnabled] = useState(true);
-    
+
 
     function fecharTudo() {
         setAcaoModal(null);
@@ -176,23 +186,6 @@ export default function ModalButtons({
 
 
 
-    type SubmodalidadeType = "todos" | "LIMITADA (ATÉ US$ 50.000)" | "LIMITADA (ATÉ US$ 150.000)" | "ILIMITADA";
-    const [filtroSubmodalidade, setFiltroSubmodalidade] = useState<SubmodalidadeType>("todos");
-
-    const empresasFiltradas = empresas.filter(e => {
-
-        if (filtroSubmodalidade === "todos") return true;
-
-
-        const sub = e.submodalidade?.toString() || "";
-        if (filtroSubmodalidade === "LIMITADA (ATÉ US$ 50.000)") return sub.includes("50.000");
-        if (filtroSubmodalidade === "LIMITADA (ATÉ US$ 150.000)") return sub.includes("150.000");
-        if (filtroSubmodalidade === "ILIMITADA") return sub.toLowerCase().includes("ILIMITADA");
-
-        return true;
-    });
-
-
     const config =
         acaoModal && acaoModal !== "duplicado"
             ? MODAL_CONFIG[acaoModal]
@@ -211,7 +204,7 @@ export default function ModalButtons({
 
                 <button
                     className="btn-secondary flex items-center gap-2"
-                    onClick={onAbrirReconsulta} 
+                    onClick={onAbrirReconsulta}
                     disabled={processando}
                 >
                     <RefreshCw className={processando ? "animate-spin" : ""} size={16} />

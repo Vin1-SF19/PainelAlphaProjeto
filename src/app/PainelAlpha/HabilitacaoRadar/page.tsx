@@ -11,7 +11,7 @@ import * as XLSX from "xlsx";
 import { deletarRegistrosBanco, registrarNovoArquivo, salvarConsultaIndividual, salvarDadosNoBanco, salvarPlanilhaCompleta } from "@/actions/RadarAction";
 import { toast } from "sonner";
 import React from "react";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, Loader2, WifiOff } from "lucide-react";
 import { prepararReconsultaLote } from "@/app/api/Reconsulta/ReconsultaRadar";
 import ModalOpcoesReconsulta from "@/Components/ComponentesRadar/BotaoReconsulta/BotaoReconsulta";
 
@@ -32,10 +32,15 @@ export default function HabilitacaoRadar() {
   const [infosimples, setInfosimples] = useState<any>(null);
 
   const [filtroSituacao, setFiltroSituacao] = useState<
-    "todos" | "DEFERIDA" | "NÃO HABILITADA" | "SUSPENSA"
+    "todos" | "DEFERIDA" | "NÃO HABILITADA" | "SUSPENSA" | "SEM STATUS"
   >("todos");
 
+
+
   const [showModalReconsulta, setShowModalReconsulta] = useState(false);
+
+  const [isOffline, setIsOffline] = useState(typeof window !== "undefined" ? !navigator.onLine : false);
+
 
   const executarLimpezaEReconsulta = async (tipo: 'ERROS' | 'NAO_HABILITADOS') => {
     setProcessando(true);
@@ -51,6 +56,23 @@ export default function HabilitacaoRadar() {
     }
     setProcessando(false);
   };
+
+
+  useEffect(() => {
+    const handleStatus = () => {
+      setIsOffline(!navigator.onLine);
+    };
+
+    handleStatus();
+
+    window.addEventListener("online", handleStatus);
+    window.addEventListener("offline", handleStatus);
+
+    return () => {
+      window.removeEventListener("online", handleStatus);
+      window.removeEventListener("offline", handleStatus);
+    };
+  }, []);
 
 
 
@@ -421,6 +443,12 @@ export default function HabilitacaoRadar() {
     cancelarProcessamento.current = false;
 
     for (let i = 0; i < listaAlvo.length; i++) {
+
+      if (isOffline) {
+        setStatusLote("PAUSADO: Aguardando conexão de rede...");
+        await new Promise(r => setTimeout(r, 10000));
+        continue;
+      }
       if (cancelarProcessamento.current) break;
 
       const emp = listaAlvo[i];
@@ -596,7 +624,7 @@ export default function HabilitacaoRadar() {
       emp.razaoSocial === "" ||
       emp.razaoSocial === "NÃO ENCONTRADO" ||
       emp.situacao === "ERRO" ||
-      emp.situacao === "NÃO LOCALIZADO - RECONSULTAR"
+      emp.situacao === "SEM STATUS - RECONSULTAR"
     );
 
     if (pendentes.length === 0) {
@@ -663,78 +691,86 @@ export default function HabilitacaoRadar() {
 
   //LOGICA DE FILTROS
 
-  const [ordem, setOrdem] = useState<"asc" | "desc" | null>(null);
-  const [ordemData, setOrdemData] = useState<"recentes" | "antigos" | null>(null);
+  const [ordem, setOrdem] = useState<"todos" | "asc" | "desc" | null>(null);
+  const [ordemData, setOrdemData] = useState<"todos" | "recentes" | "antigos" | null>(null);
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
   const [filtroErro, setFiltroErro] = useState(false);
 
   const [filtroStatus, setFiltroStatus] = useState<"todos" | "erro" | "sucesso">("todos");
 
+  const [filtroSubmodalidade, setFiltroSubmodalidade] = useState<"todos" | "LIMITADA (ATÉ US$ 50.000)" | "LIMITADA (ATÉ US$ 150.000)" | "ILIMITADA">("todos");
 
-  type SubmodalidadeType = "todos" | "LIMITADA (ATÉ US$ 50.000)" | "LIMITADA (ATÉ US$ 150.000)" | "ILIMITADA";
-
-  const [filtroSubmodalidade, setFiltroSubmodalidade] = useState<SubmodalidadeType>("todos");
 
   const empresasExibidas = React.useMemo(() => {
     let resultado = [...empresas];
 
-    if (filtroStatus === "erro") {
-      resultado = resultado.filter(e => e.situacao === "ERRO");
-    } else if (filtroStatus === "sucesso") {
-      resultado = resultado.filter(e => e.situacao !== "ERRO");
-    }
-
-    if (filtroSituacao !== "todos") {
-      resultado = resultado.filter(e => {
-        const sit = (e.situacao || e.situacao || "").toString().toUpperCase();
-        return sit === filtroSituacao.toUpperCase();
-      });
-    }
-
     if (filtroSubmodalidade !== "todos") {
-      resultado = resultado.filter(e => {
-        const sub = (e.submodalidade || "")
-          .toString()
-          .toUpperCase()
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .replace(/\./g, "")
-          .replace(/,/g, "");
-
-        if (filtroSubmodalidade === "LIMITADA (ATÉ US$ 50.000)")
-          return sub.includes("50000");
-
-        if (filtroSubmodalidade === "LIMITADA (ATÉ US$ 150.000)")
-          return sub.includes("150000");
-
-        if (filtroSubmodalidade === "ILIMITADA")
-          return sub.includes("ILIMITADA");
-
-        return true;
-      });
+      resultado = resultado.filter(
+        emp => emp.submodalidade?.trim() === filtroSubmodalidade
+      );
     }
 
-    if (ordem) {
+    console.log("FILTRO ATIVO NO MOMENTO:", filtroSubmodalidade);
+
+    resultado = resultado.filter(e => {
+      const subOriginal = String(e.submodalidade || "");
+      const subNormal = subOriginal.toUpperCase();
+
+      let condSub = true;
+
+      if (filtroSubmodalidade === "LIMITADA (ATÉ US$ 50.000)") {
+        condSub = subNormal.includes("LIMITADA (ATÉ US$ 50.000)");
+
+      }
+      else if (filtroSubmodalidade === "LIMITADA (ATÉ US$ 150.000)") {
+        condSub = subNormal.includes("LIMITADA (ATÉ US$ 150.000)");
+      }
+      else if (filtroSubmodalidade === "ILIMITADA") {
+        condSub = subNormal.includes("ILIMITADA") && !subNormal.includes("50") && !subNormal.includes("150");
+      }
+
+      // FILTROS DE SITUAÇÃO E STATUS 
+      const sitNormal = (e.situacao || "").toUpperCase().trim();
+      let condSit = true;
+      if (filtroSituacao === "SEM STATUS") {
+        condSit = !e.razaoSocial || sitNormal === "" || sitNormal === "PENDENTE RADAR";
+      } else if (filtroSituacao !== "todos") {
+        condSit = sitNormal === filtroSituacao.toUpperCase();
+      }
+
+      return condSub && condSit;
+    });
+
+    console.log("TOTAL APÓS FILTRAR:", resultado.length);
+
+    // ORDENAÇÃO
+    if (ordem && ordem !== "todos") {
       resultado.sort((a, b) =>
         ordem === "asc"
-          ? a.razaoSocial.localeCompare(b.razaoSocial)
-          : b.razaoSocial.localeCompare(a.razaoSocial)
+          ? (a.razaoSocial || "").localeCompare(b.razaoSocial || "")
+          : (b.razaoSocial || "").localeCompare(a.razaoSocial || "")
       );
-    } else if (ordemData) {
+    }
+
+    if (ordemData && ordemData !== "todos") {
       resultado.sort((a, b) => {
         const parse = (d: string) => {
           if (!d) return 0;
-          const partes = d.split('/');
-          return new Date(`${partes[2]}-${partes[1]}-${partes[0]}`).getTime();
+          return d.includes('-') ? new Date(d).getTime() : new Date(d.split('/').reverse().join('-')).getTime();
         };
-        return ordemData === "recentes"
-          ? parse(b.dataConsulta) - parse(a.dataConsulta)
-          : parse(a.dataConsulta) - parse(b.dataConsulta);
+        const dataA = parse(a.dataConsulta);
+        const dataB = parse(b.dataConsulta);
+        return ordemData === "recentes" ? dataB - dataA : dataA - dataB;
       });
     }
 
     return resultado;
-  }, [empresas, ordem, ordemData, filtroStatus, filtroSituacao, filtroSubmodalidade]);
+  }, [empresas, filtroSubmodalidade, filtroSituacao, filtroStatus, ordem, ordemData]);
+
+
+
+
+
 
 
 
@@ -800,7 +836,24 @@ export default function HabilitacaoRadar() {
 
   return (
 
+
+
     <div className="w-full min-h-screen mx-auto px-2 md:px-6 py-6 md:py-10 space-y-8 text-white bg-transparent">
+
+      {isOffline && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[500] animate-in slide-in-from-top-4 duration-500">
+          <div className="bg-rose-600/90 backdrop-blur-xl border border-rose-400/30 px-6 py-3 rounded-2xl shadow-[0_0_30px_rgba(225,29,72,0.4)] flex items-center gap-4">
+            <div className="relative">
+              <WifiOff size={20} className="text-white animate-pulse" />
+              <div className="absolute inset-0 bg-white/20 rounded-full blur-md animate-ping" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black uppercase tracking-widest text-white">Conexão Interrompida</span>
+              <span className="text-[9px] font-bold text-rose-100 uppercase opacity-80">Tentando restabelecer sinal...</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ===== HEADER ===== */}
       <header className="relative flex flex-col gap-4 bg-gradient-to-br from-blue-900/40 to-slate-900 border border-blue-900/50 rounded-3xl p-6 md:p-8 shadow-2xl">
@@ -830,49 +883,58 @@ export default function HabilitacaoRadar() {
 
         <div className="rounded-3xl border border-blue-900/30 bg-gray-900/60 p-6 shadow-2xl backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-blue-600/20 rounded-2xl border border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.1)]">
-              <BarChart3 className="text-blue-400" size={24} />
+            <div className={`p-3 rounded-2xl border transition-all duration-500 ${processando ? "bg-blue-600/20 border-blue-500/20 animate-pulse" : "bg-slate-800/40 border-white/5"
+              }`}>
+              <BarChart3 className={processando ? "text-blue-400" : "text-slate-600"} size={24} />
             </div>
             <div>
               <h2 className="text-lg font-black uppercase tracking-widest text-white leading-none">
-                Dashboard de Monitoramento
+                Monitor de Processamento
               </h2>
               <p className="text-[10px] font-bold text-slate-500 uppercase mt-1 tracking-tighter">
-                Análise em tempo real • {empresas.length} registros na fila
+                {processando ? "Robô em execução" : "Aguardando comando"} • {empresas.length} registros totais
               </p>
             </div>
           </div>
 
           <div className="h-8 w-px bg-blue-900/30 hidden md:block" />
+
           <div className="flex flex-col items-end">
-            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Velocidade</span>
-            <span className="text-xs font-bold text-amber-400 uppercase">
-              {processando ? `${Math.round((processadas / ((Date.now() - tempoInicio) / 1000 / 60)) || 0)} cnpjs/min` : "Ocioso"}
+            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Concluído</span>
+            <span className={`text-xs font-bold uppercase ${processando ? "text-blue-400" : "text-slate-400"}`}>
+              {empresas.length > 0
+                ? Math.round((empresas.filter(e => e.situacao && e.situacao !== "" && e.situacao !== "PENDENTE RADAR").length / empresas.length) * 100)
+                : 0}% Finalizado
             </span>
           </div>
 
           <div className="flex items-center gap-6 pr-2">
             <div className="flex flex-col items-end">
-              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Integridade</span>
-              <span className="text-xs font-bold text-emerald-400">
-                {empresas.length > 0
-                  ? Math.round((empresas.filter(e => e.situacao !== "ERRO").length / empresas.length) * 100)
-                  : 0}%
-              </span>
+              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Sinal de Rede</span>
+              <div className="flex items-center gap-2">
+                <span className={`text-xs font-bold uppercase ${isOffline ? "text-rose-500" : "text-emerald-400"}`}>
+                  {isOffline ? "Desconectado" : "Online"}
+                </span>
+                <div className={`h-2 w-2 rounded-full ${isOffline ? "bg-rose-500 animate-ping" : "bg-emerald-500"}`} />
+              </div>
             </div>
+
             <div className="h-8 w-px bg-blue-900/30 hidden md:block" />
+
             <div className="flex flex-col items-end">
-              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Fonte Ativa</span>
-              <span className="text-xs font-bold text-blue-400 uppercase">
-                {processando ? "Banco Interno" : "API Externa"}
+              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Eficiência</span>
+              <span className="text-xs font-bold text-indigo-400 uppercase">
+                {empresas.length > 0
+                  ? empresas.filter(e => ["DEFERIDA", "HABILITADA", "LIMITADA", "ILIMITADA"].includes(e.situacao?.toUpperCase())).length
+                  : 0} Deferidos
               </span>
             </div>
           </div>
         </div>
 
+
       </section>
 
-      {/* ===== FORM E TEXTAREA (LADO A LADO) ===== */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-6 bg-gray-900/60 border border-gray-700 rounded-3xl p-6 shadow-lg">
           <div className="space-y-2">
@@ -954,8 +1016,10 @@ export default function HabilitacaoRadar() {
               <div className="grid grid-cols-3 gap-2">
                 {(() => {
                   const normalize = (val: any) => String(val || "").toUpperCase();
-
-                  const ate50k = empresas.filter(e => normalize(e.submodalidade).includes("50.000")).length;
+                  const ate50k = empresas.filter(e => {
+                    const txt = normalize(e.submodalidade);
+                    return txt.includes("50.000") && !txt.includes("150.000");
+                  }).length;
                   const ate150k = empresas.filter(e => normalize(e.submodalidade).includes("150.000")).length;
 
                   const ilimitada = empresas.filter(e => {
@@ -1035,12 +1099,16 @@ export default function HabilitacaoRadar() {
                   ></span>
                 </p>
 
-                <h2 className={`text-xl font-black tracking-tighter ${!infosimples?.saldo ? "text-rose-500 animate-pulse" : "text-white"
-                  }`}>
-                  {infosimples?.saldo !== undefined
-                    ? `R$ ${Number(infosimples.saldo).toFixed(2)}`
-                    : "SEM CONEXÃO"}
+                <h2 className={`text-2xl font-black mt-1 ${isOffline ? "" : ""}`}>
+                  {isOffline ? (
+                    <span className="flex items-center gap-2 text-xs">
+                      <Loader2 size={14} className="animate-spin" /> AGUARDANDO REDE...
+                    </span>
+                  ) : (
+                    `R$ ${Number(infosimples?.saldo || 0).toFixed(2)}`
+                  )}
                 </h2>
+
 
 
                 <span className="text-[9px] text-gray-500">
@@ -1061,9 +1129,13 @@ export default function HabilitacaoRadar() {
                     <p className="text-xs uppercase tracking-widest font-bold text-gray-400">
                       Consumo Mensal
                     </p>
-                    <h2 className="text-2xl font-black text-cyan-400 mt-1">
-                      R$ {infosimples.consumo.toFixed(2)}
+                    <h2 className={`text-2xl font-black mt-1 transition-all ${infosimples?.consumo === undefined ? "text-slate-700 italic text-sm" : "text-cyan-400"
+                      }`}>
+                      {infosimples?.consumo !== undefined
+                        ? `R$ ${Number(infosimples.consumo).toFixed(2)}`
+                        : "OFFLINE / SEM SALDO"}
                     </h2>
+
                   </div>
 
                   {/* LADO DIREITO */}
@@ -1124,6 +1196,9 @@ export default function HabilitacaoRadar() {
         setOrdemData={setOrdemData}
         totalSelecionados={selecionados.size}
         onAbrirReconsulta={() => setShowModalReconsulta(true)}
+
+        filtroSubmodalidade={filtroSubmodalidade}
+        setFiltroSubmodalidade={setFiltroSubmodalidade}
       />
 
 
@@ -1207,7 +1282,7 @@ export default function HabilitacaoRadar() {
                         : "text-rose-400 bg-rose-500/10"
                       }`}
                   >
-                    {empresa.situacao || "NÃO LOCALIZADO"}
+                    {empresa.situacao || "SEM STATUS"}
                   </span>
                 </td>
                 <td className="p-2" onClick={() => setEmpresaSelecionada(empresa)}>

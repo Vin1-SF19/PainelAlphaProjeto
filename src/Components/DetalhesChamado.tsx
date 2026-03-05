@@ -13,7 +13,7 @@ export default function DetalhesChamado({ chamado, isAdmin }: any) {
     let solucao = "";
     if (status === "CONCLUIDO") {
       solucao = prompt("Descreva a solução aplicada:") || "";
-      if (!solucao) return; // Cancela se não escrever solução
+      if (!solucao) return; 
     }
     
     await updateChamadosStatus(chamado.id, status, solucao);
@@ -25,7 +25,7 @@ export default function DetalhesChamado({ chamado, isAdmin }: any) {
       <Button 
         onClick={() => setOpen(true)}
         variant="ghost" 
-        className="text-blue-500 hover:text-blue-400 hover:bg-blue-500/10 font-bold"
+        className="cursor-pointer text-blue-500 hover:text-blue-400 hover:bg-blue-500/10 font-bold"
       >
         Ver Detalhes
       </Button>
@@ -83,13 +83,13 @@ export default function DetalhesChamado({ chamado, isAdmin }: any) {
               <div className="grid grid-cols-2 gap-4 pt-6 border-t border-slate-800">
                 <Button 
                   onClick={() => handleStatus("EM_ATENDIMENTO")}
-                  className="bg-slate-800 hover:bg-slate-700 text-amber-500 border border-amber-500/20 h-12 font-bold rounded-xl"
+                  className="cursor-pointer bg-slate-800 hover:bg-slate-700 text-amber-500 border border-amber-500/20 h-12 font-bold rounded-xl"
                 >
                   <Clock className="mr-2 w-4 h-4" /> Em curso
                 </Button>
                 <Button 
                   onClick={() => handleStatus("CONCLUIDO")}
-                  className="bg-blue-600 hover:bg-blue-500 text-white h-12 font-bold rounded-xl shadow-lg shadow-blue-900/20"
+                  className="cursor-pointer bg-blue-600 hover:bg-blue-500 text-white h-12 font-bold rounded-xl shadow-lg shadow-blue-900/20"
                 >
                   <CheckCircle className="mr-2 w-4 h-4" /> Finalizar
                 </Button>

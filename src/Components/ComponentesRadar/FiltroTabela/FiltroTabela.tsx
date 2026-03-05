@@ -9,22 +9,23 @@ import {
     XCircle,
     Ban,
     PauseCircle,
-    ShieldCheck
+    ShieldCheck,
+    Ghost
 } from "lucide-react";
 
 type Props = {
-    ordem: "asc" | "desc" | null;
-    ordemData: "recentes" | "antigos" | null;
-    filtroStatus: "todos" | "erro" | "sucesso" | "NÃO LOCALIZADO";
-    filtroSituacao: "todos" | "DEFERIDA" | "NÃO HABILITADA" | "SUSPENSA";
+    ordem: "todos" | "asc" | "desc" | null;
+    ordemData: "todos" | "recentes" | "antigos" | null;
+    filtroStatus: "todos" | "erro" | "sucesso";
+    filtroSituacao: "todos" | "DEFERIDA" | "NÃO HABILITADA" | "SUSPENSA" | "SEM STATUS";
 
-    setOrdem: (v: "asc" | "desc" | null) => void;
-    setOrdemData: (v: "recentes" | "antigos" | null) => void;
-    setFiltroStatus: (v: "todos" | "erro" | "sucesso" | "NÃO LOCALIZADO") => void;
+    setOrdem: (v: "todos" | "asc" | "desc" | null) => void;
+    setOrdemData: (v: "todos" | "recentes" | "antigos" | null) => void;
+    setFiltroStatus: (v: "todos" | "erro" | "sucesso") => void;
 
     setFiltroSituacao: React.Dispatch<
         React.SetStateAction<
-            "todos" | "DEFERIDA" | "NÃO HABILITADA" | "SUSPENSA"
+            "todos" | "DEFERIDA" | "NÃO HABILITADA" | "SUSPENSA" | "SEM STATUS"
         >
     >;
 
@@ -43,7 +44,11 @@ type Props = {
     onDeletarDoBanco: () => void;
 
     filtroSubmodalidade: "todos" | "LIMITADA (ATÉ US$ 50.000)" | "LIMITADA (ATÉ US$ 150.000)" | "ILIMITADA";
-    setFiltroSubmodalidade: (v: "todos" | "LIMITADA (ATÉ US$ 50.000)" | "LIMITADA (ATÉ US$ 150.000)" | "ILIMITADA") => void;
+    setFiltroSubmodalidade: React.Dispatch<
+        React.SetStateAction<
+            "todos" | "LIMITADA (ATÉ US$ 50.000)" | "LIMITADA (ATÉ US$ 150.000)" | "ILIMITADA"
+        >
+    >;
 
 };
 
@@ -141,7 +146,7 @@ export default function FiltrosPopover({
 
                     <div className="flex gap-2 mb-3">
                         <button
-                            onClick={() => setOrdem("asc")}
+                            onClick={() => setOrdem(ordem === "asc" ? "todos" : "asc")}
                             className={`flex-1 px-3 py-2 rounded-lg border text-xs ${ordem === "asc"
                                 ? "bg-blue-600 text-white border-blue-400"
                                 : "bg-slate-800 border-slate-700 text-slate-400"
@@ -152,7 +157,7 @@ export default function FiltrosPopover({
                         </button>
 
                         <button
-                            onClick={() => setOrdem("desc")}
+                            onClick={() => setOrdem(ordem === "desc" ? "todos" : "desc")}
                             className={`flex-1 px-3 py-2 rounded-lg border text-xs ${ordem === "desc"
                                 ? "bg-blue-600 text-white border-blue-400"
                                 : "bg-slate-800 border-slate-700 text-slate-400"
@@ -165,7 +170,7 @@ export default function FiltrosPopover({
 
                     <div className="flex gap-2 mb-4">
                         <button
-                            onClick={() => setOrdemData("recentes")}
+                            onClick={() => setOrdemData(ordemData === "recentes" ? "todos" : "recentes")}
                             className={`flex-1 px-3 py-2 rounded-lg border text-xs ${ordemData === "recentes"
                                 ? "bg-blue-600 text-white border-blue-400"
                                 : "bg-slate-800 border-slate-700 text-slate-400"
@@ -176,7 +181,7 @@ export default function FiltrosPopover({
                         </button>
 
                         <button
-                            onClick={() => setOrdemData("antigos")}
+                            onClick={() => setOrdemData(ordemData === "antigos" ? "todos" : "antigos")}
                             className={`flex-1 px-3 py-2 rounded-lg border text-xs ${ordemData === "antigos"
                                 ? "bg-blue-600 text-white border-blue-400"
                                 : "bg-slate-800 border-slate-700 text-slate-400"
@@ -194,7 +199,7 @@ export default function FiltrosPopover({
 
                     <div className="grid grid-cols-2 gap-2 mb-4">
                         <button
-                            onClick={() => setFiltroStatus("sucesso")}
+                            onClick={() => setFiltroStatus(filtroStatus === "sucesso" ? "todos" : "sucesso")}
                             className={`flex-1 px-3 py-2 rounded-lg border text-xs ${filtroStatus === "sucesso"
                                 ? "bg-emerald-600 text-white border-emerald-400"
                                 : "bg-slate-800 border-slate-700 text-slate-400"
@@ -205,7 +210,7 @@ export default function FiltrosPopover({
                         </button>
 
                         <button
-                            onClick={() => setFiltroStatus("erro")}
+                            onClick={() => setFiltroStatus(filtroStatus === "erro" ? "todos" : "erro")}
                             className={`flex-1 px-3 py-2 rounded-lg border text-xs ${filtroStatus === "erro"
                                 ? "bg-rose-600 text-white border-rose-400"
                                 : "bg-slate-800 border-slate-700 text-slate-400"
@@ -217,16 +222,20 @@ export default function FiltrosPopover({
 
                     </div>
 
-                
+
                     <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3 mt-4">
                         Submodalidade
                     </h3>
                     <div className="flex flex-col gap-2 mb-4">
                         <button
-                            onClick={() => setFiltroSubmodalidade(filtroSubmodalidade === "LIMITADA (ATÉ US$ 50.000)" ? "todos" : "LIMITADA (ATÉ US$ 50.000)")}
+                            onClick={() => {
+                                const valor = filtroSubmodalidade === "LIMITADA (ATÉ US$ 50.000)" ? "todos" : "LIMITADA (ATÉ US$ 50.000)";
+                                console.log("CLIQUE NO FILTRO SUB:", valor);
+                                setFiltroSubmodalidade(valor);
+                            }}
                             className={`px-3 py-2 rounded-lg border text-xs transition-all ${filtroSubmodalidade === "LIMITADA (ATÉ US$ 50.000)"
-                                    ? "bg-blue-600 text-white border-blue-400"
-                                    : "bg-slate-800 border-slate-700 text-slate-400"
+                                ? "bg-blue-600 text-white border-blue-400"
+                                : "bg-slate-800 border-slate-700 text-slate-400"
                                 }`}
                         >
                             50k
@@ -235,8 +244,8 @@ export default function FiltrosPopover({
                         <button
                             onClick={() => setFiltroSubmodalidade(filtroSubmodalidade === "LIMITADA (ATÉ US$ 150.000)" ? "todos" : "LIMITADA (ATÉ US$ 150.000)")}
                             className={`px-3 py-2 rounded-lg border text-xs transition-all ${filtroSubmodalidade === "LIMITADA (ATÉ US$ 150.000)"
-                                    ? "bg-orange-600 text-white border-orange-400"
-                                    : "bg-slate-800 border-slate-700 text-slate-400"
+                                ? "bg-orange-600 text-white border-orange-400"
+                                : "bg-slate-800 border-slate-700 text-slate-400"
                                 }`}
                         >
                             150k
@@ -245,8 +254,8 @@ export default function FiltrosPopover({
                         <button
                             onClick={() => setFiltroSubmodalidade(filtroSubmodalidade === "ILIMITADA" ? "todos" : "ILIMITADA")}
                             className={`px-3 py-2 rounded-lg border text-xs transition-all ${filtroSubmodalidade === "ILIMITADA"
-                                    ? "bg-purple-600 text-white border-purple-400"
-                                    : "bg-slate-800 border-slate-700 text-slate-400"
+                                ? "bg-purple-600 text-white border-purple-400"
+                                : "bg-slate-800 border-slate-700 text-slate-400"
                                 }`}
                         >
                             Ilimitada
@@ -261,7 +270,7 @@ export default function FiltrosPopover({
 
                     <div className="flex flex-col gap-2 mb-4">
                         <button
-                            onClick={() => setFiltroSituacao("DEFERIDA")}
+                            onClick={() => setFiltroSituacao(filtroSituacao === "DEFERIDA" ? "todos" : "DEFERIDA")}
                             className={`px-3 py-2 rounded-lg border text-xs ${filtroSituacao === "DEFERIDA"
                                 ? "bg-emerald-600 text-white border-emerald-400"
                                 : "bg-slate-800 border-slate-700 text-slate-400"
@@ -272,7 +281,7 @@ export default function FiltrosPopover({
                         </button>
 
                         <button
-                            onClick={() => setFiltroSituacao("NÃO HABILITADA")}
+                            onClick={() => setFiltroSituacao(filtroSituacao === "NÃO HABILITADA" ? "todos" : "NÃO HABILITADA")}
                             className={`px-3 py-2 rounded-lg border text-xs ${filtroSituacao === "NÃO HABILITADA"
                                 ? "bg-yellow-600 text-white border-yellow-400"
                                 : "bg-slate-800 border-slate-700 text-slate-400"
@@ -283,7 +292,7 @@ export default function FiltrosPopover({
                         </button>
 
                         <button
-                            onClick={() => setFiltroSituacao("SUSPENSA")}
+                            onClick={() => setFiltroSituacao(filtroSituacao === "SUSPENSA" ? "todos" : "SUSPENSA")}
                             className={`px-3 py-2 rounded-lg border text-xs ${filtroSituacao === "SUSPENSA"
                                 ? "bg-orange-600 text-white border-orange-400"
                                 : "bg-slate-800 border-slate-700 text-slate-400"
@@ -291,6 +300,17 @@ export default function FiltrosPopover({
                         >
                             <PauseCircle size={14} />
                             SUSPENSA
+                        </button>
+
+                        <button
+                            onClick={() => setFiltroSituacao(filtroSituacao === "SEM STATUS" ? "todos" : "SEM STATUS")}
+                            className={`px-3 py-2 rounded-lg border text-xs ${filtroSituacao === "SEM STATUS"
+                                ? "bg-red-600 text-white border-red-400"
+                                : "bg-slate-800 border-slate-700 text-slate-400"
+                                }`}
+                        >
+                            <Ghost size={14} />
+                            SEM STATUS
                         </button>
                     </div>
 

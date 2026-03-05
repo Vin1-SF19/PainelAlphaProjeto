@@ -38,11 +38,11 @@ export async function GET() {
         });
 
     } catch (error) {
-        console.error("FALHA DE CONEXÃO INFOSIMPLES");
         return NextResponse.json({ 
             saldo: 0, 
+            consumo: 0, 
             status: "offline",
-            message: "Verifique sua conexão com a internet"
+            message: "Erro de conexão" 
         });
     }
 }

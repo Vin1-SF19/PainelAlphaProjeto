@@ -4,25 +4,22 @@ import CadastroUsuarios from "@/Components/FormCadastro";
 import { redirect } from 'next/navigation';
 
 export default async function CadastroPage() {
-
   const session = await auth();
-
-  if (session?.user?.role !== "Admin" && !session?.user?.permissoes?.includes("cadastro")) {
-    redirect("/"); // Expulsa se tentar entrar pelo link
-  }
 
   if (!session) {
     redirect("/");
   }
 
+  if (session?.user?.role !== "Admin" && !session?.user?.permissoes?.includes("cadastro")) {
+    redirect("/"); 
+  }
+
   return (
-    <section className="SectionUser">
-      <HeaderUser user={session?.user} />
+    <main className="min-h-screen bg-[#020617] flex flex-col">
 
-
-      <div className="ContainerUser m-5 grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+      <div className="flex-1 w-full h-full flex flex-col overflow-hidden">
         <CadastroUsuarios />
       </div>
-    </section>
+    </main>
   );
 }

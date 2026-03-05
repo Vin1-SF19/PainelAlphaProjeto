@@ -9,31 +9,33 @@ datasource db {
 }
 
 model usuarios {
-  id               Int        @id @default(autoincrement())
+  id               Int                @id @default(autoincrement())
   nome             String
-  usuario          String     @unique
-  email            String     @unique
+  usuario          String             @unique
+  email            String             @unique
   senha            String
-  role             String     @default("User")
+  role             String             @default("User")
   permissoes       String?
-  chamados_criados chamados[] @relation("Solicitante")
+  chamados_criados chamados[]         @relation("Solicitante")
+  mensagens        MensagensChamado[]
 
   reset_token   String?
   reset_expires DateTime?
 }
 
 model chamados {
-  id          Int      @id @default(autoincrement())
+  id          Int                @id @default(autoincrement())
   titulo      String
   descricao   String
   categoria   String
-  status      String   @default("ABERTO")
-  prioridade  String   @default("MEDIA")
+  status      String             @default("ABERTO")
+  prioridade  String             @default("MEDIA")
   solucao     String?
   usuarioId   Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  solicitante usuarios @relation("Solicitante", fields: [usuarioId], references: [id], onDelete: Cascade)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  solicitante usuarios           @relation("Solicitante", fields: [usuarioId], references: [id], onDelete: Cascade)
+  mensagens   MensagensChamado[]
 
   @@index([usuarioId])
   @@index([status])
@@ -106,10 +108,10 @@ model clientes {
   dataContratacao     String?
   dataExito           String?
   ultimoCs            Int?           @default(0)
-  nps                 Int?          
+  nps                 Int?
   feedbackGoogle      Boolean        @default(false)
-  createdAt           String     @default("")
-  updatedAt           String     @default("")
+  createdAt           String         @default("")
+  updatedAt           String         @default("")
   log_cs              log_cs[]
   socios              socios[]
   logFeedback         logFeedback[]
@@ -166,11 +168,28 @@ model logAlteracao {
   @@map("logAlteracao")
 }
 
-
 model ordemPastas {
   id        Int     @id @default(autoincrement())
   setor     String  @unique
-  ordem     String  
-  createdAt String?  
+  ordem     String
+  createdAt String?
   updatedAt String?
+}
+
+model MensagensChamado {
+  id        Int      @id @default(autoincrement())
+  texto     String?
+  createdAt DateTime @default(now())
+
+  chamado   chamados @relation(fields: [chamadoId], references: [id], onDelete: Cascade)
+  chamadoId Int
+  
+  lida_admin   Boolean @default(false)
+  lida_usuario Boolean @default(false)
+
+  arquivoUrl   String?
+  arquivoTipo  String?  
+
+  autor   usuarios @relation(fields: [autorId], references: [id])
+  autorId Int
 }

@@ -1,0 +1,17 @@
+const chamados = await db.chamados.findMany({
+    where: { ...(isAdmin ? {} : { usuarioId: userId }) },
+    include: {
+        _count: {
+            select: {
+                mensagens: {
+                    where: {
+                        AND: [
+                            { autorId: { not: userId } },
+                            isAdmin ? { lida_admin: false } : { lida_usuario: false }
+                        ]
+                    }
+                }
+            }
+        }
+    }
+});
