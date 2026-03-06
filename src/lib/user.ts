@@ -9,6 +9,11 @@ type User = {
   senha?: string;
   role: string;
   permissoes: string[];
+  imagemUrl?: string | null;
+  atalhos?: string | null;           
+  tema_interface?: string | null;     
+  densidade_painel?: string | null;  
+  esconderBloqueados?: boolean;      
 };
 
 export async function findUserByCredentials(
@@ -19,7 +24,6 @@ export async function findUserByCredentials(
     where: { email },
   });
   
-  console.log("EMAIL:", email)
   if (!user) return null;
 
   const passwordMatch = compareSync(senha, user.senha);
@@ -32,5 +36,10 @@ export async function findUserByCredentials(
     nome: user.nome,
     role: user.role,
     permissoes: user.permissoes?.split(",") ?? [],
+    imagemUrl: (user as any).imagemUrl ?? null,
+    atalhos: (user as any).atalhos ?? null,
+    tema_interface: (user as any).tema_interface ?? "blue",
+    densidade_painel: (user as any).densidade_painel ?? "default",
+    esconderBloqueados: !!(user as any).esconderBloqueados,
   };
 }

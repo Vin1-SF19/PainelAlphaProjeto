@@ -9,6 +9,9 @@ declare module "next-auth" {
       email: string;
       role: string;
       permissoes?: string[];
+      imagemUrl?: string | null;
+      atalhos?: string | null;
+      esconderBloqueados: boolean;
     };
   }
 
@@ -19,6 +22,7 @@ declare module "next-auth" {
     email: string;
     role: string;
     permissoes?: string | string[];
+    atalhos?: string | null;
   }
 }
 

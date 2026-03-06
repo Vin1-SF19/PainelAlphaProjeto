@@ -7,8 +7,7 @@ import { DayPicker } from 'react-day-picker';
 import { ptBR } from 'date-fns/locale';
 import 'react-day-picker/dist/style.css';
 import { agendarSala, liberarSala, buscarReservasAtivas, editarReserva, cancelarReserva, buscarHistoricoReservas } from '@/actions/Reservas';
-import LogoutButton from '@/Components/LogoutUser';
-import { BotaoVoltar } from '@/Components/BotaoVoltar';
+import { BotaoVoltar } from '@/components/BotaoVoltar';
 
 export default function ReservaSalas() {
   const { data: session, status } = useSession();

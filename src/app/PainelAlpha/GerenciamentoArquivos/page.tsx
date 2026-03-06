@@ -6,7 +6,7 @@ import { uploadDocumento } from "@/actions/UploadDocs";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react"
-import { Switch } from "@/Components/ui/switch";
+import { Switch } from "@/components/ui/switch";
 
 const SETORES = ["REGRAS GERAIS", "OPERACIONAL", "COMERCIAL", "RECURSOS HUMANOS", "FINANCEIRO", "JURÍDICO", "PARCEIRO", "SERVIÇOS GERAIS"];
 

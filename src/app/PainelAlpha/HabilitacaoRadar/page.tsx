@@ -1,11 +1,10 @@
 "use client";
 
-import { BotaoVoltar } from "@/Components/BotaoVoltar";
-import ModalButtons from "@/Components/ComponentesRadar/BotoesModal";
-import LoadingImport from "@/Components/ComponentesRadar/ImportacaoLoading";
-import ImportarPlanilha from "@/Components/ComponentesRadar/ImportacaoLote";
-import LogoutButton from "@/Components/LogoutUser";
-import { ModalDetalhesEmpresa } from "@/Components/ModalDetalhesEmpresa";
+import { BotaoVoltar } from "@/components/BotaoVoltar";
+import ModalButtons from "@/components/ComponentesRadar/BotoesModal";
+import LoadingImport from "@/components/ComponentesRadar/ImportacaoLoading";
+import ImportarPlanilha from "@/components/ComponentesRadar/ImportacaoLote";
+import { ModalDetalhesEmpresa } from "@/components/ModalDetalhesEmpresa";
 import { useState, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
 import { deletarRegistrosBanco, registrarNovoArquivo, salvarConsultaIndividual, salvarDadosNoBanco, salvarPlanilhaCompleta } from "@/actions/RadarAction";
@@ -13,7 +12,7 @@ import { toast } from "sonner";
 import React from "react";
 import { BarChart3, Loader2, WifiOff } from "lucide-react";
 import { prepararReconsultaLote } from "@/app/api/Reconsulta/ReconsultaRadar";
-import ModalOpcoesReconsulta from "@/Components/ComponentesRadar/BotaoReconsulta/BotaoReconsulta";
+import ModalOpcoesReconsulta from "@/components/ComponentesRadar/BotaoReconsulta/BotaoReconsulta";
 
 export default function HabilitacaoRadar() {
 
@@ -871,7 +870,6 @@ export default function HabilitacaoRadar() {
         </div>
 
         <div className=" top-6 right-6 lg:top-8 lg:right-8">
-          <LogoutButton />
         </div>
       </header>
 

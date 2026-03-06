@@ -59,11 +59,11 @@ export default function ModalLogAuditoria({ isOpen, onClose, cliente, aoSalvar }
 
             if (res.success) {
                 toast.success("Versão restaurada!");
-                onClose(); // Fecha o modal do olho
-                if (aoSalvar) await aoSalvar(); // Atualiza a tabela pai
+                onClose();
+                if (aoSalvar) await aoSalvar(); 
                 router.refresh();
             } else {
-                // MOSTRA O ERRO REAL NO TOAST
+                
                 toast.error("Erro: " + res.error);
             }
         } catch (error) {

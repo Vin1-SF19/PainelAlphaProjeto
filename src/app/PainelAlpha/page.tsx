@@ -1,6 +1,6 @@
 import { auth } from "../../../auth";
 import { redirect } from "next/navigation";
-import PainelAlphaClient from "@/Components/PainelAlphaClient";
+import PainelAlphaClient from "@/components/PainelAlphaClient";
 import db from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";

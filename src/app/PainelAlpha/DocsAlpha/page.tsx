@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { FileText, Eye, Search, ShieldCheck, Globe, ChevronRight, Folder, Trash2, ShieldAlert, Lock, Video, Settings, Star, ChevronDown, ChevronUp, GripVertical, Edit3, Check, X } from "lucide-react";
-import { BotaoVoltar } from "@/Components/BotaoVoltar";
+import { BotaoVoltar } from "@/components/BotaoVoltar";
 import { toast } from "sonner";
 import AntiCapture from 'react-anticapture';
 import { buscarOrdemPastas, salvarOrdemPastas } from "@/actions/OrdemPastas";

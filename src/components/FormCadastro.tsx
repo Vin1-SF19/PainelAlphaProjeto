@@ -10,12 +10,12 @@ import {
 import { toast } from "sonner";
 import Form from "next/form";
 
-import { Button } from "@/Components/ui/button";
-import { Input } from "@/Components/ui/input";
-import { Label } from "@/Components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Switch } from "./ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/Components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { getUsers } from "@/actions/get-user";
 import { deleteUser, updateUser } from "@/actions/manage-user";
@@ -225,7 +225,7 @@ export default function CadastroUsuarios() {
                   </Select>
                 </div>
 
-                <Button type="submit" disabled={isPending} className="w-full h-16 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-black uppercase tracking-[0.4em] rounded-[1.5rem] shadow-2xl shadow-blue-900/30 transition-all active:scale-95 group">
+                <Button type="submit" disabled={isPending} className="cursor-pointer w-full h-16 bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-black uppercase tracking-[0.4em] rounded-[1.5rem] shadow-2xl shadow-blue-900/30 transition-all active:scale-95 group ">
                   {isPending ? <LoaderCircle className="animate-spin" /> : "Gerar Acesso"}
                 </Button>
               </Form>
@@ -266,9 +266,19 @@ export default function CadastroUsuarios() {
                   {filteredUsers.map((user) => (
                     <div key={user.id} className="group relative flex flex-col gap-4 p-5 rounded-[2rem] border border-white/5 bg-black/40 hover:bg-slate-900/60 hover:border-blue-500/30 transition-all duration-500 overflow-hidden">
                       <div className="flex items-center gap-4">
-                        <div className="shrink-0 h-12 w-12 rounded-2xl bg-gradient-to-br from-slate-800 to-black border border-white/10 flex items-center justify-center text-blue-400 font-black text-xs group-hover:rotate-12 transition-transform duration-500 shadow-xl">
-                          {user.nome ? user.nome.substring(0, 2).toUpperCase() : "U"}
+                        <div className="shrink-0 h-12 w-12 rounded-2xl bg-gradient-to-br from-slate-800 to-black border border-white/10 flex items-center justify-center text-blue-400 font-black text-xs group-hover:rotate-12 transition-transform duration-500 shadow-xl overflow-hidden">
+                          
+                          {user.imagemUrl ? (
+                            <img
+                              src={user.imagemUrl}
+                              alt={user.nome}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            user.nome ? user.nome.substring(0, 2).toUpperCase() : "U"
+                          )}
                         </div>
+
                         <div className="flex-1 min-w-0">
                           <h4 className="text-[13px] font-black text-white uppercase truncate tracking-widest italic">{user.nome || user.usuario}</h4>
                           <div className="flex items-center gap-2 mt-1">

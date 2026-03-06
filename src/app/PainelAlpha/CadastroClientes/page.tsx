@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     Plus,
     Filter,
@@ -15,7 +15,7 @@ import {
     CheckCircle2,
     AlertCircle
 } from "lucide-react";
-import { BotaoVoltar } from "@/Components/BotaoVoltar";
+import { BotaoVoltar } from "@/components/BotaoVoltar";
 import ModalCadastroCliente from "./ModalCadastro/modal";
 import { buscarClientes } from "@/actions/Clientes";
 import ModalGestaoCliente from './ModalCadastro/modalDados';
@@ -28,6 +28,7 @@ export const dynamic = 'force-dynamic';
 
 
 export default function CadastroCliente() {
+
     const { data: session } = useSession();
 
     const [clientes, setClientes] = useState<any[]>([]);
@@ -37,15 +38,46 @@ export default function CadastroCliente() {
 
     const [modalFiltroAberto, setModalFiltroAberto] = useState(false);
     const [busca, setBusca] = useState("");
-
-    const clientesFiltrados = clientes.filter(c =>
-        c.razaoSocial?.toLowerCase().includes(busca.toLowerCase()) ||
-        c.cnpj?.includes(busca.replace(/\D/g, "")) ||
-        c.nomeFantasia?.toLowerCase().includes(busca.toLowerCase())
-    );
     const [ordenacao, setOrdenacao] = useState({ campo: 'razaoSocial', direcao: 'asc' });
     const [modalLogAberto, setModalLogAberto] = useState(false);
     const [clienteParaLog, setClienteParaLog] = useState<any>(null);
+    const [termoBusca, setTermoBusca] = useState("");
+
+    const clientesProcessados = useMemo(() => {
+        const filtrados = clientes.filter((c:
+
+            any) => {
+            const busca = termoBusca.toLowerCase();
+            const cnpjLimpo = busca.replace(/\D/g, "");
+
+            return (
+                c.razaoSocial?.toLowerCase().includes(busca) ||
+                c.nomeFantasia?.toLowerCase().includes(busca) ||
+                c.analistaResponsavel?.toLowerCase().includes(busca) ||
+                (cnpjLimpo && c.cnpj?.includes(cnpjLimpo))
+            );
+        });
+
+        return [...filtrados].sort((a, b) => {
+            let valA = a[ordenacao.campo];
+            let valB = b[ordenacao.campo];
+
+            if (ordenacao.campo.toLowerCase().includes('data')) {
+                valA = valA ? new Date(valA).getTime() : 0;
+                valB = valB ? new Date(valB).getTime() : 0;
+            } else {
+                valA = valA ? valA.toString().toLowerCase() : "";
+                valB = valB ? valB.toString().toLowerCase() : "";
+            }
+
+            if (ordenacao.direcao === 'asc') {
+                return valA > valB ? 1 : -1;
+            } else {
+                return valA < valB ? 1 : -1;
+            }
+        });
+    }, [termoBusca, clientes, ordenacao]);
+
 
 
 
@@ -67,39 +99,14 @@ export default function CadastroCliente() {
     }, []);
 
 
-    const clientesOrdenados = [...clientesFiltrados].sort((a, b) => {
-        let valA = a[ordenacao.campo];
-        let valB = b[ordenacao.campo];
-
-
-
-        if (ordenacao.campo.toLowerCase().includes('data')) {
-            valA = valA ? new Date(valA).getTime() : 0;
-            valB = valB ? new Date(valB).getTime() : 0;
-        } else {
-            valA = valA ? valA.toString().toLowerCase() : "";
-            valB = valB ? valB.toString().toLowerCase() : "";
-        }
-
-        if (ordenacao.direcao === 'asc') {
-            return valA > valB ? 1 : -1;
-        } else {
-            return valA < valB ? 1 : -1;
-        }
-    });
-
-
-
-
-
-
     const [modalAberto, setModalAberto] = useState(false);
+
+
 
     return (
         <div className="min-h-screen bg-[#020617] text-slate-200 font-sans selection:bg-indigo-500/30">
             <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-8 space-y-8">
 
-                {/* HEADER MODERNO */}
                 <header className="relative flex flex-col md:flex-row md:items-center justify-between gap-6 p-8 rounded-[2rem] bg-slate-900/40 border border-white/5 backdrop-blur-md shadow-2xl">
                     <div className="space-y-2">
                         <div className="flex items-center gap-3">
@@ -121,13 +128,15 @@ export default function CadastroCliente() {
                     </div>
                 </header>
 
-                {/* BARRA DE AÇÕES (BOTÕES SOLICITADOS) */}
+                {/* BARRA DE AÇÕES */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center bg-slate-900/20 p-4 rounded-2xl border border-white/5">
                     <div className="lg:col-span-4 relative group">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-indigo-400 transition-colors" size={18} />
                         <input
                             type="text"
                             placeholder="Pesquisar cliente ou analista..."
+                            value={termoBusca}
+                            onChange={(e) => setTermoBusca(e.target.value)}
                             className="w-full bg-slate-950/50 border border-slate-800 rounded-xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all"
                         />
                     </div>
@@ -203,10 +212,10 @@ export default function CadastroCliente() {
                             <tbody className="divide-y divide-white/5">
                                 {carregando ? (
                                     <tr><td colSpan={9} className="py-10 text-center animate-pulse text-slate-500 uppercase font-black text-xs tracking-widest">Sincronizando base de dados...</td></tr>
-                                ) : clientesOrdenados.length === 0 ? (
+                                ) : clientesProcessados.length === 0 ? (
                                     <tr><td colSpan={9} className="py-20 text-center text-slate-600 font-bold uppercase text-[10px] tracking-[0.3em]">Nenhum registro encontrado</td></tr>
                                 ) : (
-                                    clientesOrdenados.map((c) => (
+                                    clientesProcessados.map((c) => (
                                         <tr key={c.id} className="hover:bg-indigo-500/[0.02] transition-colors group">
                                             {/* STATUS */}
                                             <td className="px-6 py-4">

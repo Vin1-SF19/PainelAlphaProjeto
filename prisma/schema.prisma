@@ -9,15 +9,22 @@ datasource db {
 }
 
 model usuarios {
-  id               Int                @id @default(autoincrement())
-  nome             String
-  usuario          String             @unique
-  email            String             @unique
-  senha            String
-  role             String             @default("User")
-  permissoes       String?
-  chamados_criados chamados[]         @relation("Solicitante")
-  mensagens        MensagensChamado[]
+  id                 Int                @id @default(autoincrement())
+  nome               String
+  usuario            String             @unique
+  email              String             @unique
+  senha              String
+  role               String             @default("User")
+  permissoes         String?
+  chamados_criados   chamados[]         @relation("Solicitante")
+  mensagens          MensagensChamado[]
+  Auditoria          Auditoria[]
+  imagemUrl          String?
+  esconderBloqueados Boolean            @default(false)
+
+  atalhos          String? @default("radar,chamados")
+  tema_interface   String? @default("blue") 
+  densidade_painel String? @default("default") 
 
   reset_token   String?
   reset_expires DateTime?
@@ -183,13 +190,24 @@ model MensagensChamado {
 
   chamado   chamados @relation(fields: [chamadoId], references: [id], onDelete: Cascade)
   chamadoId Int
-  
+
   lida_admin   Boolean @default(false)
   lida_usuario Boolean @default(false)
 
-  arquivoUrl   String?
-  arquivoTipo  String?  
+  arquivoUrl  String?
+  arquivoTipo String?
 
   autor   usuarios @relation(fields: [autorId], references: [id])
   autorId Int
+}
+
+model Auditoria {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  acao      String
+  detalhes  String?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  usuario usuarios @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

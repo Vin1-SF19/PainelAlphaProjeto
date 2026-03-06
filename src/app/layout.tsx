@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
 import { Toaster } from "sonner";
-import { StatusConexao } from "@/Components/StatusConexao";
+import { StatusConexao } from "@/components/StatusConexao";
+import { ThemeProviderAlpha } from "@/components/ThemeProviderAlpha";
 
 export const metadata: Metadata = {
   title: "Painel Alpha | Sistema de Gestão",
@@ -18,17 +19,20 @@ export default function RootLayout({
     <html lang="pt-br" className="dark">
       <body className="antialiased selection:bg-blue-500/30">
         <SessionProvider>
-          <Toaster 
-            theme="dark" 
-            position="top-right" 
-            richColors 
+          <Toaster
+            theme="dark"
+            position="top-right"
+            richColors
             closeButton
             expand={false}
           />
           <StatusConexao />
-          {children}
+          <ThemeProviderAlpha>
+
+            {children}
+          </ThemeProviderAlpha>
         </SessionProvider>
       </body>
-    </html>
+    </html >
   );
 }

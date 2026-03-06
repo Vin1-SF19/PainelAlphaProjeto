@@ -20,7 +20,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!user) return null;
 
-        // RETORNO COMPLETO
         return {
           id: String(user.id),
           email: user.email,
@@ -28,6 +27,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           usuario: user.usuario,
           role: user.role,
           permissoes: (user as any).permissoes,
+          imagemUrl: (user as any).imagemUrl,
+          atalhos: (user as any).atalhos,
+          tema_interface: (user as any).tema_interface,
+          densidade_painel: (user as any).densidade_painel,
+          esconderBloqueados: (user as any).esconderBloqueados,
         };
       },
     }),
@@ -35,7 +39,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
   session: {
     strategy: "jwt",
-    maxAge: 60 * 60 * 24, // Expira em 24h se o navegador continuar aberto
+    maxAge: 60 * 60 * 24,
   },
 
   cookies: {
@@ -50,23 +54,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
 
-  jwt: {
-    maxAge:
-
-      60 * 60 * 24,
-  },
-
   callbacks: {
-    async jwt({ token, user }) {
-      // PRIMEIRO LOGIN
-      maxAge: 60 * 60 * 24
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
         token.email = user.email;
-        token.nome = user.nome;
-        token.usuario = user.usuario;
-        token.role = user.role;
+        token.nome = (user as any).nome;
+        token.usuario = (user as any).usuario;
+        token.role = (user as any).role;
         token.permissoes = (user as any).permissoes;
+        token.imagemUrl = (user as any).imagemUrl;
+        token.atalhos = (user as any).atalhos;
+        token.esconderBloqueados = (user as any).esconderBloqueados;
+        token.tema_interface = (user as any).tema_interface;
+        token.densidade_painel = (user as any).densidade_painel;
+      }
+
+      if (trigger === "update" && session?.user) {
+        if (session.user.imagemUrl !== undefined) token.imagemUrl = session.user.imagemUrl;
+        if (session.user.atalhos !== undefined) token.atalhos = session.user.atalhos;
+        if (session.user.esconderBloqueados !== undefined) token.esconderBloqueados = session.user.esconderBloqueados;
+        if (session.user.tema_interface !== undefined) token.tema_interface = session.user.tema_interface;
+        if (session.user.densidade_painel !== undefined) token.densidade_painel = session.user.densidade_painel;
       }
 
       return token;
@@ -79,10 +88,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.usuario = token.usuario as string;
         session.user.email = token.email as string;
         session.user.role = token.role as string;
-
         (session.user as any).setor = token.role as string;
-
+        session.user.imagemUrl = token.imagemUrl as string;
         session.user.permissoes = token.permissoes as string[];
+        session.user.atalhos = token.atalhos as string;
+        session.user.esconderBloqueados = !!token.esconderBloqueados;
+        (session.user as any).tema_interface = token.tema_interface;
+        (session.user as any).densidade_painel = token.densidade_painel;
       }
 
       return session;

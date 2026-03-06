@@ -1,3 +1,4 @@
+import { ThemeProviderAlpha } from "@/components/ThemeProviderAlpha";
 import type { Metadata } from "next";
 import { Toaster } from "sonner";
 
@@ -13,7 +14,10 @@ export default function PainelLayout({
   return (
     <div className="painel-cadastro"> 
     <Toaster richColors position="top-right" />
+    <ThemeProviderAlpha>
        {children}
+    </ThemeProviderAlpha>
+      
     </div>
   );
 }

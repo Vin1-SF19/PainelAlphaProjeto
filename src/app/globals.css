@@ -82,6 +82,15 @@
   --foreground: oklch(0.129 0.042 264.695);
 }
 
+:root {
+  --alpha-primary: 59 130 246; 
+}
+
+.text-alpha { color: rgb(var(--alpha-primary)); }
+.bg-alpha { background-color: rgb(var(--alpha-primary)); }
+.border-alpha { border-color: rgb(var(--alpha-primary) / 0.2); }
+.bg-alpha-glow { background-color: rgb(var(--alpha-primary) / 0.1); }
+
 .dark {
   --background: oklch(0.129 0.042 264.695);
   --foreground: oklch(0.984 0.003 247.858);

@@ -1,14 +1,13 @@
-import LogoutUser from "@/Components/LogoutUser";
 import { UserIcon, PlusCircle, Clock, CheckCircle2, AlertCircle, Filter, LayoutDashboard, ChevronRight } from "lucide-react";
 import { redirect } from "next/navigation";
 import { auth } from "../../../../auth";
-import { Button } from "@/Components/ui/button";
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import db from "@/lib/prisma";
-import DetalhesChamado from "@/Components/DetalhesChamado";
-import { BotaoVoltar } from "@/Components/BotaoVoltar";
+import DetalhesChamado from "@/components/DetalhesChamado";
+import { BotaoVoltar } from "@/components/BotaoVoltar";
 import ChatChamado from "./ChatChamado/page";
-import { FiltroChamadosCards } from "@/Components/FiltroChamado";
+import { FiltroChamadosCards } from "@/components/FiltroChamado";
 
 export default async function Chamados({
     searchParams
@@ -203,7 +202,6 @@ export default async function Chamados({
                     </div>
                 </div>
             </main>
-            <LogoutUser />
         </div>
     );
 }

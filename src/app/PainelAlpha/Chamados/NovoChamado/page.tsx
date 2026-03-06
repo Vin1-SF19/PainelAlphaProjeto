@@ -1,9 +1,9 @@
 "use client";
 
 import { createChamadoAction } from "@/actions/chamados";
-import { Button } from "@/Components/ui/button";
-import { Input } from "@/Components/ui/input";
-import { Label } from "@/Components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ArrowLeft, Send, Loader2, ShieldAlert, Cpu, Network, MessageSquare, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";

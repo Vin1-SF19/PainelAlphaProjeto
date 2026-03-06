@@ -4,8 +4,8 @@ import { Lock } from "lucide-react";
 interface AbaProps {
   permissaoRequerida: string;
   children: React.ReactNode;
-  userPermissions?: string[]; // Recebe as permissões via prop
-  userRole?: string;          // Recebe o cargo via prop
+  userPermissions?: string[]; 
+  userRole?: string;          
 }
 
 export function AbaDeAcesso({ permissaoRequerida, children, userPermissions, userRole }: AbaProps) {

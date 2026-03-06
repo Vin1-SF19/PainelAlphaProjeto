@@ -102,13 +102,6 @@ export default function ImportarPlanilha({
                 {processando ? "Processamento em andamento..." : "Importar planilha de CNPJs (lote)"}
             </label>
             <div className="btn-row items-center gap-4">
-                <button
-                    type="button"
-                    className={processando ? "btn-secondary !text-rose-500 border-rose-500/20" : "btn-secondary"}
-                    onClick={abrirSeletorArquivo}
-                >
-                    {processando ? "🛑 Interromper" : "📂 Importar planilha"}
-                </button>
                 <input
                     ref={fileInputRef}
                     type="file"

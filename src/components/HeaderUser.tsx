@@ -1,7 +1,6 @@
 "use client";
 
 import { UserIcon } from "lucide-react";
-import LogoutUser from "./LogoutUser";
 import { BotaoVoltar } from "./BotaoVoltar";
 
 type UserProps = {
@@ -37,7 +36,6 @@ export default function HeaderUser({ user }: UserProps) {
 
       </div>
 
-      <LogoutUser />
     </div>
   );
 }

@@ -20,7 +20,7 @@ import {
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { uploadDocumento } from "@/actions/UploadDocs";
-import { Switch } from "@/Components/ui/switch";
+import { Switch } from "@/components/ui/switch";
 
 interface HistoricoDoc {
     id: number;
