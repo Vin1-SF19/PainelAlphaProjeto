@@ -211,3 +211,11 @@ model Auditoria {
 
   usuario usuarios @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+model avisos_globais {
+  id         Int      @id @default(autoincrement())
+  mensagem   String
+  ativo      Boolean  @default(true)
+  tipo       String   @default("warning")
+  criado_em  DateTime @default(now())
+}

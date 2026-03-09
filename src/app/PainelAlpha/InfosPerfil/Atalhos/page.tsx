@@ -31,8 +31,8 @@ const MODULOS_BASE = [
   { id: "Reservas", title: "Salas", img: "/icons8-sala-de-reuniões-64.png", tag: "Facilities" },
   { id: "Documentos", title: "POP", img: "/arquivo.png", tag: "Processos" },
   { id: "UpDocumentos", title: "Upload", img: "/pasta.png", tag: "Arquivos" },
-  { id: "Historico", title: "Histórico", img: "/historico.png", tag: "Auditoria" },
-  { id: "Cliente", title: "CRM", img: "/local-na-rede-internet.png", tag: "Comercial" },
+  { id: "Historico", title: "Gerenciamento do POP", img: "/historico.png", tag: "Auditoria" },
+  { id: "Cliente", title: "SISTEMA CS & NPS", img: "/local-na-rede-internet.png", tag: "Comercial" },
 ];
 
 export default function AtalhosPage() {

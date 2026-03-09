@@ -92,7 +92,7 @@ export default function PainelAlphaClient({ session, chamadosIniciais, configBan
         { id: "Documentos", title: "POP", desc: "Documentos de guia e normas para funções operacionais.", img: "../arquivo.png", link: "/PainelAlpha/DocsAlpha", color: "from-indigo-600/20", tag: "Processos" },
         { id: "UpDocumentos", title: "Upload POP", desc: "Portal para transmissão de novos arquivos ao servidor.", img: "../pasta.png", link: "/PainelAlpha/GerenciamentoArquivos", color: "from-rose-600/20", tag: "Arquivos" },
         { id: "Historico", title: "Gerenciamento do POP", desc: "Controle e rastreabilidade do histórico de arquivos.", img: "../historico.png", link: "/PainelAlpha/HistoricoArquivos", color: "from-cyan-600/20", tag: "Auditoria" },
-        { id: "Cliente", title: "Cadastro de Clientes", desc: "Módulo estratégico para cadastro de novos parceiros.", img: "../local-na-rede-internet.png", link: "/PainelAlpha/CadastroClientes", color: "from-orange-600/20", tag: "Comercial" }
+        { id: "Cliente", title: "SISTEMA CS & NPS", desc: "Módulo estratégico para cadastro de novos parceiros.", img: "../local-na-rede-internet.png", link: "/PainelAlpha/CadastroClientes", color: "from-orange-600/20", tag: "Comercial" }
     ];
 
     const { favoritos, restante } = useMemo(() => {

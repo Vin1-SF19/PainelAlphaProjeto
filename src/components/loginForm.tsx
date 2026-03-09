@@ -69,19 +69,18 @@ export default function LoginForm() {
           </div>
         </div>
 
-        {/* BOTÃO DE LOGIN COM LOADING */}
         <div className="pt-2">
           <button
             type="submit"
             disabled={isPending}
             className={`
-              relative w-full h-16 rounded-[1.8rem] flex items-center justify-center gap-3 
-              text-[11px] font-black uppercase tracking-[0.4em] transition-all duration-500
-              ${isPending 
-                ? "bg-slate-800 text-slate-500 cursor-wait shadow-none" 
+                      group relative w-full h-16 rounded-[1.8rem] flex items-center justify-center gap-3 
+                      text-[11px] font-black uppercase tracking-[0.4em] transition-all duration-500 overflow-hidden
+                      ${isPending
+                ? "bg-slate-800 text-slate-500 cursor-wait shadow-none"
                 : "bg-indigo-600 hover:bg-indigo-500 text-white cursor-pointer shadow-xl shadow-indigo-950/40 hover:-translate-y-1 active:scale-95"
               }
-            `}
+                    `}
           >
             {isPending ? (
               <>
@@ -90,22 +89,22 @@ export default function LoginForm() {
               </>
             ) : (
               <>
-                <LogIn size={20} className="group-hover:translate-x-1 transition-transform" />
+                <LogIn size={20} className="group-hover:translate-x-1 transition-transform duration-300" />
                 <span>Entrar</span>
               </>
             )}
-            
-            {/* EFEITO DE BRILHO NO HOVER */}
+
             {!isPending && (
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full hover:animate-shimmer pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shimmer pointer-events-none" />
             )}
           </button>
         </div>
+
       </Form>
 
-      <ModalRecuperarSenha 
-        isOpen={isModalSenhaAberto} 
-        onClose={() => setIsModalSenhaAberto(false)} 
+      <ModalRecuperarSenha
+        isOpen={isModalSenhaAberto}
+        onClose={() => setIsModalSenhaAberto(false)}
       />
     </div>
   );

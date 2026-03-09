@@ -227,8 +227,8 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
         const res = await salvarAlteracoesGeral(
             cliente.id,
             {
-                analistaResponsavel: analistaResponsavel, 
-                dataContratacao: dataContratacao, 
+                analistaResponsavel: analistaResponsavel,
+                dataContratacao: dataContratacao,
                 status: status,
                 nps: nps,
                 feedbackGoogle: feedbackSim,
@@ -243,7 +243,7 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
             },
             session?.user?.nome || "Analista"
         );
-    
+
         if (res.success) {
             toast.success("DADOS ATUALIZADOS COM SUCESSO");
             setEditandoDados(false);
@@ -251,7 +251,7 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
             onClose();
         }
     };
-    
+
 
 
 
@@ -279,7 +279,6 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                         >
                             {editandoDados ? <><LockOpen size={12} /> Edição Liberada</> : <><Edit3 size={12} /> Editar Dados</>}
                         </button>
-                        <button onClick={onClose} className="cursor-pointer p-2 hover:bg-white/5 rounded-full text-slate-400"><X size={24} /></button>
                     </div>
                 </div>
 
@@ -402,7 +401,7 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                                 <input
                                     type="text"
                                     value={analistaResponsavel}
-                                    onChange={(e) => setAnalistaResponsavel(e.target.value)} 
+                                    onChange={(e) => setAnalistaResponsavel(e.target.value)}
                                     placeholder="NOME DO ANALISTA"
                                     className="w-full bg-indigo-500/5 border border-indigo-500/20 p-3 rounded-xl text-sm font-bold text-indigo-400 outline-none placeholder:text-indigo-900/30 transition-all focus:border-indigo-500"
                                 />
@@ -753,8 +752,15 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                     </section>
                 </div>
 
-                {/* BOTÃO SALVAR GERAL */}
-                <div className="p-8 border-t border-white/5 flex justify-end">
+                {/* BOTÃO SALVAR e cancelar GERAL */}
+                <div className="p-8 border-t border-white/5 flex justify-end gap-6">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="cursor-pointer flex items-center gap-2 px-10 py-4 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all">
+                        <X size={18} /> Cancelar
+                    </button>
+
                     <button
                         type="button"
                         onClick={handleSalvarGeral}
@@ -763,7 +769,6 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                     </button>
                 </div>
 
-                {/* MODAL PEQUENO: NOVO CS */}
                 {showNovoCS && (
                     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
                         <div className="bg-slate-900 border border-white/10 w-full max-w-md rounded-[2rem] p-8 shadow-3xl animate-in zoom-in-95 duration-200">

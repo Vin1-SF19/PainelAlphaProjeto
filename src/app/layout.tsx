@@ -7,6 +7,9 @@ import { ThemeProviderAlpha } from "@/components/ThemeProviderAlpha";
 import db from "@/lib/prisma";
 import { auth } from "../../auth";
 import { getTema } from "@/lib/temas";
+import { EngrenagemFlutuante } from "@/components/EngrenagemFlutuante";
+import BroadcastBanner from "@/components/BroadcastBanner";
+import { NotificacaoFlutuante } from "@/components/NotificacaoFlutuante";
 
 export const metadata: Metadata = {
   title: "Painel Alpha | Sistema de Gestão",
@@ -36,6 +39,7 @@ export default async function RootLayout({
     densidade: userDb?.densidade_painel || "default"
   };
 
+ 
   return (
     <html 
       lang="pt-br" 
@@ -53,7 +57,10 @@ export default async function RootLayout({
           />
           <StatusConexao />
           <ThemeProviderAlpha configIncial={configIncial}>
+          <BroadcastBanner />
+          <NotificacaoFlutuante/> 
             {children}
+            <EngrenagemFlutuante />
           </ThemeProviderAlpha>
         </SessionProvider>
       </body>
