@@ -68,7 +68,7 @@ export default function ReservaSalas() {
         <div>
           <div className="flex items-center gap-3 mb-2">
             <LayoutDashboard className="text-blue-500 w-8 h-8" />
-            <h1 className="text-3xl font-black text-white tracking-tighter uppercase tracking-tighter">AGENDA DE <span className="text-blue-500 italic">SALAS</span></h1>
+            <h1 className="text-3xl font-black text-white tracking-tighter uppercase tracking-tighter">RESERVA DE <span className="text-blue-500 italic">SALAS</span></h1>
           </div>
           <div className="px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 inline-flex items-center gap-2">
             <UserIcon size={16} className="text-blue-400" />

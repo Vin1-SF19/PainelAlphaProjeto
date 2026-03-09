@@ -8,22 +8,10 @@ export function ThemeProviderAlpha({ children }: { children: React.ReactNode }) 
   const { data: session, status } = useSession();
 
   const estilo = useMemo(() => {
-    const temaNome = (session?.user as any)?.tema_interface || "blue";
+    const userObj = session?.user as any;
+    const temaNome = userObj?.tema_interface || "blue";
     return getTema(temaNome);
   }, [session]);
-
-  useEffect(() => {
-    
-
-    if (session?.user) {
-            const userObj = session.user as any;
-            const temaNome = userObj?.tema_interface || "blue";
-            const estilo = getTema(temaNome);
-            
-            document.documentElement.style.setProperty("--alpha-primary", estilo.accent);
-            console.log("🎨 Tema Reativo Ativado:", temaNome);
-        }
-    }, [session]);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -43,7 +31,9 @@ export function ThemeProviderAlpha({ children }: { children: React.ReactNode }) 
       meta.content = `rgb(${rgb})`;
       document.head.appendChild(meta);
     }
-  }, [estilo, status]);
+
+    console.log("🎨 Interface Sincronizada:", (session?.user as any)?.tema_interface || "blue");
+  }, [estilo, status, session]);
 
   return <>{children}</>;
 }

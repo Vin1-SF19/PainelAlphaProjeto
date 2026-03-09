@@ -23,7 +23,7 @@ export default async function Chamados({
 
     const todosOsChamadosBase = await db.chamados.findMany({
         where: isAdmin ? {} : { usuarioId: userId },
-        select: { status: true } // Buscamos apenas o status para performance
+        select: { status: true } 
     });
 
     const chamados = await db.chamados.findMany({
@@ -38,7 +38,6 @@ export default async function Chamados({
                 include: { autor: true },
                 orderBy: { createdAt: 'asc' }
             },
-            // 🚀 O SEGREDO: Conta apenas as mensagens que VOCÊ ainda não marcou como lida
             _count: {
                 select: {
                     mensagens: {
@@ -82,7 +81,7 @@ export default async function Chamados({
                             <LayoutDashboard className="text-blue-400 w-8 h-8" />
                         </div>
                         <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tighter uppercase italic">
-                            Help<span className="text-blue-500">Desk</span>
+                        Chamados <span className="text-blue-500">Internos</span>
                         </h1>
                     </div>
                     <div className="flex items-center gap-4 pl-1">

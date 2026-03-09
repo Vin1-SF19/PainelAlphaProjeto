@@ -33,31 +33,35 @@ export default function PreferenciasPage() {
 
   const handleSalvar = async () => {
     setLoading(true);
+
+    // 🚀 1. MUDANÇA VISUAL IMEDIATA (Não espera o banco)
+    const estiloSelec = getTema(tema);
+    document.documentElement.style.setProperty("--alpha-primary", estiloSelec.accent);
+
     try {
-        const res = await atualizarInterfaceAction(tema, densidade);
-        
-        if (res?.success) {
-            await update({
-                ...session,
-                user: {
-                    ...session?.user,
-                    tema_interface: tema,
-                    densidade_painel: densidade
-                }
-            });
+      const res = await atualizarInterfaceAction(tema, densidade);
 
-            toast.success("Protocolo Alpha Sincronizado!");
+      if (res?.success) {
+        await update({
+          user: {
+            tema_interface: tema,
+            densidade_painel: densidade
+          }
+        });
 
-            setTimeout(() => {
-                window.location.href = `/PainelAlpha?refresh=${Date.now()}`;
-            }, 800);
-        }
+        toast.success("Protocolo Alpha Sincronizado!");
+
+        setTimeout(() => {
+          window.location.assign(`/PainelAlpha?update=${Date.now()}`);
+        }, 600);
+      }
     } catch (error) {
-        toast.error("Erro na transmissão de dados.");
+      toast.error("Erro na sincronia.");
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
-};
+  };
+
 
 
 
