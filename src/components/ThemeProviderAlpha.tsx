@@ -13,6 +13,19 @@ export function ThemeProviderAlpha({ children }: { children: React.ReactNode }) 
   }, [session]);
 
   useEffect(() => {
+    
+
+    if (session?.user) {
+            const userObj = session.user as any;
+            const temaNome = userObj?.tema_interface || "blue";
+            const estilo = getTema(temaNome);
+            
+            document.documentElement.style.setProperty("--alpha-primary", estilo.accent);
+            console.log("🎨 Tema Reativo Ativado:", temaNome);
+        }
+    }, [session]);
+
+  useEffect(() => {
     if (status === "loading") return;
 
     const rgb = estilo.accent || "59, 130, 246";

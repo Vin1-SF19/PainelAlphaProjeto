@@ -34,30 +34,31 @@ export default function PreferenciasPage() {
   const handleSalvar = async () => {
     setLoading(true);
     try {
-      const res = await atualizarInterfaceAction(tema, densidade);
+        const res = await atualizarInterfaceAction(tema, densidade);
+        
+        if (res?.success) {
+            await update({
+                ...session,
+                user: {
+                    ...session?.user,
+                    tema_interface: tema,
+                    densidade_painel: densidade
+                }
+            });
 
-      if (res?.success) {
-        await update({
-          ...session,
-          user: {
-            ...session?.user,
-            tema_interface: tema,
-            densidade_painel: densidade
-          }
-        });
+            toast.success("Protocolo Alpha Sincronizado!");
 
-        toast.success("Interface Sincronizada!");
-
-        setTimeout(() => {
-          window.location.href = `/PainelAlpha?update=${Date.now()}`;
-        }, 600);
-      }
+            setTimeout(() => {
+                window.location.href = `/PainelAlpha?refresh=${Date.now()}`;
+            }, 800);
+        }
     } catch (error) {
-      toast.error("Erro na sincronia operacional.");
+        toast.error("Erro na transmissão de dados.");
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
+};
+
 
 
   return (
