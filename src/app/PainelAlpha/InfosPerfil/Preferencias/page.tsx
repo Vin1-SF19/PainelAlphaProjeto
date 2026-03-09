@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { Palette, Layout, Save, CheckCircle2, Monitor } from "lucide-react";
 import { toast } from "sonner";
@@ -25,16 +25,23 @@ const TEMAS = [
 
 export default function PreferenciasPage() {
   const { data: session, update } = useSession();
-  const [tema, setTema] = useState((session?.user as any)?.tema_interface || "blue");
-  const [densidade, setDensidade] = useState((session?.user as any)?.densidade_painel || "default");
+  const [tema, setTema] = useState("blue");
+  const [densidade, setDensidade] = useState("default");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (session?.user) {
+      const user = session.user as any;
+      if (user.tema_interface) setTema(user.tema_interface);
+      if (user.densidade_painel) setDensidade(user.densidade_painel);
+    }
+  }, [session]);
 
   const preview = getTema(tema);
 
   const handleSalvar = async () => {
     setLoading(true);
 
-    // 🚀 1. MUDANÇA VISUAL IMEDIATA (Não espera o banco)
     const estiloSelec = getTema(tema);
     document.documentElement.style.setProperty("--alpha-primary", estiloSelec.accent);
 
@@ -43,7 +50,9 @@ export default function PreferenciasPage() {
 
       if (res?.success) {
         await update({
+          ...session,
           user: {
+            ...session?.user,
             tema_interface: tema,
             densidade_painel: densidade
           }
@@ -62,13 +71,8 @@ export default function PreferenciasPage() {
     }
   };
 
-
-
-
   return (
     <main className="min-h-screen bg-[#020617] p-8 lg:p-16 text-white relative transition-colors duration-500">
-
-      {/* FUNDO QUE MUDA COM O TEMA */}
       <div className={`absolute top-[-10%] left-[-10%] w-[50%] h-[50%] ${preview.glow} blur-[150px] rounded-full transition-all duration-700`} />
 
       <div className="max-w-4xl mx-auto relative z-10">
@@ -92,7 +96,6 @@ export default function PreferenciasPage() {
         <div className="grid gap-8">
           <BotaoVoltar />
 
-          {/* SELEÇÃO DE TEMA */}
           <section className={`bg-slate-900/40 border ${preview.border} p-8 rounded-[2.5rem] transition-all duration-500`}>
             <h2 className="text-xs font-black uppercase tracking-widest mb-6 flex items-center gap-2">
               <Monitor size={16} className={preview.text} /> Esquema de Cores
@@ -114,7 +117,6 @@ export default function PreferenciasPage() {
             </div>
           </section>
 
-          {/* DENSIDADE DO PAINEL */}
           <section className={`bg-slate-900/40 border ${preview.border} p-8 rounded-[2.5rem] transition-all duration-500`}>
             <h2 className="text-xs font-black uppercase tracking-widest mb-6 flex items-center gap-2">
               <Layout size={16} className={preview.text} /> Layout do Painel
