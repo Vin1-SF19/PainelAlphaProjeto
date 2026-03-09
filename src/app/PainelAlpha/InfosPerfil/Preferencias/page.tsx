@@ -37,7 +37,9 @@ export default function PreferenciasPage() {
     
     if (res?.success) {
       await update({
+        ...session,
         user: {
+          ...session?.user,
           tema_interface: tema,
           densidade_painel: densidade
         }
@@ -47,7 +49,7 @@ export default function PreferenciasPage() {
       
       setTimeout(() => {
         window.location.href = "/PainelAlpha";
-      }, 500); 
+      }, 800); 
     }
     setLoading(false);
 };
