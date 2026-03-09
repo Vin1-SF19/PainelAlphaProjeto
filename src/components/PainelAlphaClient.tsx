@@ -22,7 +22,7 @@ import Pusher from "pusher-js";
 import { getTema } from "@/lib/temas";
 
 
-export default function PainelAlphaClient({ session, chamadosIniciais }: any) {
+export default function PainelAlphaClient({ session, chamadosIniciais, configBanco }: any) {
 
     const [mounted, setMounted] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -40,9 +40,10 @@ export default function PainelAlphaClient({ session, chamadosIniciais }: any) {
 
     const tema_interface = (session?.user as any)?.tema_interface || "blue";
     const userObj = session?.user as any;
-    const densidade_painel = mounted ? (userObj?.densidade_painel || "default") : "default";
-    const temaNome = (session?.user as any)?.tema_interface || "blue";
     const densidade = (session?.user as any)?.densidade_painel || "default";
+    const temaNome = configBanco?.tema || "blue";
+    const densidade_painel = configBanco?.densidade || "default";
+  
     const style = getTema(temaNome);
 
 

@@ -17,7 +17,7 @@ export default async function PainelAlpha() {
   const isAdmin = session?.user?.role === "Admin";
 
   const userDb = await db.usuarios.findUnique({
-    where: { id: userId },
+    where: { id: Number(session?.user?.id) },
     select: { 
       tema_interface: true, 
       densidade_painel: true,
