@@ -74,8 +74,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (session.user.imagemUrl !== undefined) token.imagemUrl = session.user.imagemUrl;
         if (session.user.atalhos !== undefined) token.atalhos = session.user.atalhos;
         if (session.user.esconderBloqueados !== undefined) token.esconderBloqueados = session.user.esconderBloqueados;
-        if (session.user.tema_interface !== undefined) token.tema_interface = session.user.tema_interface;
-        if (session.user.densidade_painel !== undefined) token.densidade_painel = session.user.densidade_painel;
+        if (session.user.tema_interface) token.tema_interface = session.user.tema_interface;
+        if (session.user.densidade_painel) token.densidade_painel = session.user.densidade_painel;
       }
 
       return token;
@@ -94,7 +94,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.atalhos = token.atalhos as string;
         session.user.esconderBloqueados = !!token.esconderBloqueados;
         (session.user as any).tema_interface = token.tema_interface;
-        (session.user as any).densidade_painel = token.densidade_painel;
+        (session.user as any).densidade_painel = token.densidade_painel; 
+
       }
 
       return session;

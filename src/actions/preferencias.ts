@@ -43,20 +43,20 @@ export async function salvarPreferenciasAction(atalhosIds: string[], esconder: b
 
 export async function atualizarInterfaceAction(tema: string, densidade: string) {
   const session = await auth();
-  if (!session?.user?.id) return { success: false, error: "Não autorizado" };
+  if (!session?.user?.id) return { success: false };
 
   try {
     await db.usuarios.update({
       where: { id: Number(session.user.id) },
-      data: {
-        tema_interface: tema,
-        densidade_painel: densidade
+      data: { 
+        tema_interface: tema, 
+        densidade_painel: densidade 
       }
     });
+
     revalidatePath("/", "layout");
-    revalidatePath("/PainelAlpha");
     return { success: true };
-  } catch (error) {
-    return { success: false, error: "Falha ao atualizar interface" };
+  } catch (e) {
+    return { success: false };
   }
 }
