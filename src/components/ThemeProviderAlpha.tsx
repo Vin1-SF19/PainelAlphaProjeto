@@ -1,39 +1,27 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { getTema } from "@/lib/temas";
 
-interface ThemeProviderProps {
-  children: React.ReactNode;
-  configIncial: {
-    tema: string;
-    densidade: string;
-  };
-}
-
-export function ThemeProviderAlpha({ children, configIncial }: ThemeProviderProps) {
-  const { data: session, status } = useSession();
-
-  const estilo = useMemo(() => {
-    const temaNome = (session?.user as any)?.tema_interface || configIncial.tema || "blue";
-    return getTema(temaNome);
-  }, [session, configIncial]);
+export function ThemeProviderAlpha({ children, configIncial }: any) {
+  const { data: session } = useSession();
 
   useEffect(() => {
-    if (status === "loading" && !configIncial.tema) return;
-
-    const rgb = estilo.accent || "59, 130, 246";
-    const root = document.documentElement;
-
-    root.style.setProperty("--alpha-primary", rgb);
     
+    const temaLocal = localStorage.getItem("alpha-theme-temp");
+    const userObj = session?.user as any;
+    const temaNome = temaLocal || userObj?.tema_interface || configIncial?.tema || "blue";
+    
+    const estilo = getTema(temaNome);
+    const rgb = estilo.accent || "59, 130, 246";
+    
+    document.documentElement.style.setProperty("--alpha-primary", rgb);
 
-    const metaTheme = document.querySelector('meta[name="theme-color"]');
-    if (metaTheme) {
-      metaTheme.setAttribute("content", `rgb(${rgb})`);
+    if (userObj?.tema_interface === temaLocal) {
+      localStorage.removeItem("alpha-theme-temp");
     }
-  }, [estilo, status, configIncial]);
+  }, [session, configIncial]);
 
   return <>{children}</>;
 }

@@ -42,6 +42,8 @@ export default function PreferenciasPage() {
   const handleSalvar = async () => {
     setLoading(true);
 
+    localStorage.setItem("alpha-theme-temp", tema);
+    
     const estiloSelec = getTema(tema);
     document.documentElement.style.setProperty("--alpha-primary", estiloSelec.accent);
 
@@ -51,25 +53,20 @@ export default function PreferenciasPage() {
       if (res?.success) {
         await update({
           ...session,
-          user: {
-            ...session?.user,
-            tema_interface: tema,
-            densidade_painel: densidade
-          }
+          user: { ...session?.user, tema_interface: tema, densidade_painel: densidade }
         });
 
         toast.success("Protocolo Alpha Sincronizado!");
 
         setTimeout(() => {
-          window.location.assign(`/PainelAlpha?update=${Date.now()}`);
+          window.location.href = `/PainelAlpha?v=${Date.now()}`;
         }, 600);
       }
     } catch (error) {
-      toast.error("Erro na sincronia.");
-    } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <main className="min-h-screen bg-[#020617] p-8 lg:p-16 text-white relative transition-colors duration-500">
