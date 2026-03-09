@@ -23,6 +23,7 @@ import { getTema } from "@/lib/temas";
 
 
 export default function PainelAlphaClient({ session, chamadosIniciais }: any) {
+
     const [mounted, setMounted] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [notificacoesLive, setNotificacoesLive] = useState(0);
@@ -53,6 +54,11 @@ export default function PainelAlphaClient({ session, chamadosIniciais }: any) {
     }, [chamadosIniciais, notificacoesLive]);
 
     const temNotificacaoGeral = totalNotificacoesGeral > 0;
+
+    useEffect(() => {
+        window.location;
+    }, [session?.user?.tema_interface, session?.user?.densidade_painel]);
+
 
     useEffect(() => {
         if (!mounted || !chamadosIniciais || chamadosIniciais.length === 0) return;

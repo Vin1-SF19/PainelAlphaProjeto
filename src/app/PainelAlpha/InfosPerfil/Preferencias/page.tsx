@@ -6,7 +6,7 @@ import { Palette, Layout, Save, CheckCircle2, Monitor } from "lucide-react";
 import { toast } from "sonner";
 import { atualizarInterfaceAction } from "@/actions/preferencias";
 import { BotaoVoltar } from "@/components/BotaoVoltar";
-import { getTema } from "@/lib/temas"; 
+import { getTema } from "@/lib/temas";
 
 const TEMAS = [
   { id: "blue", label: "Alpha Blue", color: "bg-blue-600" },
@@ -33,26 +33,32 @@ export default function PreferenciasPage() {
 
   const handleSalvar = async () => {
     setLoading(true);
-    const res = await atualizarInterfaceAction(tema, densidade);
-    
-    if (res?.success) {
-      await update({
-        ...session,
-        user: {
-          ...session?.user,
-          tema_interface: tema,
-          densidade_painel: densidade
-        }
-      });
+    try {
+      const res = await atualizarInterfaceAction(tema, densidade);
 
-      toast.success("Interface Sincronizada!");
-      
-      setTimeout(() => {
-        window.location.href = "/PainelAlpha";
-      }, 800); 
+      if (res?.success) {
+        await update({
+          ...session,
+          user: {
+            ...session?.user,
+            tema_interface: tema,
+            densidade_painel: densidade
+          }
+        });
+
+        toast.success("Interface Sincronizada!");
+
+        setTimeout(() => {
+          window.location.href = `/PainelAlpha?update=${Date.now()}`;
+        }, 600);
+      }
+    } catch (error) {
+      toast.error("Erro na sincronia operacional.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-};
+  };
+
 
   return (
     <main className="min-h-screen bg-[#020617] p-8 lg:p-16 text-white relative transition-colors duration-500">
@@ -92,8 +98,8 @@ export default function PreferenciasPage() {
                   key={t.id}
                   onClick={() => setTema(t.id)}
                   className={`cursor-pointer p-6 rounded-3xl border transition-all flex flex-col items-center gap-3 ${tema === t.id
-                      ? `${preview.border.replace('20', '50')} ${preview.glow} scale-105`
-                      : 'border-white/5 bg-black/20 hover:border-white/20'
+                    ? `${preview.border.replace('20', '50')} ${preview.glow} scale-105`
+                    : 'border-white/5 bg-black/20 hover:border-white/20'
                     }`}
                 >
                   <div className={`h-12 w-12 rounded-full ${t.color} shadow-lg ${tema === t.id ? 'ring-4 ring-white/20' : ''}`} />
@@ -114,8 +120,8 @@ export default function PreferenciasPage() {
                   key={d}
                   onClick={() => setDensidade(d)}
                   className={`cursor-pointer flex-1 p-6 rounded-3xl border transition-all flex items-center justify-between ${densidade === d
-                      ? `${preview.border.replace('20', '50')} ${preview.glow} text-white`
-                      : 'border-white/5 bg-black/20 text-slate-500 hover:border-white/20'
+                    ? `${preview.border.replace('20', '50')} ${preview.glow} text-white`
+                    : 'border-white/5 bg-black/20 text-slate-500 hover:border-white/20'
                     }`}
                 >
                   <span className="text-[10px] font-black uppercase">{d === 'default' ? 'Espaçamento Padrão' : 'Modo Compacto'}</span>
