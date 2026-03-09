@@ -36,8 +36,10 @@ export default function PainelAlphaClient({ session, chamadosIniciais }: any) {
     const idsAtalhos = useMemo(() => session?.user?.atalhos?.split(",") || [], [session]);
     const idsFavoritos = useMemo(() => session?.user?.favoritos?.split(",") || [], [session]);
 
+
     const tema_interface = (session?.user as any)?.tema_interface || "blue";
-    const densidade_painel = (session?.user as any)?.densidade_painel || "default";
+    const userObj = session?.user as any;
+    const densidade_painel = mounted ? (userObj?.densidade_painel || "default") : "default";
     const temaNome = (session?.user as any)?.tema_interface || "blue";
     const densidade = (session?.user as any)?.densidade_painel || "default";
     const style = getTema(temaNome);

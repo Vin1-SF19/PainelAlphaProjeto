@@ -28,12 +28,12 @@ export async function salvarPreferenciasAction(atalhosIds: string[], esconder: b
   try {
     await db.usuarios.update({
       where: { id: Number(session.user.id) },
-      data: { 
-        atalhos: atalhosIds.join(","), 
-        esconderBloqueados: esconder 
+      data: {
+        atalhos: atalhosIds.join(","),
+        esconderBloqueados: esconder
       }
     });
-    
+
     revalidatePath("/");
     return { success: true };
   } catch (error) {
@@ -48,13 +48,13 @@ export async function atualizarInterfaceAction(tema: string, densidade: string) 
   try {
     await db.usuarios.update({
       where: { id: Number(session.user.id) },
-      data: { 
-        tema_interface: tema, 
-        densidade_painel: densidade 
+      data: {
+        tema_interface: tema,
+        densidade_painel: densidade
       }
     });
-
-    revalidatePath("/");
+    revalidatePath("/", "layout");
+    revalidatePath("/PainelAlpha");
     return { success: true };
   } catch (error) {
     return { success: false, error: "Falha ao atualizar interface" };
