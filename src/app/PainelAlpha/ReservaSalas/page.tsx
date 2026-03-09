@@ -38,10 +38,10 @@ export default function ReservaSalas() {
   const handleAgendar = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedDate) return toast.error("Selecione uma data");
-    const res = await agendarSala({ 
-      ...form, 
-      data: selectedDate.toISOString().split('T')[0], 
-      usuario: usuarioLogado 
+    const res = await agendarSala({
+      ...form,
+      data: selectedDate.toISOString().split('T')[0],
+      usuario: usuarioLogado
     });
     if (res.success) { toast.success("Agendado!"); atualizar(); }
   };
@@ -52,7 +52,7 @@ export default function ReservaSalas() {
     if (res.success) { setReservaEditando(null); toast.success("Removida!"); atualizar(); }
   };
 
-  const reservasDoDia = reservas.filter(r => 
+  const reservasDoDia = reservas.filter(r =>
     new Date(r.inicio).toDateString() === selectedDate?.toDateString()
   ).sort((a, b) => new Date(a.inicio).getTime() - new Date(b.inicio).getTime());
 
@@ -81,19 +81,19 @@ export default function ReservaSalas() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 max-w-[1600px] mx-auto">
         <div className="lg:col-span-4 space-y-6">
           <div className="bg-slate-900/40 border border-white/5 rounded-[2.5rem] p-6 shadow-xl">
-            <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-white"><CalendarIcon size={20} className="text-blue-500"/> Calendário</h2>
+            <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-white"><CalendarIcon size={20} className="text-blue-500" /> Calendário</h2>
             <div className="flex justify-center bg-slate-950/50 rounded-2xl p-2">
-              <DayPicker 
-                mode="single" 
-                selected={selectedDate} 
-                onSelect={setSelectedDate} 
+              <DayPicker
+                mode="single"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
                 locale={ptBR}
                 className="text-white"
               />
             </div>
 
             <form onSubmit={handleAgendar} className="mt-6 space-y-4">
-              <select className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white" value={form.sala} onChange={e => setForm({...form, sala: e.target.value})}>
+              <select className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white" value={form.sala} onChange={e => setForm({ ...form, sala: e.target.value })}>
                 <option value="Sala de Reuniões">Sala de Reuniões</option>
                 <option value="Sala Xangai">Sala Xangai</option>
                 <option value="Sala Los Angeles">Sala Los Angeles</option>
@@ -105,7 +105,7 @@ export default function ReservaSalas() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Término</label>
-                  <input type="time" value={form.fim} onChange={e => setForm({...form, fim: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white" />
+                  <input type="time" value={form.fim} onChange={e => setForm({ ...form, fim: e.target.value })} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white" />
                 </div>
               </div>
               <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl transition-all active:scale-95 shadow-lg shadow-blue-900/20">AGENDAR</button>
@@ -127,9 +127,9 @@ export default function ReservaSalas() {
             <div className="space-y-4">
               {reservasDoDia.length > 0 ? (
                 reservasDoDia.map(r => (
-                  <div 
-                    key={r.id} 
-                    onClick={() => (isAdmin || r.usuario === usuarioLogado) && setReservaEditando({...r, dataStr: new Date(r.inicio).toISOString().split('T')[0], inicioStr: new Date(r.inicio).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), fimStr: new Date(r.fim).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})})}
+                  <div
+                    key={r.id}
+                    onClick={() => (isAdmin || r.usuario === usuarioLogado) && setReservaEditando({ ...r, dataStr: new Date(r.inicio).toISOString().split('T')[0], inicioStr: new Date(r.inicio).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), fimStr: new Date(r.fim).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) })}
                     className="group relative ml-4 pl-6 py-4 border-l-2 border-blue-500 bg-slate-900/40 hover:bg-slate-800/60 rounded-r-2xl transition-all cursor-pointer border-y border-r border-white/5"
                   >
                     <div className="absolute -left-[9px] top-1/2 -translate-y-1/2 w-4 h-4 bg-blue-500 rounded-full ring-4 ring-[#020617]" />
@@ -137,8 +137,9 @@ export default function ReservaSalas() {
                       <div>
                         <p className="text-white font-black text-lg">{r.sala}</p>
                         <p className="text-blue-400 font-bold text-sm">
-                          {new Date(r.inicio).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} — {new Date(r.fim).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+                          {new Date(r.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })} — {new Date(r.fim).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })}
                         </p>
+
                       </div>
                       <div className="flex items-center gap-4 pr-4">
                         <div className="text-right">
@@ -169,20 +170,20 @@ export default function ReservaSalas() {
               <button onClick={() => setReservaEditando(null)}><XCircle className="text-slate-500 hover:text-white transition-colors" size={24} /></button>
             </div>
             <div className="space-y-4">
-              <select value={reservaEditando.sala} onChange={e => setReservaEditando({...reservaEditando, sala: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white text-sm">
+              <select value={reservaEditando.sala} onChange={e => setReservaEditando({ ...reservaEditando, sala: e.target.value })} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white text-sm">
                 <option value="Sala de Reuniões">Sala de Reuniões</option>
                 <option value="Sala Xangai">Sala Xangai</option>
                 <option value="Sala Los Angeles">Sala Los Angeles</option>
               </select>
               <div className="grid grid-cols-1 gap-4">
-                <input type="date" value={reservaEditando.dataStr} onChange={e => setReservaEditando({...reservaEditando, dataStr: e.target.value})} className="bg-slate-950 border border-slate-800 rounded-xl p-4 text-white text-sm" />
+                <input type="date" value={reservaEditando.dataStr} onChange={e => setReservaEditando({ ...reservaEditando, dataStr: e.target.value })} className="bg-slate-950 border border-slate-800 rounded-xl p-4 text-white text-sm" />
                 <div className="grid grid-cols-2 gap-3">
-                  <input type="time" value={reservaEditando.inicioStr} onChange={e => setReservaEditando({...reservaEditando, inicioStr: e.target.value})} className="bg-slate-950 border border-slate-800 rounded-xl p-4 text-white text-sm" />
-                  <input type="time" value={reservaEditando.fimStr} onChange={e => setReservaEditando({...reservaEditando, fimStr: e.target.value})} className="bg-slate-950 border border-slate-800 rounded-xl p-4 text-white text-sm" />
+                  <input type="time" value={reservaEditando.inicioStr} onChange={e => setReservaEditando({ ...reservaEditando, inicioStr: e.target.value })} className="bg-slate-950 border border-slate-800 rounded-xl p-4 text-white text-sm" />
+                  <input type="time" value={reservaEditando.fimStr} onChange={e => setReservaEditando({ ...reservaEditando, fimStr: e.target.value })} className="bg-slate-950 border border-slate-800 rounded-xl p-4 text-white text-sm" />
                 </div>
               </div>
               <div className="flex flex-col gap-3 pt-4">
-                <button onClick={() => editarReserva(reservaEditando.id, {data: reservaEditando.dataStr, inicio: reservaEditando.inicioStr, fim: reservaEditando.fimStr, sala: reservaEditando.sala}).then(() => { toast.success("Atualizado!"); setReservaEditando(null); atualizar(); })} className="bg-blue-600 text-white py-4 rounded-xl font-black uppercase text-xs tracking-widest hover:bg-blue-500 transition-colors">Salvar Alterações</button>
+                <button onClick={() => editarReserva(reservaEditando.id, { data: reservaEditando.dataStr, inicio: reservaEditando.inicioStr, fim: reservaEditando.fimStr, sala: reservaEditando.sala }).then(() => { toast.success("Atualizado!"); setReservaEditando(null); atualizar(); })} className="bg-blue-600 text-white py-4 rounded-xl font-black uppercase text-xs tracking-widest hover:bg-blue-500 transition-colors">Salvar Alterações</button>
                 <button onClick={() => handleExcluir(reservaEditando.id)} className="bg-rose-500/10 hover:bg-rose-600 border border-rose-500/20 text-rose-500 hover:text-white py-4 rounded-xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-2 transition-all"><AlertCircle size={16} /> Excluir Permanentemente</button>
               </div>
             </div>

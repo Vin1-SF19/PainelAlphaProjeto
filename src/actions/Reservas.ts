@@ -1,14 +1,28 @@
 "use server"
+
 import db from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
+const toBRT = (dateStr: string, timeStr: string) => {
+  const date = new Date(`${dateStr}T${timeStr}:00`);
+  return new Date(date.getTime() + (date.getTimezoneOffset() * 60000));
+};
+
+const formatToISO = (date: Date) => {
+  return new Date(date.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+};
+
 export async function agendarSala(dados: { sala: string, usuario: string, data: string, inicio: string, fim: string }) {
   try {
-    const dataHoraInicio = new Date(`${dados.data}T${dados.inicio}:00`);
-    const dataHoraFim = new Date(`${dados.data}T${dados.fim}:00`);
+    const dataHoraInicio = toBRT(dados.data, dados.inicio);
+    const dataHoraFim = toBRT(dados.data, dados.fim);
 
     if (isNaN(dataHoraInicio.getTime()) || isNaN(dataHoraFim.getTime())) {
       return { success: false, error: "Data ou hora inválida." };
+    }
+
+    if (dataHoraInicio >= dataHoraFim) {
+      return { success: false, error: "O início deve ser antes do fim." };
     }
 
     const conflito = await db.reservas.findFirst({
@@ -16,7 +30,12 @@ export async function agendarSala(dados: { sala: string, usuario: string, data: 
         sala: dados.sala,
         status: "Agendado",
         OR: [
-          { inicio: { lt: dataHoraFim }, fim: { gt: dataHoraInicio } }
+          {
+            AND: [
+              { inicio: { lt: dataHoraFim } },
+              { fim: { gt: dataHoraInicio } }
+            ]
+          }
         ]
       }
     });
@@ -27,7 +46,7 @@ export async function agendarSala(dados: { sala: string, usuario: string, data: 
       data: {
         sala: dados.sala,
         usuario: dados.usuario,
-        data: new Date(dados.data),
+        data: toBRT(dados.data, "00:00"),
         inicio: dataHoraInicio,
         fim: dataHoraFim,
         status: "Agendado"
@@ -43,11 +62,16 @@ export async function agendarSala(dados: { sala: string, usuario: string, data: 
 }
 
 export async function liberarSala(id: number) {
-  await db.reservas.update({
-    where: { id },
-    data: { status: "Concluído" }
-  });
-  revalidatePath("/PainelAlpha/ReservaSalas");
+  try {
+    await db.reservas.update({
+      where: { id },
+      data: { status: "Concluído" }
+    });
+    revalidatePath("/PainelAlpha/ReservaSalas");
+    return { success: true };
+  } catch (e) {
+    return { success: false };
+  }
 }
 
 export async function cancelarReserva(id: any) {
@@ -64,22 +88,40 @@ export async function cancelarReserva(id: any) {
 }
 
 export async function buscarReservasAtivas() {
-  return await db.reservas.findMany({
-    where: { status: "Agendado" },
-    orderBy: { inicio: 'asc' }
-  });
+  try {
+    return await db.reservas.findMany({
+      where: { status: "Agendado" },
+      orderBy: { inicio: 'asc' }
+    });
+  } catch (e) {
+    return [];
+  }
 }
 
 export async function editarReserva(id: number, dados: { data: string, inicio: string, fim: string, sala: string }) {
   try {
-    const dataHoraInicio = new Date(`${dados.data}T${dados.inicio}:00`);
-    const dataHoraFim = new Date(`${dados.data}T${dados.fim}:00`);
+    const dataHoraInicio = toBRT(dados.data, dados.inicio);
+    const dataHoraFim = toBRT(dados.data, dados.fim);
+
+    const conflito = await db.reservas.findFirst({
+      where: {
+        id: { not: id },
+        sala: dados.sala,
+        status: "Agendado",
+        AND: [
+          { inicio: { lt: dataHoraFim } },
+          { fim: { gt: dataHoraInicio } }
+        ]
+      }
+    });
+
+    if (conflito) return { success: false, error: "Conflito com outra reserva!" };
 
     await db.reservas.update({
       where: { id },
       data: {
         sala: dados.sala,
-        data: new Date(dados.data),
+        data: toBRT(dados.data, "00:00"),
         inicio: dataHoraInicio,
         fim: dataHoraFim
       }
@@ -87,7 +129,7 @@ export async function editarReserva(id: number, dados: { data: string, inicio: s
     revalidatePath("/PainelAlpha/ReservaSalas");
     return { success: true };
   } catch (e) {
-    return { success: false };
+    return { success: false, error: "Erro ao atualizar." };
   }
 }
 
