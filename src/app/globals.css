@@ -80,16 +80,8 @@
   --sidebar-ring: oklch(0.704 0.04 256.788);
   --background: oklch(30.474% 0.13219 265.83);
   --foreground: oklch(0.129 0.042 264.695);
-}
-
-:root {
   --alpha-primary: 59 130 246; 
 }
-
-.text-alpha { color: rgb(var(--alpha-primary)); }
-.bg-alpha { background-color: rgb(var(--alpha-primary)); }
-.border-alpha { border-color: rgb(var(--alpha-primary) / 0.2); }
-.bg-alpha-glow { background-color: rgb(var(--alpha-primary) / 0.1); }
 
 .dark {
   --background: oklch(0.129 0.042 264.695);
@@ -125,14 +117,10 @@
   --sidebar-ring: oklch(0.551 0.027 264.364);
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body{
-    background-color: var(--background);
-  }
-}
+.text-alpha { color: rgb(var(--alpha-primary)); }
+.bg-alpha { background-color: rgb(var(--alpha-primary)); }
+.border-alpha { border-color: rgb(var(--alpha-primary) / 0.2); }
+.bg-alpha-glow { background-color: rgb(var(--alpha-primary) / 0.1); }
 
 @layer base {
   * {
@@ -142,6 +130,7 @@
     @apply bg-background text-foreground;
   }
 }
+
 
 @layer utilities {
   .custom-scrollbar::-webkit-scrollbar {

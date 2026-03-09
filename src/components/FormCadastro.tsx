@@ -99,16 +99,16 @@ export default function CadastroUsuarios() {
       </div>
 
       {/* HEADER DINÂMICO */}
-      <nav className="relative z-10 w-full px-8 py-6 flex items-center justify-between border-b border-white/5 bg-slate-950/20 backdrop-blur-md">
+      <nav className="text-alpha italic font-black relative z-10 w-full px-8 py-6 flex items-center justify-between border-b border-white/5 bg-slate-950/20 backdrop-blur-md">
         <div className="flex items-center gap-6">
           <button onClick={() => router.back()} className="cursor-pointer p-3 rounded-2xl bg-white/5 border border-white/5 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all group">
             <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
           </button>
           <div>
-            <h1 className="text-2xl font-black tracking-tighter uppercase italic text-white">
+            <h1 className="text-2xl font-black tracking-tighter uppercase  italic text-white">
               SISTEMA <span className="text-blue-500">ALPHA</span>
             </h1>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-1bg-alpha">
               <Globe size={12} className="text-emerald-500 animate-pulse" />
               <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Network Status: Online</span>
             </div>
@@ -152,7 +152,7 @@ export default function CadastroUsuarios() {
               </div>
             </header>
 
-            <div className="flex-1 p-8 overflow-y-auto custom-scrollbar bg-[radial-gradient(circle_at_top_left,_var(--tw-gradient-stops))] from-blue-900/5 via-transparent to-transparent">
+            <div className="bg-alphaflex-1 p-8 overflow-y-auto custom-scrollbar bg-[radial-gradient(circle_at_top_left,_var(--tw-gradient-stops))] from-blue-900/5 via-transparent to-transparent">
               <Form action={formAction} autoComplete="off" className="space-y-6">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-slate-500 ml-1 tracking-widest">Identificação Nominal</Label>

@@ -65,3 +65,15 @@ export async function atualizarFotoPerfilAction(url: string | null) {
       return { success: false, error: "Erro ao sincronizar imagem no banco." };
     }
   }
+
+  export async function deletarImagemAction() {
+    const session = await auth();
+    if (!session?.user?.id) return { success: false };
+
+    await db.usuarios.update({
+        where: { id: Number(session.user.id) },
+        data: { imagemUrl: null }
+    });
+
+    return { success: true };
+}
