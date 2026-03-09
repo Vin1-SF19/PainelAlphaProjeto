@@ -14,29 +14,18 @@ const formatToISO = (date: Date) => {
 
 export async function agendarSala(dados: { sala: string, usuario: string, data: string, inicio: string, fim: string }) {
   try {
-    const dataHoraInicio = toBRT(dados.data, dados.inicio);
-    const dataHoraFim = toBRT(dados.data, dados.fim);
+    const dataHoraInicio = new Date(`${dados.data}T${dados.inicio}:00-03:00`);
+    const dataHoraFim = new Date(`${dados.data}T${dados.fim}:00-03:00`);
 
     if (isNaN(dataHoraInicio.getTime()) || isNaN(dataHoraFim.getTime())) {
       return { success: false, error: "Data ou hora inválida." };
-    }
-
-    if (dataHoraInicio >= dataHoraFim) {
-      return { success: false, error: "O início deve ser antes do fim." };
     }
 
     const conflito = await db.reservas.findFirst({
       where: {
         sala: dados.sala,
         status: "Agendado",
-        OR: [
-          {
-            AND: [
-              { inicio: { lt: dataHoraFim } },
-              { fim: { gt: dataHoraInicio } }
-            ]
-          }
-        ]
+        OR: [{ inicio: { lt: dataHoraFim }, fim: { gt: dataHoraInicio } }]
       }
     });
 
@@ -46,8 +35,8 @@ export async function agendarSala(dados: { sala: string, usuario: string, data: 
       data: {
         sala: dados.sala,
         usuario: dados.usuario,
-        data: toBRT(dados.data, "00:00"),
-        inicio: dataHoraInicio,
+        data: new Date(`${dados.data}T00:00:00-03:00`),
+        inicio: dataHoraInicio, 
         fim: dataHoraFim,
         status: "Agendado"
       }
@@ -56,10 +45,10 @@ export async function agendarSala(dados: { sala: string, usuario: string, data: 
     revalidatePath("/PainelAlpha/ReservaSalas");
     return { success: true };
   } catch (e) {
-    console.error(e);
     return { success: false, error: "Erro ao gravar no banco." };
   }
 }
+
 
 export async function liberarSala(id: number) {
   try {
