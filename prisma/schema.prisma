@@ -21,10 +21,11 @@ model usuarios {
   Auditoria          Auditoria[]
   imagemUrl          String?
   esconderBloqueados Boolean            @default(false)
+  ultimo_aviso       String?
 
   atalhos          String? @default("radar,chamados")
-  tema_interface   String? @default("blue") 
-  densidade_painel String? @default("default") 
+  tema_interface   String? @default("blue")
+  densidade_painel String? @default("default")
 
   reset_token   String?
   reset_expires DateTime?
@@ -213,9 +214,9 @@ model Auditoria {
 }
 
 model avisos_globais {
-  id         Int      @id @default(autoincrement())
-  mensagem   String
-  ativo      Boolean  @default(true)
-  tipo       String   @default("warning")
-  criado_em  DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  mensagem  String
+  ativo     Boolean  @default(true)
+  tipo      String   @default("warning")
+  criado_em DateTime @default(now())
 }

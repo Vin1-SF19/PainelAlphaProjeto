@@ -6,12 +6,10 @@ export default auth((req) => {
   const pathname = req.nextUrl.pathname;
   const isLoggedIn = !!session;
 
-  //BLOQUEIA ACESSO SE NÃO ESTIVER LOGADO
   if (!isLoggedIn) {
     return NextResponse.redirect(new URL("/", req.nextUrl));
   }
 
-  // BLOQUEIA USER COMUM DE ENTRAR NO CADASTRO (EXIGE ADMIN)
   if (
     pathname.startsWith("/PainelAlpha/cadastro") &&
     session?.user?.role !== "Admin"
@@ -23,5 +21,8 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/PainelAlpha/:path*"],
+  matcher: [
+    "/PainelAlpha/:path*", 
+    "/((?!api/user/heartbeat|_next/static|_next/image|favicon.ico).*)"
+  ],
 };

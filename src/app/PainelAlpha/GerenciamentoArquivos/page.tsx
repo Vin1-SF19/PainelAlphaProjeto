@@ -81,15 +81,24 @@ export default function AdminUploadDocs() {
       const res = await uploadDocumento(formData);
       if (res.success) {
         toast.success(`${midiaTipo} publicado com sucesso!`);
-        setFile(null);
+        setFile(
+
+          null);
         setTipoSelecionado("");
         setTipoPersonalizado("");
         (e.target as HTMLFormElement).reset();
       } else {
+        console.error("❌ ERRO NA ACTION:", res.error);
         toast.error(res.error || "Erro ao processar upload.");
       }
-    } catch (err) {
-      toast.error("Falha na comunicação com o servidor.");
+    } catch (err: any) {
+      if (err.message?.includes("exceeded") || err.message?.includes("too large")) {
+        toast.error("ARQUIVO MUITO GRANDE! LIMITE DE 100MB EXCEDIDO.");
+        console.error("🚨 LIMITE DE PAYLOAD:", err.message);
+      } else {
+        console.error("🚨 FALHA CRÍTICA:", err);
+        toast.error("Falha na comunicação com o servidor.");
+      }
     } finally {
       setLoading(false);
     }
@@ -122,7 +131,7 @@ export default function AdminUploadDocs() {
         <div className="bg-slate-900/40 p-8 rounded-[2rem] border border-white/5 backdrop-blur-md shadow-2xl relative overflow-hidden">
           <form onSubmit={handleUpload} className="space-y-8">
             <div className="grid grid-cols-2 gap-4 p-2 bg-black/40 rounded-3xl border border-white/5">
-              <button 
+              <button
                 type="button"
                 onClick={() => setMidiaTipo("PDF")}
                 className={`flex items-center justify-center gap-3 py-4 rounded-2xl transition-all duration-500 ${midiaTipo === "PDF" ? "bg-blue-600 text-white shadow-lg shadow-blue-900/40" : "text-slate-600 hover:bg-white/5"}`}
@@ -130,7 +139,7 @@ export default function AdminUploadDocs() {
                 <FileText size={20} />
                 <span className="text-[10px] font-black uppercase tracking-widest">Documentos</span>
               </button>
-              <button 
+              <button
                 type="button"
                 onClick={() => setMidiaTipo("VIDEO")}
                 className={`flex items-center justify-center gap-3 py-4 rounded-2xl transition-all duration-500 ${midiaTipo === "VIDEO" ? "bg-purple-600 text-white shadow-lg shadow-purple-900/40" : "text-slate-600 hover:bg-white/5"}`}

@@ -10,6 +10,7 @@ import { getTema } from "@/lib/temas";
 import { EngrenagemFlutuante } from "@/components/EngrenagemFlutuante";
 import BroadcastBanner from "@/components/BroadcastBanner";
 import { NotificacaoFlutuante } from "@/components/NotificacaoFlutuante";
+import { Heartbeat } from "@/components/Heartbeat";
 
 export const metadata: Metadata = {
   title: "Painel Alpha | Sistema de Gestão",
@@ -58,7 +59,8 @@ export default async function RootLayout({
           <StatusConexao />
           <ThemeProviderAlpha configIncial={configIncial}>
           <BroadcastBanner />
-          <NotificacaoFlutuante/> 
+          <NotificacaoFlutuante/>
+          <Heartbeat /> 
             {children}
             <EngrenagemFlutuante />
           </ThemeProviderAlpha>
