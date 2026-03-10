@@ -10,13 +10,12 @@ export async function POST(request: Request): Promise<NextResponse> {
       onBeforeGenerateToken: async () => ({
         allowedContentTypes: ['video/mp4', 'application/pdf', 'image/jpeg', 'image/png'],
         tokenPayload: JSON.stringify({}),
+        addRandomSuffix: true, 
       }),
-      onUploadCompleted: async ({ blob }) => {
-        console.log('Upload finalizado:', blob.url);
-      },
+      onUploadCompleted: async () => {},
     });
     return NextResponse.json(jsonResponse);
-  } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 400 });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
   }
 }
