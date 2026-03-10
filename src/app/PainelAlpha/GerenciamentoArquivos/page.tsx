@@ -68,41 +68,53 @@ export default function AdminUploadDocs() {
 
   async function handleUpload(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!file || !setorSelecionado || !valorFinalTipo) return toast.error("PREENCHA TUDO!");
+    if (!file || !setorSelecionado || !valorFinalTipo) {
+      return toast.error("Por favor, preencha todos os campos!", {
+        style: { background: '#020617', color: '#ef4444', border: '1px solid #ef444450', fontWeight: '900', fontSize: '10px', textTransform: 'uppercase' }
+      });
+    }
 
     setLoading(true);
+    const formOriginal = new FormData(e.currentTarget);
+    const tituloDigitado = formOriginal.get("titulo")?.toString();
+
     try {
-        const newBlob = await upload(file.name, file, {
-            access: 'public',
-            handleUploadUrl: '/api/upload',
+      const newBlob = await upload(file.name, file, {
+        access: 'public',
+        handleUploadUrl: '/api/upload',
+      });
+
+      const dataParaBanco = new FormData();
+      dataParaBanco.append("url", newBlob.url);
+      dataParaBanco.append("titulo", tituloDigitado || file.name);
+      dataParaBanco.append("setor", setorSelecionado);
+      dataParaBanco.append("tipo_pasta", valorFinalTipo);
+      dataParaBanco.append("tipo_midia", midiaTipo);
+      dataParaBanco.append("criado_por", session?.user?.nome || "SISTEMA");
+      dataParaBanco.append("protecao", comProtecao ? "ATIVO" : "INATIVO");
+      dataParaBanco.append("ordem_manual", "0");
+
+      const res = await uploadDocumento(dataParaBanco);
+
+      if (res.success) {
+        toast.success(`${midiaTipo} PUBLICADO COM SUCESSO!`, {
+          style: { background: '#020617', color: '#10b981', border: '1px solid #10b98150', fontWeight: '900', fontSize: '10px', textTransform: 'uppercase' }
         });
-
-        const formData = new FormData();
-        formData.append("url", newBlob.url);
-        formData.append("titulo", file.name);
-        formData.append("setor", setorSelecionado);
-        formData.append("tipo_pasta", valorFinalTipo);
-        formData.append("tipo_midia", midiaTipo);
-        formData.append("criado_por", session?.user?.nome || "SISTEMA");
-        formData.append("protecao", comProtecao ? "ATIVO" : "INATIVO");
-        formData.append("ordem_manual", "0");
-
-        const res = await uploadDocumento(formData);
-
-        if (res.success) {
-            toast.success("PUBLICADO COM SUCESSO!");
-            setFile(null);
-            (e.target as HTMLFormElement).reset();
-        } else {
-            toast.error(res.error || "ERRO AO GRAVAR NO BANCO");
-        }
+        setFile(null);
+        setTipoSelecionado("");
+        setTipoPersonalizado("");
+        (e.target as HTMLFormElement).reset();
+      } else {
+        toast.error(res.error || "ERRO AO GRAVAR NO BANCO");
+      }
     } catch (err: any) {
-        console.error("ERRO_FINAL:", err);
-        toast.error("FALHA NA COMUNICAÇÃO FINAL COM O BANCO.");
+      console.error("ERRO_FINAL:", err);
+      toast.error("FALHA NA COMUNICAÇÃO ALPHA.");
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
-}
+  }
+
 
 
 
