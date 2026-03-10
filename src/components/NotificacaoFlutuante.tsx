@@ -14,18 +14,22 @@ if (typeof window !== "undefined") {
 }
 
 export function NotificacaoFlutuante() {
-    const { data: session } = useSession();
+    const { data: session, status } = useSession();
     const router = useRouter();
     const ultimaMsgId = useRef<number | null>(null);
+
 
     const temaNome = (session?.user as any)?.tema_interface || "blue";
     const style = getTema(temaNome);
 
     const checkNovasMensagens = useCallback(async () => {
-        if (!session?.user?.id) return;
+        if (status !== "authenticated" || !session?.user?.id) return;
 
         try {
-            const res = await fetch(`/api/notificacoes?v=${Date.now()}`, { cache: 'no-store' });
+            const res = await fetch(`/api/notificacoes?v=${Date.now()}`, {
+                cache: 'no-store',
+                headers: { 'Pragma': 'no-cache' }
+            });
             const msg = await res.json();
 
             if (!msg || msg.nenhum) {
@@ -49,7 +53,7 @@ export function NotificacaoFlutuante() {
                 toast.custom((t) => (
                     <div
                         onClick={() => {
-                            router.push(`/PainelAlpha/Chamados`);
+                            router.push(`/PainelAlpha/Chamados/${msg.chamadoId}`);
                             toast.dismiss(t);
                         }}
                         className={`w-[350px] bg-slate-950 border ${style.border} p-5 rounded-[2rem] shadow-2xl backdrop-blur-xl cursor-pointer hover:scale-105 transition-all group relative overflow-hidden`}
@@ -74,7 +78,8 @@ export function NotificacaoFlutuante() {
                 ), { duration: 5000, id: `msg-${msg.id}` });
             }
         } catch (e) { }
-    }, [session, router, style]);
+    }, [session, status, router, style]);
+
 
     useEffect(() => {
         const interval = setInterval(checkNovasMensagens, 1000);

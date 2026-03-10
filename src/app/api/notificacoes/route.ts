@@ -6,6 +6,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const session = await auth();
+  
   if (!session?.user?.id) return NextResponse.json({ nenhum: true });
 
   const userId = Number(session.user.id);
@@ -15,7 +16,13 @@ export async function GET() {
     const ultimaMensagem = await db.mensagensChamado.findFirst({
       where: {
         autorId: { not: userId },
-        ...(isAdmin ? { lida_admin: false } : { lida_usuario: false }),
+        ...(isAdmin 
+          ? { lida_admin: false } 
+          : { 
+              lida_usuario: false, 
+              chamado: { usuarioId: userId } 
+            }
+        ),
       },
       include: {
         autor: { select: { nome: true } },
