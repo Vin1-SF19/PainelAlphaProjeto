@@ -66,8 +66,14 @@ export default function AdminUploadDocs() {
 
   async function handleUpload(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
     if (!file || !setorSelecionado || !valorFinalTipo) {
       return toast.error("Por favor, preencha todos os campos e selecione a pasta!");
+    }
+
+    const LIMITE_BLOB = 500 * 1024 * 1024;
+    if (file.size > LIMITE_BLOB) {
+      return toast.error("ARQUIVO MUITO GRANDE! LIMITE DE 500MB EXCEDIDO.");
     }
 
     setLoading(true);
@@ -81,9 +87,7 @@ export default function AdminUploadDocs() {
       const res = await uploadDocumento(formData);
       if (res.success) {
         toast.success(`${midiaTipo} publicado com sucesso!`);
-        setFile(
-
-          null);
+        setFile(null);
         setTipoSelecionado("");
         setTipoPersonalizado("");
         (e.target as HTMLFormElement).reset();
@@ -92,9 +96,8 @@ export default function AdminUploadDocs() {
         toast.error(res.error || "Erro ao processar upload.");
       }
     } catch (err: any) {
-      if (err.message?.includes("exceeded") || err.message?.includes("too large")) {
-        toast.error("ARQUIVO MUITO GRANDE! LIMITE DE 100MB EXCEDIDO.");
-        console.error("🚨 LIMITE DE PAYLOAD:", err.message);
+      if (err.message?.includes("exceeded") || err.message?.includes("too large") || err.message?.includes("413")) {
+        toast.error("ARQUIVO MUITO GRANDE! LIMITE DO SERVIDOR EXCEDIDO.");
       } else {
         console.error("🚨 FALHA CRÍTICA:", err);
         toast.error("Falha na comunicação com o servidor.");
@@ -103,6 +106,7 @@ export default function AdminUploadDocs() {
       setLoading(false);
     }
   }
+
 
   return (
     <div className="min-h-screen bg-slate-950 p-4 md:p-8 text-white font-sans">
