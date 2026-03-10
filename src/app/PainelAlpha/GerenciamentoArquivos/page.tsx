@@ -68,41 +68,42 @@ export default function AdminUploadDocs() {
 
   async function handleUpload(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!file || !setorSelecionado || !valorFinalTipo) {
-      return toast.error("PREENCHA TODOS OS CAMPOS!");
-    }
+    if (!file || !setorSelecionado || !valorFinalTipo) return toast.error("PREENCHA TUDO!");
 
     setLoading(true);
     try {
-      const newBlob = await upload(file.name, file, {
-        access: 'public',
-        handleUploadUrl: '/api/upload',
-      });
+        const newBlob = await upload(file.name, file, {
+            access: 'public',
+            handleUploadUrl: '/api/upload',
+        });
 
-      const formData = new FormData(e.currentTarget);
-      formData.set("url", newBlob.url);
-      formData.set("tipo_pasta", valorFinalTipo.toUpperCase().trim());
-      formData.set("tipo_midia", midiaTipo);
-      formData.set("criado_por", session?.user?.nome || "SISTEMA");
-      formData.set("protecao", comProtecao ? "ATIVO" : "INATIVO");
-      formData.delete("file");
+        const formData = new FormData();
+        formData.append("url", newBlob.url);
+        formData.append("titulo", file.name);
+        formData.append("setor", setorSelecionado);
+        formData.append("tipo_pasta", valorFinalTipo);
+        formData.append("tipo_midia", midiaTipo);
+        formData.append("criado_por", session?.user?.nome || "SISTEMA");
+        formData.append("protecao", comProtecao ? "ATIVO" : "INATIVO");
+        formData.append("ordem_manual", "0");
 
-      const res = await uploadDocumento(formData);
+        const res = await uploadDocumento(formData);
 
-      if (res.success) {
-        toast.success("PUBLICADO COM SUCESSO!");
-        setFile(null);
-        (e.target as HTMLFormElement).reset();
-      } else {
-        toast.error(res.error || "ERRO NO BANCO DE DADOS");
-      }
+        if (res.success) {
+            toast.success("PUBLICADO COM SUCESSO!");
+            setFile(null);
+            (e.target as HTMLFormElement).reset();
+        } else {
+            toast.error(res.error || "ERRO AO GRAVAR NO BANCO");
+        }
     } catch (err: any) {
-      toast.error("FALHA NO UPLOAD: VERIFIQUE O TAMANHO OU CONEXÃO");
-      console.error("ERRO_DETALHADO:", err);
+        console.error("ERRO_FINAL:", err);
+        toast.error("FALHA NA COMUNICAÇÃO FINAL COM O BANCO.");
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  }
+}
+
 
 
 
