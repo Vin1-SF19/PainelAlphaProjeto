@@ -65,26 +65,14 @@ export default function AdminUploadDocs() {
 
   const valorFinalTipo = tipoSelecionado === "PERSONALIZAR" ? tipoPersonalizado : tipoSelecionado;
 
+
   async function handleUpload(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-
     if (!file || !setorSelecionado || !valorFinalTipo) {
-      return
-
-      toast.error("Por favor, preencha todos os campos e selecione a pasta!", {
-        style: { background: '#0f172a', color: '#ef4444', border: '1px solid #ef444450', fontWeight: '900', fontSize: '10px', textTransform: 'uppercase' }
-      });
-    }
-
-    const LIMITE_BLOB = 500 * 1024 * 1024;
-    if (file.size > LIMITE_BLOB) {
-      return toast.error("ARQUIVO MUITO GRANDE! LIMITE DE 500MB EXCEDIDO.", {
-        style: { background: '#0f172a', color: '#f59e0b', border: '1px solid #f59e0b50', fontWeight: '900', fontSize: '10px', textTransform: 'uppercase' }
-      });
+      return toast.error("PREENCHA TODOS OS CAMPOS!");
     }
 
     setLoading(true);
-
     try {
       const newBlob = await upload(file.name, file, {
         access: 'public',
@@ -102,27 +90,20 @@ export default function AdminUploadDocs() {
       const res = await uploadDocumento(formData);
 
       if (res.success) {
-        toast.success(`${midiaTipo} PUBLICADO COM SUCESSO!`, {
-          style: { background: '#0f172a', color: '#10b981', border: '1px solid #10b98150', fontWeight: '900', fontSize: '10px', textTransform: 'uppercase' }
-        });
+        toast.success("PUBLICADO COM SUCESSO!");
         setFile(null);
-        setTipoSelecionado("");
-        setTipoPersonalizado("");
         (e.target as HTMLFormElement).reset();
       } else {
-        toast.error(res.error || "ERRO AO PROCESSAR UPLOAD NO BANCO.", {
-          style: { background: '#0f172a', color: '#ef4444', border: '1px solid #ef444450', fontWeight: '900', fontSize: '10px', textTransform: 'uppercase' }
-        });
+        toast.error(res.error || "ERRO NO BANCO DE DADOS");
       }
     } catch (err: any) {
-      const isLarge = err.message?.includes("413") || err.message?.includes("large") || err.message?.includes("exceeded");
-      toast.error(isLarge ? "PROCESSO INTERROMPIDO: PAYLOAD MUITO GRANDE." : "FALHA CRÍTICA NA COMUNICAÇÃO ALPHA.", {
-        style: { background: '#0f172a', color: '#ef4444', border: '1px solid #ef444450', fontWeight: '900', fontSize: '10px', textTransform: 'uppercase' }
-      });
+      toast.error("FALHA NO UPLOAD: VERIFIQUE O TAMANHO OU CONEXÃO");
+      console.error("ERRO_DETALHADO:", err);
     } finally {
       setLoading(false);
     }
   }
+
 
 
   return (

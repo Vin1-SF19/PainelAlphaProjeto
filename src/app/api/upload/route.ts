@@ -10,7 +10,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       onBeforeGenerateToken: async () => ({
         allowedContentTypes: ['video/mp4', 'application/pdf', 'image/jpeg', 'image/png'],
         tokenPayload: JSON.stringify({}),
-        addRandomSuffix: true, 
+        addRandomSuffix: true,
       }),
       onUploadCompleted: async () => {},
     });
