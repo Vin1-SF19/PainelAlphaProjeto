@@ -6,7 +6,9 @@ export default auth((req) => {
   const pathname = req.nextUrl.pathname;
   const isLoggedIn = !!session;
 
-  if (!isLoggedIn) {
+  if (pathname === "/") return NextResponse.next();
+
+  if (!isLoggedIn && pathname.startsWith("/PainelAlpha")) {
     return NextResponse.redirect(new URL("/", req.nextUrl));
   }
 
@@ -21,8 +23,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: [
-    "/PainelAlpha/:path*",
-    "/((?!api/upload|api/user/heartbeat|_next/static|_next/image|favicon.ico).*)"
-  ],
+  matcher: ["/PainelAlpha/:path*"],
 };

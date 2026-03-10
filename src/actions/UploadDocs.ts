@@ -11,7 +11,7 @@ const client = createClient({
 
 export async function uploadDocumento(formData: FormData) {
   try {
-    const file = formData.get("file") as File;
+    const file = formData.get("file") as File | null;
     const urlPrevia = formData.get("url")?.toString();
 
     const titulo = (formData.get("titulo")?.toString() || file?.name || "SEM TITULO").toUpperCase().trim();
@@ -20,7 +20,11 @@ export async function uploadDocumento(formData: FormData) {
     const criado_por = formData.get("criado_por")?.toString() || "SISTEMA";
     const protecao = formData.get("protecao")?.toString() || "ATIVO";
     const ordem_manual = parseInt(formData.get("ordem_manual")?.toString() || "0");
-    const tipo_midia = formData.get("tipo_midia")?.toString() || (file?.type?.startsWith("video/") ? "VIDEO" : "PDF");
+    
+    let tipo_midia = formData.get("tipo_midia")?.toString();
+    if (!tipo_midia) {
+      tipo_midia = file?.type?.startsWith("video/") ? "VIDEO" : "PDF";
+    }
 
     if (!setor || !pasta) return { success: false, error: "DADOS OBRIGATORIOS AUSENTES" };
 
