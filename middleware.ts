@@ -22,7 +22,6 @@ export default auth((req) => {
 
 export const config = {
   matcher: [
-    "/PainelAlpha/:path*", 
-    "/((?!api/user/heartbeat|_next/static|_next/image|favicon.ico).*)"
+    "/PainelAlpha/:path*"
   ],
 };
