@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react"
 import { Switch } from "@/components/ui/switch";
+import { upload } from '@vercel/blob/client';
 
 const SETORES = ["Diretrizes", "T.I", "OPERACIONAL", "COMERCIAL", "RECURSOS HUMANOS", "FINANCEIRO", "JURÍDICO", "PARCEIRO", "SERVIÇOS GERAIS"];
 
@@ -68,40 +69,56 @@ export default function AdminUploadDocs() {
     e.preventDefault();
 
     if (!file || !setorSelecionado || !valorFinalTipo) {
-      return toast.error("Por favor, preencha todos os campos e selecione a pasta!");
+      return
+
+      toast.error("Por favor, preencha todos os campos e selecione a pasta!", {
+        style: { background: '#0f172a', color: '#ef4444', border: '1px solid #ef444450', fontWeight: '900', fontSize: '10px', textTransform: 'uppercase' }
+      });
     }
 
     const LIMITE_BLOB = 500 * 1024 * 1024;
     if (file.size > LIMITE_BLOB) {
-      return toast.error("ARQUIVO MUITO GRANDE! LIMITE DE 500MB EXCEDIDO.");
+      return toast.error("ARQUIVO MUITO GRANDE! LIMITE DE 500MB EXCEDIDO.", {
+        style: { background: '#0f172a', color: '#f59e0b', border: '1px solid #f59e0b50', fontWeight: '900', fontSize: '10px', textTransform: 'uppercase' }
+      });
     }
 
     setLoading(true);
-    const formData = new FormData(e.currentTarget);
-    formData.set("tipo_pasta", valorFinalTipo.toUpperCase().trim());
-    formData.set("tipo_midia", midiaTipo);
-    formData.set("criado_por", session?.user?.nome || "SISTEMA");
-    formData.set("protecao", comProtecao ? "ATIVO" : "INATIVO");
 
     try {
+      const newBlob = await upload(file.name, file, {
+        access: 'public',
+        handleUploadUrl: '/api/upload',
+      });
+
+      const formData = new FormData(e.currentTarget);
+      formData.set("url", newBlob.url);
+      formData.set("tipo_pasta", valorFinalTipo.toUpperCase().trim());
+      formData.set("tipo_midia", midiaTipo);
+      formData.set("criado_por", session?.user?.nome || "SISTEMA");
+      formData.set("protecao", comProtecao ? "ATIVO" : "INATIVO");
+      formData.delete("file");
+
       const res = await uploadDocumento(formData);
+
       if (res.success) {
-        toast.success(`${midiaTipo} publicado com sucesso!`);
+        toast.success(`${midiaTipo} PUBLICADO COM SUCESSO!`, {
+          style: { background: '#0f172a', color: '#10b981', border: '1px solid #10b98150', fontWeight: '900', fontSize: '10px', textTransform: 'uppercase' }
+        });
         setFile(null);
         setTipoSelecionado("");
         setTipoPersonalizado("");
         (e.target as HTMLFormElement).reset();
       } else {
-        console.error("❌ ERRO NA ACTION:", res.error);
-        toast.error(res.error || "Erro ao processar upload.");
+        toast.error(res.error || "ERRO AO PROCESSAR UPLOAD NO BANCO.", {
+          style: { background: '#0f172a', color: '#ef4444', border: '1px solid #ef444450', fontWeight: '900', fontSize: '10px', textTransform: 'uppercase' }
+        });
       }
     } catch (err: any) {
-      if (err.message?.includes("exceeded") || err.message?.includes("too large") || err.message?.includes("413")) {
-        toast.error("ARQUIVO MUITO GRANDE! LIMITE DO SERVIDOR EXCEDIDO.");
-      } else {
-        console.error("🚨 FALHA CRÍTICA:", err);
-        toast.error("Falha na comunicação com o servidor.");
-      }
+      const isLarge = err.message?.includes("413") || err.message?.includes("large") || err.message?.includes("exceeded");
+      toast.error(isLarge ? "PROCESSO INTERROMPIDO: PAYLOAD MUITO GRANDE." : "FALHA CRÍTICA NA COMUNICAÇÃO ALPHA.", {
+        style: { background: '#0f172a', color: '#ef4444', border: '1px solid #ef444450', fontWeight: '900', fontSize: '10px', textTransform: 'uppercase' }
+      });
     } finally {
       setLoading(false);
     }
