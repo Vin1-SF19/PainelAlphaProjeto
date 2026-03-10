@@ -43,7 +43,7 @@ export default function PainelAlphaClient({ session, chamadosIniciais, configBan
     const densidade = (session?.user as any)?.densidade_painel || "default";
     const temaNome = configBanco?.tema || "blue";
     const densidade_painel = configBanco?.densidade || "default";
-  
+
     const style = getTema(temaNome);
 
 
@@ -170,24 +170,44 @@ export default function PainelAlphaClient({ session, chamadosIniciais, configBan
                     <UserDropdown userName={userName} userRole={userRole} userImage={session?.user?.imagemUrl} />
                 </header>
 
-                <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <section
+
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {[
                         { label: "Nível de Acesso", value: userRole, icon: ShieldCheck, color: `${style.text} ${style.glow}`, active: false },
                         { label: "Integridade", value: "100%", icon: Activity, color: "text-emerald-500 bg-emerald-500/10", active: false },
                         { label: "Notificações", value: temNotificacaoGeral ? `${totalNotificacoesGeral} Pendentes` : "Limpo", icon: Bell, color: temNotificacaoGeral ? "text-amber-500 bg-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.3)]" : "text-amber-500 bg-amber-500/10", active: temNotificacaoGeral },
-                        { label: "Sistema Alpha", value: "Ativo", icon: Zap, color: "text-purple-500 bg-purple-500/10", active: false }
-                    ].map((stat, i) => (
-                        <div key={i} className={`p-5 rounded-[1.8rem] border flex items-center gap-4 transition-all duration-500 group overflow-hidden relative ${stat.active ? "bg-amber-600/10 border-amber-500/50 animate-pulse shadow-[0_0_20px_rgba(245,158,11,0.2)]" : "bg-slate-900/40 border-white/5 hover:bg-slate-900/60"}`}>
-                            {stat.active && <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-transparent animate-shimmer" />}
-                            <div className={`p-3 rounded-xl relative z-10 transition-transform duration-500 ${stat.color} ${stat.active ? "scale-110" : "group-hover:scale-110"}`}>
-                                <stat.icon size={20} className={stat.active ? "animate-bounce" : ""} />
+                        {
+                            label: "Sistema Alpha",
+                            value: "Explorar Guia",
+                            icon: Zap,
+                            color: "text-purple-500 bg-purple-500/10",
+                            active: false,
+                            href: "/PainelAlpha/Guia" 
+                        }
+                    ].map((stat, i) => {
+                        const Content = (
+                            <div className={`p-5 h-full rounded-[1.8rem] border flex items-center gap-4 transition-all duration-500 group overflow-hidden relative ${stat.active ? "bg-amber-600/10 border-amber-500/50 animate-pulse shadow-[0_0_20px_rgba(245,158,11,0.2)]" : "bg-slate-900/40 border-white/5 hover:bg-slate-900/60"} ${stat.href ? "hover:border-purple-500/50" : ""}`}>
+                                {stat.active && <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-transparent animate-shimmer" />}
+                                <div className={`p-3 rounded-xl relative z-10 transition-transform duration-500 ${stat.color} ${stat.active ? "scale-110" : "group-hover:scale-110"}`}>
+                                    <stat.icon size={20} className={stat.active ? "animate-bounce" : ""} />
+                                </div>
+                                <div className="relative z-10">
+                                    <p className={`text-[9px] font-black uppercase tracking-widest ${stat.active ? "text-amber-400" : "text-slate-500"}`}>{stat.label}</p>
+                                    <p className="text-xs font-black text-white uppercase italic">{stat.value}</p>
+                                </div>
+                                {stat.href && <ArrowRight size={14} className="absolute right-6 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all text-purple-500" />}
                             </div>
-                            <div className="relative z-10">
-                                <p className={`text-[9px] font-black uppercase tracking-widest ${stat.active ? "text-amber-400" : "text-slate-500"}`}>{stat.label}</p>
-                                <p className="text-xs font-black text-white uppercase italic">{stat.value}</p>
-                            </div>
-                        </div>
-                    ))}
+                        );
+
+                        return stat.href ? (
+                            <Link key={i} href={stat.href} className="block no-underline">
+                                {Content}
+                            </Link>
+                        ) : (
+                            <div key={i}>{Content}</div>
+                        );
+                    })}
                 </section>
 
                 <div className="flex flex-col gap-12">

@@ -6,11 +6,38 @@ import { adicionarSocio, salvarAlteracoesGeral, salvarAlteracoesGestao, salvarLo
 import { toast } from 'sonner';
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { getTema } from '@/lib/temas';
+
+interface ModalDadosProps {
+    editandoDados: boolean;
+    cnpj: string;
+    setCnpj: (val: string) => void;
+    razaoSocial: string;
+    setRazaoSocial: (val: string) => void;
+    nomeFantasia: string;
+    setNomeFantasia: (val: string) => void;
+    dataConstituicao: string;
+    setDataConstituicao: (val: string) => void;
+    regimeTributario: string;
+    setRegimeTributario: (val: string) => void;
+    uf: string;
+    setUf: (val: string) => void;
+    servicosSelecionados: string[];
+    analistaSelecionado: string;
+    style: any;
+}
 
 
-export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar }: { isOpen: boolean, onClose: () => void, cliente: any; aoSalvar?: () => void; }) {
-    const router = useRouter();
+
+
+export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar }: any) {
     const { data: session } = useSession();
+    const style = getTema((session?.user as any)?.tema_interface || "blue");
+
+    const [servicosSelecionados, setServicosSelecionados] = useState<string[]>([]);
+    const [analistaSelecionado, setAnalistaSelecionado] = useState("");
+
+    const router = useRouter();
     const [showNovoCS, setShowNovoCS] = useState(false);
     const [status, setStatus] = useState(cliente?.status || "Em Andamento");
     const [feedbackCS, setFeedbackCS] = useState<"pos" | "neg" | "na" | null>(null);
@@ -29,6 +56,13 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
     const [dataContratacao, setDataContratacao] = useState(cliente?.dataContratacao || "");
 
     const [analistaResponsavel, setAnalistaResponsavel] = useState(cliente?.analistaResponsavel || "");
+
+    const [showServicos, setShowServicos] = useState(false);
+    const [isCriandoServico, setIsCriandoServico] = useState(false);
+    const [novoServicoNome, setNovoServicoNome] = useState("");
+
+    const listaServicos = ["Habilitação RADAR - 50K", "Revisão RADAR - 150K", "Revisão RADAR - ILIMITADO", "TTD 409", "Recuperação AFRMM", "Outras Recuperaçoes Tributarias"];
+
 
 
 
@@ -54,6 +88,16 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
     const [listaSocios, setListaSocios] = useState<any[]>([]);
     const [showNovoSocio, setShowNovoSocio] = useState(false);
     const [novoSocio, setNovoSocio] = useState({ nome: "", telefone: "", obs: "" });
+
+
+    useEffect(() => {
+        if (cliente) {
+            setCnpj(cliente.cnpj || "");
+            setRazaoSocial(cliente.razaoSocial || "");
+            setServicosSelecionados(cliente.servicos?.split(",") || []);
+            setAnalistaSelecionado(cliente.analista || "");
+        }
+    }, [cliente]);
 
 
 
@@ -239,7 +283,8 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                 nomeFantasia: nomeFantasia,
                 dataConstituicao: dataConstituicao,
                 regimeTributario: regimeTributario,
-                uf: uf
+                uf: uf,
+                servicos: servicosSelecionados
             },
             session?.user?.nome || "Analista"
         );
@@ -285,62 +330,113 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                 <div className="p-8 space-y-10">
 
                     {/* SEÇÃO 1: IGUAL AO CADASTRO */}
-                    <section className={`grid grid-cols-1 md:grid-cols-12 gap-5 transition-all ${editandoDados ? "opacity-100" : "opacity-70"}`}>
+                    <section className={`grid grid-cols-1 md:grid-cols-12 gap-5 transition-all duration-500 ${editandoDados ? "opacity-100" : "opacity-70"}`}>
                         <div className="md:col-span-4 space-y-1">
-                            <label className="text-[9px] font-black uppercase text-slate-500 ml-1">CNPJ</label>
+                            <label className="text-[9px] font-black uppercase text-slate-500 ml-1 tracking-widest">CNPJ</label>
                             <input
                                 disabled={!editandoDados}
                                 value={cnpj}
                                 onChange={(e) => setCnpj(e.target.value)}
-                                className={`w-full bg-slate-900/50 border rounded-xl py-3 px-4 text-sm transition-all ${editandoDados ? "border-indigo-500/50 text-white" : "border-white/5 text-slate-400"}`}
+                                className={`w-full bg-slate-950/50 border rounded-xl py-3.5 px-4 text-sm transition-all outline-none ${editandoDados ? "border-alpha/30 text-white focus:border-alpha" : "border-white/5 text-slate-500 cursor-not-allowed"}`}
                             />
                         </div>
+
                         <div className="md:col-span-8 space-y-1">
-                            <label className="text-[9px] font-black uppercase text-slate-500 ml-1">Razão Social</label>
+                            <label className="text-[9px] font-black uppercase text-slate-500 ml-1 tracking-widest">Razão Social</label>
                             <input
                                 disabled={!editandoDados}
                                 value={razaoSocial}
                                 onChange={(e) => setRazaoSocial(e.target.value)}
-                                className={`w-full bg-slate-900/50 border rounded-xl py-3 px-4 text-sm transition-all ${editandoDados ? "border-indigo-500/50 text-white" : "border-white/5 text-slate-400"}`}
+                                className={`w-full bg-slate-950/50 border rounded-xl py-3.5 px-4 text-sm transition-all outline-none ${editandoDados ? "border-alpha/30 text-white focus:border-alpha" : "border-white/5 text-slate-500 cursor-not-allowed"}`}
                             />
                         </div>
+
                         <div className="md:col-span-6 space-y-1">
-                            <label className="text-[9px] font-black uppercase text-slate-500 ml-1">Nome Fantasia</label>
+                            <label className="text-[9px] font-black uppercase text-slate-500 ml-1 tracking-widest">Nome Fantasia</label>
                             <input
                                 disabled={!editandoDados}
                                 value={nomeFantasia}
                                 onChange={(e) => setNomeFantasia(e.target.value)}
-                                className={`w-full bg-slate-900/50 border rounded-xl py-3 px-4 text-sm transition-all ${editandoDados ? "border-indigo-500/50 text-white" : "border-white/5 text-slate-400"}`}
+                                className={
+
+                                    `w-full bg-slate-950/50 border rounded-xl py-3.5 px-4 text-sm transition-all outline-none ${editandoDados ? "border-alpha/30 text-white focus:border-alpha" : "border-white/5 text-slate-500 cursor-not-allowed"}`}
                             />
                         </div>
+
                         <div className="md:col-span-3 space-y-1">
-                            <label className="text-[9px] font-black uppercase text-slate-500 ml-1">Data Constituição</label>
+                            <label className="text-[9px] font-black uppercase text-slate-500 ml-1 tracking-widest">Data Constituição</label>
                             <input
                                 disabled={!editandoDados}
                                 value={dataConstituicao}
                                 onChange={(e) => setDataConstituicao(e.target.value)}
-                                className={`w-full bg-slate-900/50 border rounded-xl py-3 px-4 text-sm transition-all ${editandoDados ? "border-indigo-500/50 text-white" : "border-white/5 text-slate-400"}`}
+                                className={`w-full bg-slate-950/50 border rounded-xl py-3.5 px-4 text-sm transition-all outline-none ${editandoDados ? "border-alpha/30 text-white focus:border-alpha" : "border-white/5 text-slate-500 cursor-not-allowed"}`}
                             />
                         </div>
+
                         <div className="md:col-span-3 space-y-1">
-                            <label className="text-[9px] font-black uppercase text-slate-500 ml-1">Regime</label>
+                            <label className="text-[9px] font-black uppercase text-slate-500 ml-1 tracking-widest">Regime</label>
                             <input
                                 disabled={!editandoDados}
                                 value={regimeTributario}
                                 onChange={(e) => setRegimeTributario(e.target.value)}
-                                className={`w-full bg-slate-900/50 border rounded-xl py-3 px-4 text-sm transition-all ${editandoDados ? "border-indigo-500/50 text-white" : "border-white/5 text-slate-400"}`}
+                                className={`w-full bg-slate-950/50 border rounded-xl py-3.5 px-4 text-sm transition-all outline-none ${editandoDados ? "border-alpha/30 text-white focus:border-alpha" : "border-white/5 text-slate-500 cursor-not-allowed"}`}
                             />
                         </div>
+
                         <div className="md:col-span-3 space-y-1">
-                            <label className="text-[9px] font-black uppercase text-slate-500 ml-1">UF</label>
+                            <label className="text-[9px] font-black uppercase text-slate-500 ml-1 tracking-widest">UF</label>
                             <input
                                 disabled={!editandoDados}
                                 value={uf}
                                 onChange={(e) => setUf(e.target.value)}
-                                className={`w-full bg-slate-900/50 border rounded-xl py-3 px-4 text-sm transition-all ${editandoDados ? "border-indigo-500/50 text-white" : "border-white/5 text-slate-400"}`}
+                                className={`w-full bg-slate-950/50 border rounded-xl py-3.5 px-4 text-sm transition-all outline-none ${editandoDados ? "border-alpha/30 text-white focus:border-alpha" : "border-white/5 text-slate-500 cursor-not-allowed"}`}
                             />
                         </div>
+
+                        <div className="md:col-span-9 space-y-1 relative">
+                            <label className="text-[9px] font-black uppercase text-slate-500 ml-1 tracking-widest">
+                                Serviço Contratado
+                            </label>
+
+                            {editandoDados ? (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowServicos(!showServicos)}
+                                    className="w-full bg-slate-950/50 border border-alpha/30 rounded-xl py-3.5 px-4 text-sm font-black text-white hover:border-alpha transition-all text-left flex justify-between items-center italic uppercase group"
+                                >
+                                    {servicosSelecionados.length > 0 ? servicosSelecionados.join(" + ") : "SELECIONAR SERVIÇO"}
+                                    <Plus size={14} className="text-alpha group-hover:scale-125 transition-transform" />
+                                </button>
+                            ) : (
+                                <div className={`w-full bg-slate-950/30 border border-white/5 rounded-xl py-3.5 px-4 text-sm font-black ${servicosSelecionados.length > 0 ? style.text : "text-slate-600"} italic uppercase`}>
+                                    {servicosSelecionados.length > 0 ? servicosSelecionados.join(" + ") : "NENHUM SERVIÇO DEFINIDO"}
+                                </div>
+                            )}
+
+
+
+                            {showServicos && editandoDados && (
+                                <div className="absolute top-full mt-2 w-full bg-slate-900 border border-white/10 rounded-2xl p-4 z-50 shadow-2xl animate-in zoom-in-95 duration-200">
+                                    <div className="space-y-1 max-h-60 overflow-y-auto custom-scrollbar">
+                                        {listaServicos.map(s => (
+                                            <button
+                                                key={s}
+                                                type="button"
+                                                onClick={() => {
+                                                    setServicosSelecionados([s]);
+                                                    setShowServicos(false);
+                                                }}
+                                                className="w-full text-left p-3 rounded-xl text-xs font-bold text-slate-400 hover:bg-white/5 hover:text-alpha transition-all"
+                                            >
+                                                {s}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </section>
+
 
 
                     <section className="grid grid-cols-1 md:grid-cols-4 gap-6 pt-6 border-t border-white/5">

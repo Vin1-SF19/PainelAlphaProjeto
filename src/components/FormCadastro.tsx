@@ -120,11 +120,6 @@ export default function CadastroUsuarios() {
             <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Total Equipe</span>
             <span className="text-sm font-black text-white italic">{usersList.length}</span>
           </div>
-          <div className="h-8 w-px bg-white/10" />
-          <div className="flex flex-col items-end">
-            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Acessos Hoje</span>
-            <span className="text-sm font-black text-emerald-400 italic">24</span>
-          </div>
         </div>
       </nav>
 

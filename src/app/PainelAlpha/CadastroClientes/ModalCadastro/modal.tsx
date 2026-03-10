@@ -33,11 +33,9 @@ export default function ModalCadastroCliente({ isOpen, onClose }: { isOpen: bool
         { nome: "", telefone: "", obs: "" }
     ]);
 
-    // 2. VARIÁVEIS DE LISTA
     const listaServicos = ["Habilitação RADAR - 50K", "Revisão RADAR - 150K", "Revisão RADAR - ILIMITADO", "TTD 409", "Recuperação AFRMM", "Outras Recuperaçoes Tributarias"];
     const listaAnalistas = ["Vitor", "Maria", "Kaline", "Marcelo"];
 
-    // 3. FUNÇÕES
     const updateSocio = (index: number, field: string, value: string) => {
         const novosSocios = [...socios];
         novosSocios[index] = { ...novosSocios[index], [field]: value };
@@ -192,7 +190,7 @@ export default function ModalCadastroCliente({ isOpen, onClose }: { isOpen: bool
                                             <button
                                                 key={s}
                                                 onClick={() => {
-                                                    setServicosSelecionados([s]); // Seleciona e substitui (ou use spread para manter múltiplos)
+                                                    setServicosSelecionados([s]); 
                                                     setShowServicos(false);
                                                 }}
                                                 className="w-full text-left p-3 rounded-xl text-xs font-bold text-slate-400 hover:bg-white/5 hover:text-indigo-400 transition-all"
@@ -201,7 +199,6 @@ export default function ModalCadastroCliente({ isOpen, onClose }: { isOpen: bool
                                             </button>
                                         ))}
 
-                                        {/* OPÇÃO NOVO SERVIÇO */}
                                         {!isCriandoServico ? (
                                             <button
                                                 onClick={() => setIsCriandoServico(true)}

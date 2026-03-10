@@ -36,7 +36,7 @@ export async function agendarSala(dados: { sala: string, usuario: string, data: 
         sala: dados.sala,
         usuario: dados.usuario,
         data: new Date(`${dados.data}T00:00:00-03:00`),
-        inicio: dataHoraInicio, 
+        inicio: dataHoraInicio,
         fim: dataHoraFim,
         status: "Agendado"
       }
@@ -89,8 +89,12 @@ export async function buscarReservasAtivas() {
 
 export async function editarReserva(id: number, dados: { data: string, inicio: string, fim: string, sala: string }) {
   try {
-    const dataHoraInicio = toBRT(dados.data, dados.inicio);
-    const dataHoraFim = toBRT(dados.data, dados.fim);
+    const dataHoraInicio = new Date(`${dados.data}T${dados.inicio}:00-03:00`);
+    const dataHoraFim = new Date(`${dados.data}T${dados.fim}:00-03:00`);
+
+    if (isNaN(dataHoraInicio.getTime()) || isNaN(dataHoraFim.getTime())) {
+      return { success: false, error: "Horário inválido." };
+    }
 
     const conflito = await db.reservas.findFirst({
       where: {
@@ -110,17 +114,19 @@ export async function editarReserva(id: number, dados: { data: string, inicio: s
       where: { id },
       data: {
         sala: dados.sala,
-        data: toBRT(dados.data, "00:00"),
+        data: new Date(`${dados.data}T00:00:00-03:00`),
         inicio: dataHoraInicio,
         fim: dataHoraFim
       }
     });
+
     revalidatePath("/PainelAlpha/ReservaSalas");
     return { success: true };
   } catch (e) {
-    return { success: false, error: "Erro ao atualizar." };
+    return { success: false, error: "Erro ao atualizar no banco." };
   }
 }
+
 
 export async function buscarHistoricoReservas() {
   try {

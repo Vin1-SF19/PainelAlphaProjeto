@@ -27,12 +27,12 @@ interface Documento {
 }
 
 
-const SETORES = ["REGRAS GERAIS", "OPERACIONAL", "COMERCIAL", "RECURSOS HUMANOS", "FINANCEIRO", "JURÍDICO", "PARCEIRO", "SERVIÇOS GERAIS"];
-const SENHA_MESTRA = "1234";
+const SETORES = ["Diretrizes", "T.I", "OPERACIONAL", "COMERCIAL", "RECURSOS HUMANOS", "FINANCEIRO", "JURÍDICO", "PARCEIRO", "SERVIÇOS GERAIS"];
+const SENHA_MESTRA = "@Alpha2562";
 
 export default function PaginaDocumentos() {
     const { data: session, status } = useSession();
-    const [setorAtivo, setSetorAtivo] = useState("REGRAS GERAIS");
+    const [setorAtivo, setSetorAtivo] = useState("Diretrizes");
     const [documentos, setDocumentos] = useState<Documento[]>([]);
     const [docSelecionado, setDocSelecionado] = useState<Documento | null>(null);
     const [busca, setBusca] = useState("");
@@ -214,7 +214,7 @@ export default function PaginaDocumentos() {
                 return setorDoc === abaSelecionada;
             }
 
-            const ehRegrasGerais = setorDoc === "REGRAS GERAIS";
+            const ehRegrasGerais = setorDoc === "Diretrizes";
             const ehProprioSetor = setorDoc === role;
 
             return setorDoc === abaSelecionada && (ehRegrasGerais || ehProprioSetor);
@@ -360,10 +360,10 @@ export default function PaginaDocumentos() {
                         </div>
                         <div className="flex flex-wrap justify-center gap-6">
                             {SETORES.map(s => {
-                                const podeVer = isAdmin || s === "REGRAS GERAIS" || roleUser === s || rh;
+                                const podeVer = isAdmin || s === "Diretrizes" || roleUser === s || rh;
                                 if (!podeVer) return null;
                                 return (
-                                    <button key={s} onClick={() => { setSetorAtivo(s); setDocSelecionado(null); }} className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase transition-all ${setorAtivo === s ? "bg-blue-600 text-white scale-105" : "text-slate-500 hover:bg-white/5"}`}>{s}</button>
+                                    <button key={s} onClick={() => { setSetorAtivo(s); setDocSelecionado(null); }} className={`cursor-pointer px-4 py-2 rounded-xl text-[9px] font-black uppercase transition-all ${setorAtivo === s ? "bg-blue-600 text-white scale-105" : "text-slate-500 hover:bg-white/5"}`}>{s}</button>
                                 );
                             })}
                         </div>

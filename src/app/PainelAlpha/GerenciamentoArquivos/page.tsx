@@ -8,10 +8,11 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react"
 import { Switch } from "@/components/ui/switch";
 
-const SETORES = ["REGRAS GERAIS", "OPERACIONAL", "COMERCIAL", "RECURSOS HUMANOS", "FINANCEIRO", "JURÍDICO", "PARCEIRO", "SERVIÇOS GERAIS"];
+const SETORES = ["Diretrizes", "T.I", "OPERACIONAL", "COMERCIAL", "RECURSOS HUMANOS", "FINANCEIRO", "JURÍDICO", "PARCEIRO", "SERVIÇOS GERAIS"];
 
 const PASTAS_ESTATICAS: Record<string, string[]> = {
-  "REGRAS GERAIS": ["MANUAIS", "POLÍTICAS", "CÓDIGO DE CONDUTA"],
+  "Diretrizes": ["MANUAIS", "POLÍTICAS", "CÓDIGO DE CONDUTA"],
+  "T.I": ["MANUAIS", "PADROES", "CODIGOS LIVRES"],
   "OPERACIONAL": ["PROCEDIMENTOS", "CHECKLISTS", "LOGÍSTICA"],
   "COMERCIAL": ["TABELAS DE PREÇOS", "APRESENTAÇÕES", "PROPOSTAS"],
   "RECURSOS HUMANOS": ["CONTRATOS", "CURRÍCULOS", "TREINAMENTOS"],

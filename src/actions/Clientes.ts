@@ -219,11 +219,8 @@ export async function salvarAlteracoesGeral(clienteId: number, dadosNovos: any, 
     await db.clientes.update({
       where: { id: clienteId },
       data: {
-        // --- CAMPOS QUE NÃO ESTAVAM SALVANDO ---
-        analistaResponsavel: dadosNovos.analistaResponsavel, 
+        analistaResponsavel: dadosNovos.analistaResponsavel,
         dataContratacao: dadosNovos.dataContratacao ? new Date(dadosNovos.dataContratacao).toISOString() : null,
-
-        // --- RESTANTE DOS CAMPOS ---
         status: dadosNovos.status,
         nps: (dadosNovos.nps === "" || dadosNovos.nps === null) ? null : Number(dadosNovos.nps),
         feedbackGoogle: dadosNovos.feedbackGoogle,
@@ -234,6 +231,7 @@ export async function salvarAlteracoesGeral(clienteId: number, dadosNovos: any, 
         dataConstituicao: dadosNovos.dataConstituicao,
         regimeTributario: dadosNovos.regimeTributario,
         uf: dadosNovos.uf,
+        servicos: Array.isArray(dadosNovos.servicos) ? dadosNovos.servicos.join(", ") : dadosNovos.servicos,
         dataExito: dadosNovos.dataExito ? new Date(dadosNovos.dataExito).toISOString() : (dadosNovos.status === "Deferido" ? new Date().toISOString() : null),
         updatedAt: new Date().toISOString(),
       }
@@ -255,6 +253,7 @@ export async function salvarAlteracoesGeral(clienteId: number, dadosNovos: any, 
     return { success: false, error: error.message };
   }
 }
+
 
 
 

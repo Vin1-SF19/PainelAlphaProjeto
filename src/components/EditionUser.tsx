@@ -41,10 +41,10 @@ const MODULOS_SISTEMA = [
   { id: "radar", label: "Coletor RADAR", desc: "Consultas" },
   { id: "chamados", label: "Chamados", desc: "Suporte TI" },
   { id: "Reservas", label: "Reservas", desc: "Salas de reunião" },
-  { id: "Documentos", label: "Documentos", desc: "Manuais e guias" },
+  { id: "Documentos", label: "POP", desc: "Manuais e guias" },
   { id: "UpDocumentos", label: "UpDocumentos", desc: "Uploads de Arquivos" },
-  { id: "Historico", label: "Historico", desc: "Historico de Arquivos" },
-  { id: "Cliente", label: "Cliente", desc: "Cadastro de Cliente" }
+  { id: "Historico", label: "Gerenciamento", desc: "Gerenciamento do POP" },
+  { id: "Cliente", label: "Cs & Nps", desc: "Cadastro de Cliente" }
 ];
 
 const SETORES_LISTA = [
