@@ -19,16 +19,17 @@ export default async function Chamados({
 
     const { status } = await searchParams;
     const isAdmin = session.user.role === "Admin";
+    const isCeo = session.user.role === "CEO";
     const userId = Number(session.user.id);
 
     const todosOsChamadosBase = await db.chamados.findMany({
-        where: isAdmin ? {} : { usuarioId: userId },
-        select: { status: true } 
+        where: isAdmin || isCeo ? {} : { usuarioId: userId },
+        select: { status: true }
     });
 
     const chamados = await db.chamados.findMany({
         where: {
-            ...(isAdmin ? {} : { usuarioId: userId }),
+            ...(isAdmin || isCeo ? {} : { usuarioId: userId }),
             ...(status && status !== "TODOS" && { status: status as any }),
         },
         orderBy: { createdAt: 'desc' },
@@ -71,7 +72,7 @@ export default async function Chamados({
 
     return (
         <div className="min-h-screen bg-[#020617] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black px-4 py-10 sm:px-8 custom-scrollbar">
-            {/* HEADER COM EFEITO NEON */}
+            {/* HEADER  */}
             <div className="mx-auto max-w-7xl mb-10 rounded-[2.5rem] border border-white/5 bg-slate-900/20 backdrop-blur-3xl shadow-2xl p-8 flex flex-col lg:flex-row items-center justify-between gap-6 ring-1 ring-white/5 relative overflow-hidden group">
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
@@ -81,7 +82,7 @@ export default async function Chamados({
                             <LayoutDashboard className="text-blue-400 w-8 h-8" />
                         </div>
                         <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tighter uppercase italic">
-                        Chamados <span className="text-blue-500">Internos</span>
+                            Chamados <span className="text-blue-500">Internos</span>
                         </h1>
                     </div>
                     <div className="flex items-center gap-4 pl-1">
@@ -95,7 +96,7 @@ export default async function Chamados({
 
                 <div className="flex items-center gap-4 relative z-10">
                     <BotaoVoltar />
-                    {!isAdmin && (
+                    {(!isAdmin || isCeo) && (
                         <Link href="/PainelAlpha/Chamados/NovoChamado">
                             <Button className="cursor-pointer bg-blue-600 hover:bg-blue-500 text-white rounded-[1.5rem] px-8 h-14 font-black uppercase tracking-widest shadow-2xl shadow-blue-900/40 border-t border-white/20 transition-all active:scale-95 group">
                                 <PlusCircle className="mr-2 w-5 h-5 group-hover:rotate-90 transition-transform" />

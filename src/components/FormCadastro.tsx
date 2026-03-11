@@ -203,12 +203,13 @@ export default function CadastroUsuarios() {
                   <Label className="text-[10px] font-black uppercase text-amber-500 ml-1 tracking-widest italic flex items-center gap-2">
                     <ShieldCheck size={14} /> Hierarquia Operacional
                   </Label>
-                  <Select name="role" defaultValue="OPERACIONAL">
+                  <Select name="role" defaultValue="CEO">
                     <SelectTrigger className="h-14 bg-black/40 border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest focus:border-blue-500/50">
                       <SelectValue placeholder="Definir Nível" />
                     </SelectTrigger>
                     <SelectContent className="bg-slate-950 border-white/10 text-white rounded-xl max-h-[300px]">
                       <SelectItem value="Admin" className="text-[10px] font-black uppercase py-3">Administrador MASTER</SelectItem>
+                      <SelectItem value="CEO" className="text-[10px] font-black uppercase py-3">CEO </SelectItem>
                       <SelectItem value="OPERACIONAL" className="text-[10px] font-black uppercase py-3">OPERACIONAL</SelectItem>
                       <SelectItem value="COMERCIAL" className="text-[10px] font-black uppercase py-3">COMERCIAL</SelectItem>
                       <SelectItem value="RECURSOS HUMANOS" className="text-[10px] font-black uppercase py-3">RECURSOS HUMANOS</SelectItem>

@@ -49,6 +49,7 @@ const MODULOS_SISTEMA = [
 
 const SETORES_LISTA = [
   { value: "Admin", label: "TI.ADMINISTRADOR", color: "text-blue-400" },
+  { value: "CEO", label: "CEO", color: "text-blue-400" },
   { value: "OPERACIONAL", label: "OPERACIONAL", color: "text-slate-300" },
   { value: "COMERCIAL", label: "COMERCIAL", color: "text-slate-300" },
   { value: "RECURSOS HUMANOS", label: "RECURSOS HUMANOS", color: "text-slate-300" },
