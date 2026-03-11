@@ -27,6 +27,10 @@ model usuarios {
   tema_interface   String? @default("blue")
   densidade_painel String? @default("default")
 
+  cargo            String?
+  data_contratacao String?
+  status           String  @default("ATIVO")
+
   reset_token   String?
   reset_expires DateTime?
 }

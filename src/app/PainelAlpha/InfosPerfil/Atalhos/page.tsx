@@ -33,6 +33,8 @@ const MODULOS_BASE = [
   { id: "UpDocumentos", title: "Upload", img: "/pasta.png", tag: "Arquivos" },
   { id: "Historico", title: "Gerenciamento do POP", img: "/historico.png", tag: "Auditoria" },
   { id: "Cliente", title: "SISTEMA CS & NPS", img: "/local-na-rede-internet.png", tag: "Comercial" },
+  { id: "Senhas", title: "Gerenciamento de Acessos", img: "/senha.png", tag: "Administração" }
+
 ];
 
 export default function AtalhosPage() {
@@ -105,7 +107,7 @@ export default function AtalhosPage() {
   }
 
   const handleSalvar = async () => {
-    setLoading(true); 
+    setLoading(true);
     const apenasOsFavoritos = items
       .filter((i: any) => selecionados.includes(i.id))
       .map((i: any) => i.id);
@@ -131,7 +133,7 @@ export default function AtalhosPage() {
     } catch (error) {
       toast.error("Erro na transmissão");
     } finally {
-      setLoading(false); 
+      setLoading(false);
     }
   };
 
@@ -140,15 +142,15 @@ export default function AtalhosPage() {
     setEsconderBloqueados(novosEsconder);
 
     const idsBloqueados = items
-        .filter((m: any) => !(isAdmin || userPermissions.includes(m.id.toLowerCase())))
-        .map((m: any) => m.id);
+      .filter((m: any) => !(isAdmin || userPermissions.includes(m.id.toLowerCase())))
+      .map((m: any) => m.id);
 
     if (novosEsconder) {
-        setSelecionados(prev => prev.filter(id => !idsBloqueados.includes(id)));
+      setSelecionados(prev => prev.filter(id => !idsBloqueados.includes(id)));
     } else {
-        setSelecionados(prev => Array.from(new Set([...prev, ...idsBloqueados])));
+      setSelecionados(prev => Array.from(new Set([...prev, ...idsBloqueados])));
     }
-};
+  };
 
 
 
@@ -175,20 +177,20 @@ export default function AtalhosPage() {
           </div>
           <div className="flex items-center gap-4">
 
-          <BotaoVoltar/>
-        <button 
-            onClick={handleSalvar} 
-            disabled={loading}
-            className={`h-14 px-10 rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center gap-3 shadow-xl transition-all active:scale-95 ${loading ? "bg-slate-800 cursor-wait opacity-70" : "bg-blue-600 hover:bg-blue-500 cursor-pointer"}`}
-        >
-            {loading ? (
+            <BotaoVoltar />
+            <button
+              onClick={handleSalvar}
+              disabled={loading}
+              className={`h-14 px-10 rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center gap-3 shadow-xl transition-all active:scale-95 ${loading ? "bg-slate-800 cursor-wait opacity-70" : "bg-blue-600 hover:bg-blue-500 cursor-pointer"}`}
+            >
+              {loading ? (
                 <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
+              ) : (
                 <Save size={18} />
-            )}
-            {loading ? "Sincronizando..." : "Sincronizar Painel"}
-        </button>
-    </div>
+              )}
+              {loading ? "Sincronizando..." : "Sincronizar Painel"}
+            </button>
+          </div>
         </header>
 
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
