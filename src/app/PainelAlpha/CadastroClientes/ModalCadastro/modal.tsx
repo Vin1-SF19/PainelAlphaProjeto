@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { CadastrarCliente } from "@/actions/Clientes";
 
 export default function ModalCadastroCliente({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
-    // 1. ESTADOS
+   
     const [dataContratacao, setDataContratacao] = useState(new Date().toISOString().split('T')[0]);
     const [showServicos, setShowServicos] = useState(false);
     const [showAnalistas, setShowAnalistas] = useState(false);

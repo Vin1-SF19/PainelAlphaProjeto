@@ -33,8 +33,8 @@ const MODULOS_BASE = [
   { id: "UpDocumentos", title: "Upload", img: "/pasta.png", tag: "Arquivos" },
   { id: "Historico", title: "Gerenciamento do POP", img: "/historico.png", tag: "Auditoria" },
   { id: "Cliente", title: "SISTEMA CS & NPS", img: "/local-na-rede-internet.png", tag: "Comercial" },
-  { id: "Senhas", title: "Gerenciamento de Acessos", img: "/senha.png", tag: "Administração" }
-
+  { id: "Senhas", title: "Gerenciamento de Acessos", img: "/senha.png", tag: "Administração" },
+  { id: "Perse", title: "Alpha Connect", img: "/planejamento-tributario.png", tag: "Connect"}
 ];
 
 export default function AtalhosPage() {

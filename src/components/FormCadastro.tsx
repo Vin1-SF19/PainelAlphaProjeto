@@ -189,7 +189,9 @@ export default function CadastroUsuarios() {
                       { id: "Documentos", label: "POP" },
                       { id: "UpDocumentos", label: "Uploads" },
                       { id: "Historico", label: "Gerenciamento do POP" },
-                      { id: "Cliente", label: "Cadastro de Cliente" }
+                      { id: "Cliente", label: "Cadastro de Cliente" },
+                      { id: "Senhas", label: "Senhas gerais" },
+                      { id: "Perse", label: "Radar Fiscal" },
                     ].map((item) => (
                       <div key={item.id} className="flex items-center justify-between p-4 rounded-2xl bg-black/40 border border-white/5 hover:border-blue-500/30 transition-all group">
                         <Label htmlFor={item.id} className="text-[9px] font-black uppercase text-slate-500 group-hover:text-white cursor-pointer tracking-tighter">{item.label}</Label>

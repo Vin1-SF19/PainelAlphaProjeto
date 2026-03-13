@@ -368,12 +368,9 @@ export default function CadastroCliente() {
                 aoSalvar={carregarDados}
             />
 
-            {/* MODAL DE CADASTRO */}
             <ModalCadastroCliente
                 isOpen={modalAberto}
-                onClose={() => setModalAberto(
-
-                    false)}
+                onClose={() => setModalAberto(false)}
             />
 
             <ModalFiltros

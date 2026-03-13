@@ -224,3 +224,70 @@ model avisos_globais {
   tipo      String   @default("warning")
   criado_em DateTime @default(now())
 }
+
+model colaboradores_core {
+  id               Int     @id @default(autoincrement())
+  nome             String
+  setor            String
+  cargo            String
+  data_contratacao String?
+  status           String? @default("ATIVO")
+  criado_em        String?
+}
+
+model sistemas_core {
+  id        Int     @id @default(autoincrement())
+  nome      String
+  link      String
+  icone     String? @default("google")
+  criado_em String?
+
+  recursos vault_recursos[]
+}
+
+model vault_recursos {
+  id             Int     @id @default(autoincrement())
+  colaborador_id String
+  sistema_id     Int
+  login          String
+  senha          String
+  criado_em      String?
+
+  sistema sistemas_core @relation(fields: [sistema_id], references: [id])
+}
+
+model radar_fiscal {
+  id                 Int     @id @default(autoincrement())
+  cnpj               String  @unique
+  razao_social       String?
+  nome_fantasia      String?
+  qualificacao       String?
+  situacao_cadastral String?
+  municipio          String?
+  uf                 String?
+  data_abertura      String?
+  capital_social     String?
+
+  regime_receita        String?
+  regime_ea             String?
+  data_opcao_simples    String?
+  data_exclusao_simples String?
+  divida_tributaria     Float?  @default(0)
+
+  historico_regime String?
+  cnaes            String?
+  qsa              String?
+
+  data_consulta String?
+  perse_anexo   String?
+  perse         String?
+  perse_motivo  String?
+  fonte         String? @default("API")
+}
+
+model historico_planilha_fiscal {
+  id      Int      @id @default(autoincrement())
+  nome    String
+  arquivo Bytes
+  data    DateTime @default(now())
+}

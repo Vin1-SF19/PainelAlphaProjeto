@@ -93,7 +93,8 @@ export default function PainelAlphaClient({ session, chamadosIniciais, configBan
         { id: "UpDocumentos", title: "Upload POP", desc: "Portal para transmissão de novos arquivos ao servidor.", img: "../pasta.png", link: "/PainelAlpha/GerenciamentoArquivos", color: "from-rose-600/20", tag: "Arquivos" },
         { id: "Historico", title: "Gerenciamento do POP", desc: "Controle e rastreabilidade do histórico de arquivos.", img: "../historico.png", link: "/PainelAlpha/HistoricoArquivos", color: "from-cyan-600/20", tag: "Auditoria" },
         { id: "Cliente", title: "SISTEMA CS & NPS", desc: "Módulo estratégico para cadastro de novos parceiros.", img: "../local-na-rede-internet.png", link: "/PainelAlpha/CadastroClientes", color: "from-orange-600/20", tag: "Comercial" },
-        { id: "Senhas", title: "Gerenciamento de Acessos", desc: "Sistema de gerenciamento de senhas e acessos.", img: "../senha.png", link: "/PainelAlpha/AlphaVault", color: "from-red-600/20", tag: "Administração" }
+        { id: "Senhas", title: "Gerenciamento de Acessos", desc: "Sistema de gerenciamento de senhas e acessos.", img: "../senha.png", link: "/PainelAlpha/AlphaVault", color: "from-red-600/20", tag: "Administração" },
+        { id: "Perse", title: "Analise Fiscal", desc: "Sistema de pesquisa cnpj", img: "../planejamento-tributario.png", link: "/PainelAlpha/AlphaConnect", color: "from-green-600/20", tag: "Connect" }
     ];
 
     const { favoritos, restante } = useMemo(() => {

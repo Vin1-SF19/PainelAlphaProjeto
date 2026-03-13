@@ -44,7 +44,9 @@ const MODULOS_SISTEMA = [
   { id: "Documentos", label: "POP", desc: "Manuais e guias" },
   { id: "UpDocumentos", label: "UpDocumentos", desc: "Uploads de Arquivos" },
   { id: "Historico", label: "Gerenciamento", desc: "Gerenciamento do POP" },
-  { id: "Cliente", label: "Cs & Nps", desc: "Cadastro de Cliente" }
+  { id: "Cliente", label: "Cs & Nps", desc: "Cadastro de Cliente" },
+  { id: "Senhas", label: "Gerenciamento de Senhas", desc: "Gerencie Cadastros e Senhas de sistemas" },
+  { id: "Perse", label: "Analise Fiscal", desc: "Sistema de pesquisa cnpj" },
 ];
 
 const SETORES_LISTA = [

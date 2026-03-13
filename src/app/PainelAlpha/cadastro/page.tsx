@@ -1,5 +1,4 @@
 import { auth } from '../../../../auth'
-import HeaderUser from "@/components/HeaderUser";
 import CadastroUsuarios from "@/components/FormCadastro";
 import { redirect } from 'next/navigation';
 
