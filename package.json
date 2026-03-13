@@ -42,7 +42,7 @@
     "dotenv": "^17.2.4",
     "exceljs": "^4.4.0",
     "file-saver": "^2.0.5",
-    "framer-motion": "^12.35.0",
+    "framer-motion": "^12.36.0",
     "lucide": "^0.563.0",
     "lucide-react": "^0.563.0",
     "next": "16.1.6",
