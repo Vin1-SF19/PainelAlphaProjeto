@@ -1,26 +1,31 @@
 "use client";
 
 import { useEffect } from "react";
-import { useSession } from "next-auth/react";
 
 export function Heartbeat() {
-  const { data: session, status } = useSession();
-
   useEffect(() => {
-    if (status !== "authenticated") return;
+    const controller = new AbortController();
 
     const enviarSinal = async () => {
       try {
-        await fetch("/api/heartbeat", { method: "POST" });
-      } catch (e) {
-        console.error("Falha no radar");
+        await fetch("/api/heartbeat", { 
+          method: "POST",
+          signal: controller.signal 
+        });
+      } catch (e: any) {
+        if (e.name !== 'AbortError') {
+        }
       }
     };
 
-    enviarSinal(); 
-    const interval = setInterval(enviarSinal, 20000); 
-    return () => clearInterval(interval);
-  }, [status]);
+    enviarSinal();
+    const intervalo = setInterval(enviarSinal, 20000);
+
+    return () => {
+      controller.abort(); 
+      clearInterval(intervalo); 
+    };
+  }, []);
 
   return null;
 }

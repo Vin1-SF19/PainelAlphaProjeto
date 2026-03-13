@@ -2,20 +2,27 @@
 
 import { useState } from "react";
 import ModalDetalhesCNPJ from "./ModalDetalhesCNPJ";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface TabelaRadarProps {
     dados: any[];
     style: any;
-    selecionados: number[]; // Recebe do pai
+    selecionados: number[];
     onSelectionChange: (ids: number[]) => void;
 }
 
 export function TabelaRadar({ dados, style, selecionados, onSelectionChange }: TabelaRadarProps) {
     const [detalheSelecionado, setDetalheSelecionado] = useState<any>(null);
+    const [pagina, setPagina] = useState(1);
+    const itensPorPagina = 20;
+
+    const totalPaginas = Math.ceil(dados.length / itensPorPagina);
+    const inicio = (pagina - 1) * itensPorPagina;
+    const dadosExibidos = dados.slice(inicio, inicio + itensPorPagina);
 
     const handleToggleSelect = (id: number) => {
-        const novos = selecionados.includes(id) 
-            ? selecionados.filter(i => i !== id) 
+        const novos = selecionados.includes(id)
+            ? selecionados.filter(i => i !== id)
             : [...selecionados, id];
         onSelectionChange(novos);
     };
@@ -53,9 +60,9 @@ export function TabelaRadar({ dados, style, selecionados, onSelectionChange }: T
                         </tr>
                     </thead>
                     <tbody>
-                        {dados.map((item) => (
-                            <tr 
-                                key={item.id} 
+                        {dadosExibidos.map((item) => (
+                            <tr
+                                key={item.id}
                                 className={`border-b border-white/5 transition-colors ${selecionados.includes(item.id) ? 'bg-emerald-500/10' : 'hover:bg-white/[0.02]'}`}
                             >
                                 <td className="p-6">
@@ -86,14 +93,45 @@ export function TabelaRadar({ dados, style, selecionados, onSelectionChange }: T
                                         {Number(item.divida_tributaria) > 0 ? Number(item.divida_tributaria).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : "SEM DÍVIDAS"}
                                     </span>
                                 </td>
-                                <td className="p-6 text-[10px] font-bold uppercase italic text-emerald-400">
-                                    {item.perse_anexo || 'NÃO'}
+                                <td className="p-6">
+                                    <span className={`text-[10px] font-black uppercase italic ${item.perse === "SIM"
+                                        ? "text-emerald-400"
+                                        : "text-red-400"
+                                        }`}>
+                                        {item.perse === "SIM" ? (item.perse_anexo) : "NÃO"}
+                                    </span>
                                 </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
             </div>
+
+            {/* Controles de Paginação */}
+            {totalPaginas > 1 && (
+                <div className="p-6 flex items-center justify-between border-t border-white/5 bg-black/20">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                        Página {pagina} de {totalPaginas} ({dados.length} registros)
+                    </span>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setPagina(p => Math.max(1, p - 1))}
+                            disabled={pagina === 1}
+                            className="p-2 bg-white/5 rounded-lg disabled:opacity-20 hover:bg-white/10"
+                        >
+                            <ChevronLeft size={16} />
+                        </button>
+                        <button
+                            onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))}
+                            disabled={pagina === totalPaginas}
+                            className="p-2 bg-white/5 rounded-lg disabled:opacity-20 hover:bg-white/10"
+                        >
+                            <ChevronRight size={16} />
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {detalheSelecionado && (
                 <ModalDetalhesCNPJ key={detalheSelecionado.id} item={detalheSelecionado} onClose={() => setDetalheSelecionado(null)} />
             )}

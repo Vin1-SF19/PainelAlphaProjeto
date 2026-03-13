@@ -33,6 +33,12 @@ model usuarios {
 
   reset_token   String?
   reset_expires DateTime?
+
+  mensagensEnviadas   mensagens[] @relation("Enviadas")
+  mensagensRecebidas mensagens[] @relation("Recebidas")
+
+  conversasP1     conversas[] @relation("ConversaP1")
+  conversasP2     conversas[] @relation("ConversaP2")
 }
 
 model chamados {
@@ -290,4 +296,29 @@ model historico_planilha_fiscal {
   nome    String
   arquivo Bytes
   data    DateTime @default(now())
+}
+
+model mensagens {
+  id             Int      @id @default(autoincrement())
+  texto          String
+  remetenteId    Int
+  destinatarioId Int
+  lida           Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  remetente    usuarios @relation("Enviadas", fields: [remetenteId], references: [id])
+  destinatario usuarios @relation("Recebidas", fields: [destinatarioId], references: [id])
+}
+
+model conversas {
+  id            Int      @id @default(autoincrement())
+  p1Id          Int
+  p2Id          Int
+  ultimaMsg     String?
+  updatedAt     DateTime @default(now())
+
+  user1         usuarios @relation("ConversaP1", fields: [p1Id], references: [id])
+  user2         usuarios @relation("ConversaP2", fields: [p2Id], references: [id])
+
+  @@unique([p1Id, p2Id])
 }

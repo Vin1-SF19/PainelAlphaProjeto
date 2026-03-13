@@ -177,7 +177,13 @@ export default function PainelAlphaClient({ session, chamadosIniciais, configBan
                     className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {[
                         { label: "Nível de Acesso", value: userRole, icon: ShieldCheck, color: `${style.text} ${style.glow}`, active: false },
-                        { label: "Integridade", value: "100%", icon: Activity, color: "text-emerald-500 bg-emerald-500/10", active: false },
+                        { 
+                            label: "Alpha Comm", 
+                            value: "Canal de mensagens", 
+                            icon: Zap, 
+                            color: "text-blue-500 bg-blue-500/10", 
+                            href: "/PainelAlpha/AlphaComm", 
+                          },
                         { label: "Notificações", value: temNotificacaoGeral ? `${totalNotificacoesGeral} Pendentes` : "Limpo", icon: Bell, color: temNotificacaoGeral ? "text-amber-500 bg-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.3)]" : "text-amber-500 bg-amber-500/10", active: temNotificacaoGeral },
                         {
                             label: "Sistema Alpha",
