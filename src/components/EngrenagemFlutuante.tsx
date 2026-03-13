@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Settings, Megaphone, Activity } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -15,6 +15,19 @@ export function EngrenagemFlutuante() {
 
   if (session?.user?.role !== "Admin") return null;
   const style = getTema((session?.user as any)?.tema_interface);
+
+useEffect(() => {
+  const syncTheme = () => {
+    const cached = localStorage.getItem("alpha-theme-temp");
+    if (cached) {
+    }
+  };
+
+  syncTheme();
+  window.addEventListener("storage", syncTheme);
+  return () => window.removeEventListener("storage", syncTheme);
+}, []);
+
 
   return (
     <>

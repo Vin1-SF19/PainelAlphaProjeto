@@ -11,6 +11,7 @@ import { EngrenagemFlutuante } from "@/components/EngrenagemFlutuante";
 import BroadcastBanner from "@/components/BroadcastBanner";
 import { NotificacaoFlutuante } from "@/components/NotificacaoFlutuante";
 import { Heartbeat } from "@/components/Heartbeat";
+import { ThemeSyncer } from "@/components/ThemeSyncer";
 
 export const metadata: Metadata = {
   title: "Painel Alpha | Sistema de Gestão",
@@ -40,7 +41,6 @@ export default async function RootLayout({
     densidade: userDb?.densidade_painel || "default"
   };
 
- 
   return (
     <html 
       lang="pt-br" 
@@ -49,6 +49,7 @@ export default async function RootLayout({
     >
       <body className="antialiased selection:bg-alpha/30">
         <SessionProvider session={session}>
+          <ThemeSyncer />
           <Toaster
             theme="dark"
             position="top-right"
@@ -58,9 +59,9 @@ export default async function RootLayout({
           />
           <StatusConexao />
           <ThemeProviderAlpha configIncial={configIncial}>
-          <BroadcastBanner />
-          <NotificacaoFlutuante/>
-          <Heartbeat /> 
+            <BroadcastBanner />
+            <NotificacaoFlutuante/>
+            <Heartbeat /> 
             {children}
             <EngrenagemFlutuante />
           </ThemeProviderAlpha>

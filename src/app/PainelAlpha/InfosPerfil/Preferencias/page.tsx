@@ -25,111 +25,134 @@ const TEMAS = [
 
 export default function PreferenciasPage() {
   const { data: session, update } = useSession();
-  const [tema, setTema] = useState("blue");
-  const [densidade, setDensidade] = useState("default");
+  
+  const [tema, setTema] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("alpha-theme-temp") || "blue";
+    }
+    return "blue";
+  });
+
+  const [densidade, setDensidade] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("alpha-density-temp") || "default";
+    }
+    return "default";
+  });
+  
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (session?.user) {
       const user = session.user as any;
-      if (user.tema_interface) setTema(user.tema_interface);
-      if (user.densidade_painel) setDensidade(user.densidade_painel);
+      const cachedTheme = localStorage.getItem("alpha-theme-temp");
+      const cachedDensity = localStorage.getItem("alpha-density-temp");
+
+      if (user.tema_interface && !cachedTheme) setTema(user.tema_interface);
+      if (user.densidade_painel && !cachedDensity) setDensidade(user.densidade_painel);
     }
   }, [session]);
+
+  useEffect(() => {
+    const estilo = getTema(tema);
+    document.documentElement.style.setProperty("--alpha-primary", estilo.accent);
+    localStorage.setItem("alpha-theme-temp", tema);
+    localStorage.setItem("alpha-density-temp", densidade);
+  }, [tema, densidade]);
 
   const preview = getTema(tema);
 
   const handleSalvar = async () => {
     setLoading(true);
-
-    localStorage.setItem("alpha-theme-temp", tema);
     
-    const estiloSelec = getTema(tema);
-    document.documentElement.style.setProperty("--alpha-primary", estiloSelec.accent);
-
     try {
       const res = await atualizarInterfaceAction(tema, densidade);
-
+  
       if (res?.success) {
+        localStorage.setItem("alpha-theme-temp", tema);
+        localStorage.setItem("alpha-density-temp", densidade);
+
         await update({
           ...session,
           user: { ...session?.user, tema_interface: tema, densidade_painel: densidade }
         });
-
+  
         toast.success("Protocolo Alpha Sincronizado!");
-
+  
         setTimeout(() => {
-          window.location.href = `/PainelAlpha?v=${Date.now()}`;
-        }, 600);
+          window.location.replace(`/PainelAlpha?refresh=${Date.now()}`);
+        }, 500);
       }
     } catch (error) {
       setLoading(false);
+      toast.error("Erro na sincronização");
     }
   };
 
-
   return (
-    <main className="min-h-screen bg-[#020617] p-8 lg:p-16 text-white relative transition-colors duration-500">
-      <div className={`absolute top-[-10%] left-[-10%] w-[50%] h-[50%] ${preview.glow} blur-[150px] rounded-full transition-all duration-700`} />
+    <main className="min-h-screen bg-[#020617] p-8 lg:p-16 text-white relative transition-colors duration-500 overflow-x-hidden">
+      <div className={`absolute top-[-10%] left-[-10%] w-[50%] h-[50%] ${preview.glow} blur-[150px] rounded-full transition-all duration-700 opacity-50`} />
 
       <div className="max-w-4xl mx-auto relative z-10">
-        <header className="flex justify-between items-center mb-12">
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
           <div>
             <h1 className="text-4xl font-black uppercase italic tracking-tighter flex items-center gap-4">
-              <Palette className={preview.text} size={40} /> Customizar Interface
+              <Palette className={preview.text} size={40} /> Interface
             </h1>
             <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] mt-2 italic">Ajuste de Estética Operacional</p>
           </div>
           <button
             onClick={handleSalvar}
             disabled={loading}
-            className={`cursor-pointer h-14 px-10 ${preview.bg} hover:brightness-110 rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center gap-3 transition-all shadow-xl ${preview.shadow} disabled:opacity-50`}
+            className={`cursor-pointer h-14 px-10 ${preview.bg} hover:brightness-110 rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center gap-3 transition-all shadow-xl ${preview.shadow} disabled:opacity-50 active:scale-95`}
           >
             {loading ? <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save size={18} />}
-            Salvar Configuração
+            Salvar Protocolo
           </button>
         </header>
 
         <div className="grid gap-8">
           <BotaoVoltar />
 
-          <section className={`bg-slate-900/40 border ${preview.border} p-8 rounded-[2.5rem] transition-all duration-500`}>
-            <h2 className="text-xs font-black uppercase tracking-widest mb-6 flex items-center gap-2">
+          <section className={`bg-slate-900/20 backdrop-blur-md border ${preview.border} p-8 rounded-[2.5rem] transition-all duration-500 shadow-2xl`}>
+            <h2 className="text-xs font-black uppercase tracking-widest mb-8 flex items-center gap-2 text-slate-400">
               <Monitor size={16} className={preview.text} /> Esquema de Cores
             </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {TEMAS.map((t) => (
                 <button
                   key={t.id}
                   onClick={() => setTema(t.id)}
-                  className={`cursor-pointer p-6 rounded-3xl border transition-all flex flex-col items-center gap-3 ${tema === t.id
-                    ? `${preview.border.replace('20', '50')} ${preview.glow} scale-105`
-                    : 'border-white/5 bg-black/20 hover:border-white/20'
+                  className={`cursor-pointer p-6 rounded-3xl border transition-all duration-300 flex flex-col items-center gap-4 group ${tema === t.id
+                    ? `${preview.border.replace('20', '50')} bg-white/5 shadow-lg`
+                    : 'border-white/5 bg-black/40 hover:border-white/20'
                     }`}
                 >
-                  <div className={`h-12 w-12 rounded-full ${t.color} shadow-lg ${tema === t.id ? 'ring-4 ring-white/20' : ''}`} />
-                  <span className={`text-[9px] font-black uppercase ${tema === t.id ? preview.text : 'text-slate-500'}`}>{t.label}</span>
+                  <div className={`h-10 w-10 rounded-full ${t.color} shadow-inner transition-transform group-hover:scale-110 ${tema === t.id ? 'ring-4 ring-white/10 scale-110' : ''}`} />
+                  <span className={`text-[9px] font-black uppercase tracking-widest ${tema === t.id ? preview.text : 'text-slate-600'}`}>{t.label}</span>
                 </button>
               ))}
             </div>
           </section>
 
-          <section className={`bg-slate-900/40 border ${preview.border} p-8 rounded-[2.5rem] transition-all duration-500`}>
-            <h2 className="text-xs font-black uppercase tracking-widest mb-6 flex items-center gap-2">
-              <Layout size={16} className={preview.text} /> Layout do Painel
+          <section className={`bg-slate-900/20 backdrop-blur-md border ${preview.border} p-8 rounded-[2.5rem] transition-all duration-500 shadow-2xl`}>
+            <h2 className="text-xs font-black uppercase tracking-widest mb-8 flex items-center gap-2 text-slate-400">
+              <Layout size={16} className={preview.text} /> Densidade do Painel
             </h2>
-            <div className="flex gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {['default', 'compact'].map((d) => (
                 <button
                   key={d}
                   onClick={() => setDensidade(d)}
-                  className={`cursor-pointer flex-1 p-6 rounded-3xl border transition-all flex items-center justify-between ${densidade === d
-                    ? `${preview.border.replace('20', '50')} ${preview.glow} text-white`
-                    : 'border-white/5 bg-black/20 text-slate-500 hover:border-white/20'
+                  className={`cursor-pointer p-6 rounded-3xl border transition-all duration-300 flex items-center justify-between group ${densidade === d
+                    ? `${preview.border.replace('20', '50')} bg-white/5`
+                    : 'border-white/5 bg-black/40 text-slate-600 hover:border-white/20'
                     }`}
                 >
-                  <span className="text-[10px] font-black uppercase">{d === 'default' ? 'Espaçamento Padrão' : 'Modo Compacto'}</span>
-                  {densidade === d && <CheckCircle2 size={18} className={preview.text} />}
+                  <span className={`text-[10px] font-black uppercase tracking-widest ${densidade === d ? 'text-white' : ''}`}>
+                    {d === 'default' ? 'Espaçamento Padrão' : 'Modo Compacto'}
+                  </span>
+                  {densidade === d ? <CheckCircle2 size={18} className={preview.text} /> : <div className="w-[18px] h-[18px] rounded-full border-2 border-white/5 group-hover:border-white/20" />}
                 </button>
               ))}
             </div>
