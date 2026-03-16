@@ -8,13 +8,15 @@ import { BotaoVoltar } from "@/components/BotaoVoltar";
 import { getContatosChat } from "@/actions/get-contatos";
 import { pusherClient } from "@/lib/pusher";
 import { enviarMensagemChatAction, getHistoricoMensagens, marcarChatComoLido } from "@/actions/ChatAction";
+import { redirect } from "next/navigation";
+import { toast } from "sonner";
 
 interface Agente {
   id: number;
   nome: string;
   isOnline: boolean;
-  imagemUrl: string | null;    
-  tema_interface: string | null; 
+  imagemUrl: string | null;
+  tema_interface: string | null;
   ultimaMsg?: string;
   naoLidas?: number;
 }
@@ -30,6 +32,11 @@ export default function AlphaCommPage() {
   const [isMuted, setIsMuted] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  if (session?.user?.role !== "Admin" && session?.user?.usuario !== "Wesleia") {
+    toast.error("Painel em desenvolvimento - Voce não tem permissao para acessa-lo")
+    redirect("/PainelAlpha");
+  }
 
   const meuId = Number((session?.user as any)?.id);
   const style = getTema((session?.user as any)?.tema_interface || "blue");
@@ -48,7 +55,7 @@ export default function AlphaCommPage() {
     if (!meuId) return;
     const notifyChannel = pusherClient.subscribe(`user-notifications-${meuId}`);
     notifyChannel.bind("atualizar-lista", (data: any) => {
-      if (!isMuted) audioRef.current?.play().catch(() => {});
+      if (!isMuted) audioRef.current?.play().catch(() => { });
       setContatos(prev => {
         const list = [...prev];
         const index = list.findIndex(c => c.id === data.remetenteId);
@@ -108,8 +115,8 @@ export default function AlphaCommPage() {
         <div className="flex items-center gap-8">
           <BotaoVoltar />
           <h1 className="text-2xl font-black uppercase italic tracking-tighter flex items-center gap-3 group">
-             <Zap className={`${style.text} group-hover:scale-125 transition-all duration-500`} size={24} /> 
-             Alpha <span className={style.text}>Comm</span>
+            <Zap className={`${style.text} group-hover:scale-125 transition-all duration-500`} size={24} />
+            Alpha <span className={style.text}>Comm</span>
           </h1>
         </div>
         <div className="flex items-center gap-6">
@@ -117,8 +124,8 @@ export default function AlphaCommPage() {
             {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
           </button>
           <div className="flex items-center gap-4 px-6 py-2 bg-emerald-500/5 border border-emerald-500/10 rounded-full shadow-[0_0_20px_rgba(16,185,129,0.1)]">
-              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_#10b981]" />
-              <span className="text-[10px] font-black uppercase text-emerald-500 tracking-[0.2em]">Enlace Seguro</span>
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_#10b981]" />
+            <span className="text-[10px] font-black uppercase text-emerald-500 tracking-[0.2em]">Canal Seguro</span>
           </div>
         </div>
       </header>
@@ -191,8 +198,8 @@ export default function AlphaCommPage() {
             </>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center opacity-20">
-               <ShieldCheck size={100} className="mb-6" />
-               <p className="text-[12px] font-black uppercase tracking-[1em]">Terminal em Standby</p>
+              <ShieldCheck size={100} className="mb-6" />
+              <p className="text-[12px] font-black uppercase tracking-[1em]">Terminal em Standby</p>
             </div>
           )}
         </section>
