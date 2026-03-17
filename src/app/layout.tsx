@@ -10,6 +10,7 @@ import BroadcastBanner from "@/components/BroadcastBanner";
 import { NotificacaoFlutuante } from "@/components/NotificacaoFlutuante";
 import { Heartbeat } from "@/components/Heartbeat";
 import { ThemeSyncer } from "@/components/ThemeSyncer";
+import { PusherGlobal } from "@/components/PusherGlobal.tsx";
 
 export const metadata: Metadata = {
   title: "Painel Alpha | Sistema de Gestão",
@@ -41,6 +42,7 @@ export default async function RootLayout({
             <BroadcastBanner />
             <NotificacaoFlutuante/>
             <Heartbeat /> 
+            <PusherGlobal/>
             {children}
             <EngrenagemFlutuante />
           </ThemeProviderAlpha>

@@ -20,6 +20,7 @@ export async function GET(req: Request) {
         const cnpjRaw = searchParams.get("cnpj") || "";
         const cnpj = cnpjRaw.replace(/\D/g, "").padStart(14, "0").substring(0, 14);
         const forcar = searchParams.get("forcar") === "true";
+        const somenteBanco = searchParams.get("somenteBanco") === "true";
 
         if (!cnpj) return NextResponse.json({ error: "CNPJ obrigatório" }, { status: 400 });
 
@@ -30,10 +31,10 @@ export async function GET(req: Request) {
                 where: { cnpj },
             });
 
-            if (existente && existente.razao_social && existente.razao_social !== "NÃO ENCONTRADO" && existente.situacao_radar !== "NÃO HABILITADA") {
+            if (existente && existente.razao_social && existente.razao_social !== "NÃO ENCONTRADO") {
                 return NextResponse.json({
                     ...existente,
-                    razaoSocial: existente.razao_social,
+                    crazaoSocial: existente.razao_social,
                     nomeFantasia: existente.nome_fantasia,
                     situacao: existente.situacao_radar,
                     dataSituacao: existente.data_situacao,
@@ -42,8 +43,13 @@ export async function GET(req: Request) {
                     regimeTributario: existente.regime_tributario,
                     capitalSocial: existente.capital_social,
                     dataConsulta: existente.data_consulta,
-                    data_opcao: existente.data_opcao
+                    data_opcao: existente.data_opcao,
+                    fonte: "Banco Local"
                 });
+            }
+
+            if (somenteBanco) {
+                return NextResponse.json({ error: "Não encontrado no banco" }, { status: 404 });
             }
         }
 
@@ -73,12 +79,10 @@ export async function GET(req: Request) {
             }
         } catch (e) {
             erroRadar = true;
-            console.log("Erro na consulta externa do Radar");
         }
 
         const radarVazioTotal = !radar.situacao && !radar.submodalidade && !radar.dataSituacao && !radar.contribuinte;
         const radarIncompleto = !radar.situacao || !radar.submodalidade || !radar.dataSituacao;
-
 
         let situacaoDefinitiva = "";
 
@@ -91,7 +95,7 @@ export async function GET(req: Request) {
         }
 
         const payload = {
-           cnpj,
+            cnpj,
             razao_social: (receita.razaoSocial || "NÃO ENCONTRADO").toUpperCase(),
             nome_fantasia: (receita.nomeFantasia || "").toUpperCase(),
             situacao_radar: situacaoDefinitiva,
@@ -104,12 +108,10 @@ export async function GET(req: Request) {
             capital_social: String(receita.capitalSocial || ""),
             data_constituicao: parseDateBR(receita.dataConstituicao || receita.data_inicio_atividade),
             contribuinte: (radar.contribuinte || receita.razaoSocial || "").toUpperCase(),
-            fonte: forcar ? "Reconsulta" : "API",
+            fonte: forcar ? "Reconsulta" : "API Externa",
             json_completo: JSON.stringify({ radar, receita }),
             data_consulta: new Date().toISOString()
         };
-
-       
 
         const salvo = await db.consultas_radar.upsert({
             where: { cnpj },
@@ -136,9 +138,7 @@ export async function GET(req: Request) {
             fonte: salvo.fonte
         });
 
-
     } catch (error: any) {
-        console.error("ERRO CONSULTA COMPLETA:", error.message);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

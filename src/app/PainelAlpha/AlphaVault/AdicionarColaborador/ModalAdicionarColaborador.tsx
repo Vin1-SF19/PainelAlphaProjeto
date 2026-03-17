@@ -42,12 +42,12 @@ export function ModalAdicionarColaborador({ isOpen, onClose, style }: Props) {
             <div className="bg-[#0f172a] border border-white/10 p-8 rounded-[2.5rem] max-w-md w-full shadow-2xl relative overflow-hidden">
                 <div className={`absolute top-0 left-0 w-full h-1 ${style.bg}`} />
 
-                <button onClick={onClose} className="absolute top-6 right-6 text-slate-500 hover:text-white transition-colors">
+                <button onClick={onClose} className="cursor-pointer absolute top-6 right-6 text-slate-500 hover:text-white transition-colors">
                     <X size={20} />
                 </button>
 
                 <h2 className="text-xl font-black uppercase italic tracking-tighter text-white mb-8 flex items-center gap-3">
-                    <User className={style.text} size={22} /> Novo Registro Core
+                    <User className={style.text} size={22} /> Novo Colaborador
                 </h2>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
@@ -96,7 +96,7 @@ export function ModalAdicionarColaborador({ isOpen, onClose, style }: Props) {
                         </div>
                     </div>
 
-                    <button type="submit" disabled={loading} className={`w-full h-16 mt-4 ${style.bg} rounded-2xl text-[11px] font-black uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:brightness-110 transition-all active:scale-95`}>
+                    <button type="submit" disabled={loading} className={`cursor-pointer w-full h-16 mt-4 ${style.bg} rounded-2xl text-[11px] font-black uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:brightness-110 transition-all active:scale-95`}>
                         {loading ? <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Check size={20} />}
                         Finalizar Registro
                     </button>

@@ -16,6 +16,7 @@ const FAVICONS = [
     { id: 'google', name: 'Google', src: '/google.png' },
     { id: 'callix', name: 'Callix', src: '/callix.png' },
     { id: 'microsoft', name: 'Microsoft', src: '/microsoft.png' },
+    { id: 'outlook', name: 'Outlook', src: '/icons8-microsoft-outlook-2019-48.png' },
 ];
 
 export function ModalAdicionarSistema({ isOpen, onClose, style }: Props) {
@@ -47,12 +48,12 @@ export function ModalAdicionarSistema({ isOpen, onClose, style }: Props) {
             <div className="bg-[#0f172a] border border-white/10 p-8 rounded-[2.5rem] max-w-md w-full shadow-2xl relative overflow-hidden">
                 <div className={`absolute top-0 left-0 w-full h-1 ${style.bg}`} />
 
-                <button onClick={onClose} className="absolute top-6 right-6 text-slate-500 hover:text-white transition-colors">
+                <button onClick={onClose} className="cursor-pointer absolute top-6 right-6 text-slate-500 hover:text-white transition-colors">
                     <X size={20} />
                 </button>
 
                 <h2 className="text-xl font-black uppercase italic tracking-tighter text-white mb-8 flex items-center gap-3">
-                    <Globe className={style.text} size={22} /> Mapear Novo Sistema
+                    <Globe className={style.text} size={22} /> Incluir Novo Sistema
                 </h2>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -80,7 +81,7 @@ export function ModalAdicionarSistema({ isOpen, onClose, style }: Props) {
                                     key={item.id}
                                     type="button"
                                     onClick={() => setIconeSelecionado(item.id)}
-                                    className={`h-14 rounded-2xl flex items-center justify-center border transition-all relative overflow-hidden group ${iconeSelecionado === item.id ? 'border-white/20 bg-white/5' : 'bg-black/40 border-white/5 grayscale opacity-50 hover:grayscale-0 hover:opacity-100'}`}
+                                    className={`cursor-pointer h-14 rounded-2xl flex items-center justify-center border transition-all relative overflow-hidden group ${iconeSelecionado === item.id ? 'border-white/20 bg-white/5' : 'bg-black/40 border-white/5 grayscale opacity-50 hover:grayscale-0 hover:opacity-100'}`}
                                 >
                                     <div className="relative w-7 h-7">
                                         <Image
@@ -99,8 +100,8 @@ export function ModalAdicionarSistema({ isOpen, onClose, style }: Props) {
                         <input type="hidden" name="icone" value={iconeSelecionado} />
                     </div>
 
-                    <button type="submit" disabled={loading} className={`w-full h-16 mt-4 ${style.bg} rounded-2xl text-[11px] font-black uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:brightness-110 transition-all active:scale-95 shadow-xl`}>
-                        {loading ? <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Check size={20} />}
+                    <button type="submit" disabled={loading} className={`cursor-pointer w-full h-16 mt-4 ${style.bg} rounded-2xl text-[11px] font-black uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:brightness-110 transition-all active:scale-95 shadow-xl`}>
+                        {loading ? <div className="cursor-pointer h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Check size={20} />}
                         Registrar Sistema
                     </button>
                 </form>

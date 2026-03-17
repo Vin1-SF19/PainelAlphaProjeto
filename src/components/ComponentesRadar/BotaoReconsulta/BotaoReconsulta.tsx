@@ -21,14 +21,6 @@ export default function ModalOpcoesReconsulta({ isOpen, onClose, onExecutar }: a
                         <AlertCircle size={16} className="group-hover:animate-bounce" /> 
                         Limpar Erros de API
                     </button>
-
-                    <button
-                        onClick={() => onExecutar('NAO_HABILITADOS')}
-                        className="w-full py-5 bg-amber-500/10 hover:bg-amber-600 border border-amber-500/20 text-amber-500 hover:text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-3 group"
-                    >
-                        <ShieldAlert size={16} className="group-hover:rotate-12" /> 
-                        Limpar Não Habilitados
-                    </button>
                     
                     <p className="text-[9px] text-slate-600 uppercase font-bold text-center leading-relaxed px-4">
                         * Isso removerá os registros do banco para que o robô de consulta os identifique como novos.

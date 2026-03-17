@@ -367,6 +367,7 @@ export default function PaginaDocumentos() {
                                 );
                             })}
                         </div>
+                            <BotaoVoltar/>
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-[700px]">

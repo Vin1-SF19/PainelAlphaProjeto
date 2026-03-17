@@ -1,6 +1,6 @@
 "use client"
 
-;
+  ;
 
 import { BotaoVoltar } from "@/components/BotaoVoltar";
 import { BookOpen, Palette, LayoutGrid, Bell, Shield, Zap, ArrowRight, MousePointer2 } from "lucide-react";
@@ -61,7 +61,7 @@ export default function GuiaSistema() {
   return (
     <main className="min-h-screen bg-[#020617] text-slate-200 p-6 lg:p-12 relative overflow-hidden">
       <div className={`absolute top-[-20%] right-[-10%] w-[600px] h-[600px] ${style.glow} blur-[120px] rounded-full opacity-20`} />
-      
+
       <div className="max-w-5xl mx-auto relative z-10">
         <header className="mb-12">
           <BotaoVoltar />
@@ -90,7 +90,7 @@ export default function GuiaSistema() {
                   <p className="text-[10px] font-bold text-slate-500 uppercase">{s.desc}</p>
                 </div>
               </div>
-              
+
               <ul className="space-y-4">
                 {s.dicas.map((dica, idx) => (
                   <li key={idx} className="flex items-start gap-3 text-[11px] font-bold text-slate-400 leading-relaxed uppercase tracking-tight">
@@ -110,25 +110,25 @@ export default function GuiaSistema() {
           <div className="relative z-10 max-w-2xl">
             <h3 className="text-2xl font-black text-white uppercase italic mb-4">Novidades da Versão 4.0</h3>
             <p className="text-xs text-slate-400 font-bold leading-relaxed uppercase mb-8">
-              Implementamos o motor de temas reativo e o radar de broadcast. Agora o TI pode enviar avisos globais 
+              Implementamos o motor de temas reativo e o radar de broadcast. Agora o TI pode enviar avisos globais
               que aparecem no topo da sua tela em tempo real para avisos de manutenção.
             </p>
             <div className="flex flex-wrap gap-4">
-               <div className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-slate-300">
-                  #RealTimePolling
-               </div>
-               <div className={`px-4 py-2 rounded-full ${style.bg} text-[9px] font-black uppercase tracking-widest text-white`}>
-                  #AlphaThemeEngine
-               </div>
-               <div className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-slate-300">
-                  #VercelBlobReady
-               </div>
+              <div className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-slate-300">
+                #RealTimePolling
+              </div>
+              <div className={`px-4 py-2 rounded-full ${style.bg} text-[9px] font-black uppercase tracking-widest text-white`}>
+                #AlphaThemeEngine
+              </div>
+              <div className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-slate-300">
+                #VercelBlobReady
+              </div>
             </div>
           </div>
         </section>
 
         <footer className="mt-12 text-center">
-            <p className="text-[9px] font-black text-slate-700 uppercase tracking-[0.5em]">Painel Alpha © 2026 - Sistema Blindado</p>
+          <p className="text-[9px] font-black text-slate-700 uppercase tracking-[0.5em]">Painel Alpha © 2026 - Sistema Blindado</p>
         </footer>
       </div>
     </main>

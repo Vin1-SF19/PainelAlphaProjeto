@@ -85,16 +85,16 @@ export default function PainelAlphaClient({ session, chamadosIniciais, configBan
     }, [mounted, chamadosIniciais, session?.user?.id]);
 
     const modulos = [
-        { id: "radar", title: "Consulta RADAR", desc: "Consultas unitárias ou em lote via API com exportação Excel.", img: "../bar-chart_1573395.png", link: "/PainelAlpha/HabilitacaoRadar", color: "from-blue-600/20", tag: "Logística" },
+        { id: "radar", title: "Consulta RADAR", desc: "Consultas unitárias ou em lote via API com exportação Excel.", img: "../bar-chart_1573395.png", link: "/PainelAlpha/HabilitacaoRadar", color: "from-blue-600/20", tag: "RADAR" },
         { id: "chamados", title: "Chamados Internos", desc: "Suporte técnico e registro de incidentes para o time de TI.", img: "../discussion_655664.png", link: "/PainelAlpha/Chamados", color: "from-amber-600/20", tag: "Suporte" },
         { id: "cadastro", title: "Gestão de Equipe", desc: "Gerenciamento de contas, permissões e status de usuários.", img: "../people_10893485.png", link: "/PainelAlpha/cadastro", color: "from-purple-600/20", tag: "Admin" },
-        { id: "Reservas", title: "Reserva de Salas", desc: "Agendamento de salas com controle de data e horários.", img: "../icons8-sala-de-reuniões-64.png", link: "/PainelAlpha/ReservaSalas", color: "from-emerald-600/20", tag: "Facilities" },
-        { id: "Documentos", title: "POP", desc: "Documentos de guia e normas para funções operacionais.", img: "../arquivo.png", link: "/PainelAlpha/DocsAlpha", color: "from-indigo-600/20", tag: "Processos" },
-        { id: "UpDocumentos", title: "Upload POP", desc: "Portal para transmissão de novos arquivos ao servidor.", img: "../pasta.png", link: "/PainelAlpha/GerenciamentoArquivos", color: "from-rose-600/20", tag: "Arquivos" },
-        { id: "Historico", title: "Gerenciamento do POP", desc: "Controle e rastreabilidade do histórico de arquivos.", img: "../historico.png", link: "/PainelAlpha/HistoricoArquivos", color: "from-cyan-600/20", tag: "Auditoria" },
-        { id: "Cliente", title: "SISTEMA CS & NPS", desc: "Módulo estratégico para cadastro de novos parceiros.", img: "../local-na-rede-internet.png", link: "/PainelAlpha/CadastroClientes", color: "from-orange-600/20", tag: "Comercial" },
+        { id: "Reservas", title: "Reserva de Salas", desc: "Agendamento de salas com controle de data e horários.", img: "../icons8-sala-de-reuniões-64.png", link: "/PainelAlpha/ReservaSalas", color: "from-emerald-600/20", tag: "utilidades" },
+        { id: "Documentos", title: "POP", desc: "Documentos de guia e normas para funções.", img: "../arquivo.png", link: "/PainelAlpha/DocsAlpha", color: "from-indigo-600/20", tag: "POP" },
+        { id: "UpDocumentos", title: "Upload POP", desc: "Portal para transmissão de novos arquivos ao POP.", img: "../pasta.png", link: "/PainelAlpha/GerenciamentoArquivos", color: "from-rose-600/20", tag: "POP" },
+        { id: "Historico", title: "Gerenciamento do POP", desc: "Controle e rastreabilidade do histórico do POP.", img: "../historico.png", link: "/PainelAlpha/HistoricoArquivos", color: "from-cyan-600/20", tag: "POP" },
+        { id: "Cliente", title: "SISTEMA CS & NPS", desc: "Controle de CS, NPS e Feedbacks no Google", img: "../local-na-rede-internet.png", link: "/PainelAlpha/CadastroClientes", color: "from-orange-600/20", tag: "CLIENTES" },
         { id: "Senhas", title: "Gerenciamento de Acessos", desc: "Sistema de gerenciamento de senhas e acessos.", img: "../senha.png", link: "/PainelAlpha/AlphaVault", color: "from-red-600/20", tag: "Administração" },
-        { id: "Perse", title: "Analise Fiscal", desc: "Sistema de pesquisa cnpj", img: "../planejamento-tributario.png", link: "/PainelAlpha/AlphaConnect", color: "from-green-600/20", tag: "Connect" }
+        { id: "Perse", title: "Analise Fiscal", desc: "Sistema de analise previa para Oportunidades tributarias", img: "../planejamento-tributario.png", link: "/PainelAlpha/AlphaConnect", color: "from-green-600/20", tag: "tributario" }
     ];
 
     const { favoritos, restante } = useMemo(() => {

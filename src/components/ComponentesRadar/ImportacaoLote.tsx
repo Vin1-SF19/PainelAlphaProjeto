@@ -96,12 +96,14 @@ export default function ImportarPlanilha({
         event.target.value = "";
     }
 
+
     return (
-        <div className="space-y-2 pt-6 border-t">
-            <label className="label">
-                {processando ? "Processamento em andamento..." : "Importar planilha de CNPJs (lote)"}
-            </label>
-            <div className="btn-row items-center gap-4">
+        <div className="pt-6 border-t border-white/5 space-y-4">
+        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">
+        {processando ? "Status do Processamento" : "Carga de Dados em Lote"}
+        </label>
+        
+            <div className="relative group">
                 <input
                     ref={fileInputRef}
                     type="file"
@@ -109,7 +111,44 @@ export default function ImportarPlanilha({
                     className="hidden"
                     onChange={handleArquivoSelecionado}
                 />
+                
+                <button
+                    onClick={abrirSeletorArquivo}
+                    className={`w-full h-16 rounded-[1.5rem] flex items-center justify-between px-8 transition-all duration-500 border ${
+                        processando 
+                        ? 'bg-red-500/10 border-red-500/20 text-red-500' 
+                        : 'bg-white/5 border-white/5 hover:border-white/20 text-white shadow-2xl hover:shadow-blue-500/10'
+                    }`}
+                >
+                    <div className="flex items-center gap-4">
+                        <div className={`h-10 w-10 rounded-xl flex items-center justify-center border ${
+                            processando ? 'border-red-500/20 bg-red-500/20 animate-pulse' : 'border-white/10 bg-white/5'
+                        }`}>
+                            {processando ? (
+                                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                                <svg className="w-5 h-5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                </svg>
+                            )}
+                        </div>
+                        <span className="text-[11px] font-black uppercase tracking-widest italic">
+                            {processando ? "INTERROMPER IMPORTAÇÃO" : "CARREGAR PLANILHA"}
+                        </span>
+                    </div>
+        
+                    {!processando && (
+                        <div className="flex items-center gap-2 opacity-40 group-hover:opacity-100 transition-opacity">
+                            <span className="text-[9px] font-bold uppercase tracking-tighter">CSV / XLSX</span>
+                        </div>
+                    )}
+                </button>
+        
+                {processando && (
+                    <div className="absolute -bottom-1 left-0 h-[2px] bg-red-500 transition-all duration-300 w-full animate-pulse shadow-[0_0_10px_#ef4444]" />
+                )}
             </div>
         </div>
-    );
+        
+        );
 }

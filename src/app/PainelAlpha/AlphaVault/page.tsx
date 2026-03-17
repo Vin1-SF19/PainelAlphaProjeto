@@ -64,7 +64,7 @@ export default async function ColaboradoresPage() {
                 <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
                     <div>
                         <h1 className="text-4xl font-black uppercase italic tracking-tighter flex items-center gap-4">
-                            <LayoutGrid className={style.text} size={40} /> Alpha <span className={style.text}>Core</span>
+                            <LayoutGrid className={style.text} size={40} /> Gerenciador de <span className={style.text}>Senhas</span>
                         </h1>
                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] mt-2">Gestão de Identidade e Recursos</p>
                     </div>

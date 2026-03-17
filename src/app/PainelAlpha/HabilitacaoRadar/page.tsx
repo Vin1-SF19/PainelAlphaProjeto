@@ -128,75 +128,6 @@ export default function HabilitacaoRadar() {
     }
   };
 
-
-
-
-
-
-
-  const handleProcessarLote = async (dadosPlanilha: any[]) => {
-    setLoading(true);
-    setProcessando(true);
-    setTotalLote(dadosPlanilha.length);
-    setProcessadas(0);
-    cancelarProcessamento.current = false;
-
-    const cnpjsParaVerificar = dadosPlanilha.map(item => String(item.cnpj || "").replace(/\D/g, ""));
-
-    let mapaBanco = new Map();
-    try {
-      const resBusca = await fetch("/api/BuscaLote", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cnpjs: cnpjsParaVerificar }),
-      });
-      if (resBusca.ok) {
-        const dbData = await resBusca.json();
-        dbData.forEach((r: any) => mapaBanco.set(String(r.cnpj).replace(/\D/g, ""), r));
-      }
-    } catch (err) {
-      console.error("Erro ao verificar banco:", err);
-    }
-
-    const mapaTemporario = new Map();
-
-    for (let i = 0; i < dadosPlanilha.length; i++) {
-      const item = dadosPlanilha[i];
-      const cnpjLimpo = String(item.cnpj || "").replace(/\D/g, "").trim();
-
-      if (!cnpjLimpo) continue;
-
-      const existeNoBanco = mapaBanco.has(cnpjLimpo);
-      const estaCompleto = item.razaoSocial && item.capitalSocial && item.situacao && item.situacao !== "ERRO";
-
-      mapaTemporario.set(cnpjLimpo, {
-        ...item,
-        cnpj: cnpjLimpo,
-        situacao: estaCompleto ? item.situacao : "ERRO",
-        razaoSocial: item.razaoSocial || "DADO PENDENTE",
-        salvo: existeNoBanco
-      });
-    }
-
-    const listaFinal = Array.from(mapaTemporario.values());
-
-    setEmpresas(prev => {
-      const mapaGeral = new Map();
-      prev.forEach(e => mapaGeral.set(e.cnpj, e));
-      listaFinal.forEach(item => mapaGeral.set(item.cnpj, item));
-      return Array.from(mapaGeral.values());
-    });
-
-    setProcessadas(dadosPlanilha.length);
-    setProcessando(false);
-    setLoading(false);
-    setStatusLote(`Concluído: ${listaFinal.length} registros processados.`);
-  };
-
-
-
-
-
   type EmpresaRadar = {
     dataConsulta: string;
     cnpj: string;
@@ -522,13 +453,13 @@ export default function HabilitacaoRadar() {
     setProcessadas(0);
     setTotalLote(dadosFiltrados.length);
     setProcessando(true);
-    setStatusLote("Iniciando nova sincronização...");
+    setStatusLote("Verificando banco de dados...");
 
-    const toastId = toast.loading("Sincronizando com o banco de dados...");
+    const toastId = toast.loading("Sincronizando com o banco Alpha...");
 
     try {
-      const promessas = dadosFiltrados.map(async (item, idx) => {
-        const res = await fetch(`/api/ConsultaCompleta?cnpj=${item.cnpj}`);
+      const promessas = dadosFiltrados.map(async (item) => {
+        const res = await fetch(`/api/ConsultaCompleta?cnpj=${item.cnpj}&somenteBanco=true`);
 
         setProcessadas(prev => prev + 1);
 
@@ -538,38 +469,39 @@ export default function HabilitacaoRadar() {
             return { ...item, ...banco, salvo: true };
           }
         }
-        return item;
+        return { ...item, salvo: false };
       });
 
-      const sincronizados = await Promise.all(promessas);
-      setEmpresas(prev => [...prev, ...sincronizados]);
+      const resultadosBanco = await Promise.all(promessas);
+      
+      const jaSincronizados = resultadosBanco.filter(e => e.salvo);
+      const paraConsultarExterno = resultadosBanco.filter(e => !e.salvo);
 
-      const jaExistentes = sincronizados.filter(e => e.salvo).length;
-      toast.success(`${sincronizados.length} registros carregados (${jaExistentes} recuperados do banco)`, { id: toastId });
+      setEmpresas(prev => [...prev, ...resultadosBanco]);
 
-      const processarEmSegundoPlano = async () => {
-        const TAMANHO_LOTE = 50;
-        const apenasNovos = sincronizados.filter(e => !e.salvo);
+      if (paraConsultarExterno.length > 0) {
+        toast.loading(`Encontrados ${jaSincronizados.length} no banco. Consultando ${paraConsultarExterno.length} novos...`, { id: toastId });
 
-        for (let i = 0; i < apenasNovos.length; i += TAMANHO_LOTE) {
-          const lote = apenasNovos.slice(i, i + TAMANHO_LOTE);
-          try {
-            const res = await salvarDadosNoBanco(lote);
-            if (res.success) {
-              setEmpresas(prev => prev.map(emp => {
-                if (lote.some(l => l.cnpj === emp.cnpj)) return { ...emp, salvo: true };
-                return emp;
-              }));
+        const processarEmLotesExternos = async () => {
+          for (const item of paraConsultarExterno) {
+            try {
+              const res = await fetch(`/api/ConsultaCompleta?cnpj=${item.cnpj}`);
+              if (res.ok) {
+                const dados = await res.json();
+                setEmpresas(prev => prev.map(emp => 
+                  emp.cnpj === item.cnpj ? { ...emp, ...dados, salvo: true } : emp
+                ));
+              }
+            } catch (err) {
+              console.error("Erro na consulta externa:", item.cnpj);
             }
-          } catch (err) {
-            console.error("Erro background sync:", err);
           }
-          await new Promise(r => setTimeout(r, 200));
-        }
-      };
+          toast.success("Importação e sincronização concluída!", { id: toastId });
+        };
 
-      if (sincronizados.some(e => !e.salvo)) {
-        processarEmSegundoPlano();
+        processarEmLotesExternos();
+      } else {
+        toast.success(`${jaSincronizados.length} registros recuperados do banco.`, { id: toastId });
       }
 
     } catch (err) {
@@ -577,6 +509,7 @@ export default function HabilitacaoRadar() {
       setEmpresas(prev => [...prev, ...dadosFiltrados]);
     } finally {
       setLoading(false);
+      setProcessando(false);
     }
   };
 
@@ -769,12 +702,6 @@ export default function HabilitacaoRadar() {
 
 
 
-
-
-
-
-
-
   const handleAlternarOrdemNome = () => {
     setOrdemData(null);
     setOrdem(prev => (prev === "asc" ? "desc" : prev === "desc" ? null : "asc"));
@@ -952,7 +879,6 @@ export default function HabilitacaoRadar() {
 
             <button onClick={() => window.open("https://servicos.receita.fazenda.gov.br/servicos/radar/consultaSituacaoCpfCnpj.asp", "_blank")} className="flex-1 rounded-xl bg-gray-600 hover:bg-gray-700 transition-all py-3 font-bold text-xs sm:text-sm">🌐 Abrir Receita</button>
           </div>
-
 
 
           <ImportarPlanilha
