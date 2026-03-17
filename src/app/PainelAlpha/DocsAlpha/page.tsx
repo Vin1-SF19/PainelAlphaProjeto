@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { FileText, Eye, Search, ShieldCheck, Globe, ChevronRight, Folder, Trash2, ShieldAlert, Lock, Video, Settings, Star, ChevronDown, ChevronUp, GripVertical, Edit3, Check, X } from "lucide-react";
+import { FileText, Eye, Search, ShieldCheck, Globe, ChevronRight, Folder, Trash2, ShieldAlert, Lock, Video, Settings, Star, ChevronDown, ChevronUp, GripVertical, Edit3, Check, X, PlayCircle } from "lucide-react";
 import { BotaoVoltar } from "@/components/BotaoVoltar";
 import { toast } from "sonner";
 import AntiCapture from 'react-anticapture';
@@ -170,23 +170,23 @@ export default function PaginaDocumentos() {
 
     const handleExcluirLogico = async () => {
         if (senhaInput !== SENHA_MESTRA) return toast.error("Senha Administrativa Incorreta!");
-        
+
         if (!docParaExcluir?.id) return toast.error("Nenhum documento alvo identificado!");
-    
+
         try {
             const idParaExcluir = docParaExcluir.id;
-    
+
             const res = await fetch(`/api/documentos`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: idParaExcluir, status: 'INATIVO' })
             });
-    
+
             if (!res.ok) throw new Error("Falha na resposta do servidor");
-    
+
             setDocumentos(prev => prev.filter(d => d.id !== idParaExcluir));
-            
-            setDocParaExcluir(null); 
+
+            setDocParaExcluir(null);
             setModalExcluir(false);
             setSenhaInput("");
             toast.success("Documento desativado com sucesso!");
@@ -195,7 +195,7 @@ export default function PaginaDocumentos() {
             setSenhaInput("");
         }
     };
-    
+
 
 
 
@@ -367,7 +367,7 @@ export default function PaginaDocumentos() {
                                 );
                             })}
                         </div>
-                            <BotaoVoltar/>
+                        <BotaoVoltar />
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-[700px]">
@@ -475,7 +475,7 @@ export default function PaginaDocumentos() {
                                                         e.stopPropagation();
                                                         setPastaConfig(pasta);
                                                     }}
-                                                    className="mr-4 absolute right-10 opacity-0 group-hover/pasta:opacity-100 p-2 hover:bg-blue-600/20 rounded-lg transition-all text-slate-500 hover:text-blue-400 z-10"
+                                                    className="cursor-pointer mr-4 absolute right-10 opacity-0 group-hover/pasta:opacity-100 p-2 hover:bg-blue-600/20 rounded-lg transition-all text-slate-500 hover:text-blue-400 z-10"
                                                 >
                                                     <Settings size={14} />
                                                 </button>
@@ -484,15 +484,28 @@ export default function PaginaDocumentos() {
                                             {/* ARQUIVOS INTERNOS */}
                                             {pastasAbertas[pasta] && (
                                                 <div className="ml-4 pl-4 border-l border-white/10 space-y-1 mt-1">
-                                                    {docs.map(doc => (
-                                                        <button
-                                                            key={doc.id}
-                                                            onClick={() => setDocSelecionado(doc)}
-                                                            className={`w-full flex items-center gap-3 p-3 rounded-lg text-[9px] font-bold uppercase transition-all ${docSelecionado?.id === doc.id ? "bg-blue-600/20 text-blue-400" : "text-slate-500 hover:bg-white/5"}`}
-                                                        >
-                                                            <span className="truncate">{doc.titulo}</span>
-                                                        </button>
-                                                    ))}
+                                                    {docs.map(doc => {
+                                                        // Lógica para definir o ícone
+                                                        const isVideo = doc.url?.match(/\.(mp4|webm|ogg|mov)$/i) || doc.tipo === 'video';
+
+                                                        return (
+                                                            <button
+                                                                key={doc.id}
+                                                                onClick={() => setDocSelecionado(doc)}
+                                                                className={`w-full flex items-center gap-3 p-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${docSelecionado?.id === doc.id
+                                                                        ? "bg-blue-600/20 text-blue-400 shadow-[0_0_15px_rgba(37,99,235,0.1)]"
+                                                                        : "text-slate-500 hover:bg-white/5 hover:text-slate-300"
+                                                                    }`}
+                                                            >
+                                                                {isVideo ? (
+                                                                    <Video size={14} className={docSelecionado?.id === doc.id ? "text-blue-400" : "text-slate-600"} />
+                                                                ) : (
+                                                                    <FileText size={14} className={docSelecionado?.id === doc.id ? "text-blue-400" : "text-slate-600"} />
+                                                                )}
+                                                                <span className="truncate">{doc.titulo}</span>
+                                                            </button>
+                                                        );
+                                                    })}
                                                 </div>
                                             )}
                                         </div>
@@ -824,7 +837,7 @@ export default function PaginaDocumentos() {
 
                                         <button
                                             onClick={() => {
-                                                setDocParaExcluir(doc); 
+                                                setDocParaExcluir(doc);
                                                 setModalExcluir(true);
                                             }}
                                             className="cursor-pointer px-4 py-2 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white rounded-xl transition-all text-[9px] font-black uppercase border border-red-600/20 flex items-center gap-2 relative z-[70]"
