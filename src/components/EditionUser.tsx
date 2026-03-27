@@ -47,6 +47,8 @@ const MODULOS_SISTEMA = [
   { id: "Cliente", label: "Cs & Nps", desc: "Cadastro de Cliente" },
   { id: "Senhas", label: "Gerenciamento de Senhas", desc: "Gerencie Cadastros e Senhas de sistemas" },
   { id: "Perse", label: "Analise Fiscal", desc: "Sistema de pesquisa cnpj" },
+  { id: "Extratos", label: "Extratos Bancarios", desc: "Sistema de Extratos Bancarios" },
+  { id: "ServiçosGerais", label:"Serviços Gerais", desc: "Painel de conferencia de tarefas" }
 ];
 
 const SETORES_LISTA = [

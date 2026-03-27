@@ -192,6 +192,8 @@ export default function CadastroUsuarios() {
                       { id: "Cliente", label: "Cadastro de Cliente" },
                       { id: "Senhas", label: "Senhas gerais" },
                       { id: "Perse", label: "Radar Fiscal" },
+                      { id: "Extratos", label: "Extratos Bancarios" },
+                      { id: "ServiçosGerais", label: "Serviços Gerais"}
                     ].map((item) => (
                       <div key={item.id} className="flex items-center justify-between p-4 rounded-2xl bg-black/40 border border-white/5 hover:border-blue-500/30 transition-all group">
                         <Label htmlFor={item.id} className="text-[9px] font-black uppercase text-slate-500 group-hover:text-white cursor-pointer tracking-tighter">{item.label}</Label>
@@ -265,7 +267,7 @@ export default function CadastroUsuarios() {
                     <div key={user.id} className="group relative flex flex-col gap-4 p-5 rounded-[2rem] border border-white/5 bg-black/40 hover:bg-slate-900/60 hover:border-blue-500/30 transition-all duration-500 overflow-hidden">
                       <div className="flex items-center gap-4">
                         <div className="shrink-0 h-12 w-12 rounded-2xl bg-gradient-to-br from-slate-800 to-black border border-white/10 flex items-center justify-center text-blue-400 font-black text-xs group-hover:rotate-12 transition-transform duration-500 shadow-xl overflow-hidden">
-                          
+
                           {user.imagemUrl ? (
                             <img
                               src={user.imagemUrl}

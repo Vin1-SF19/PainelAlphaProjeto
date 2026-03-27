@@ -34,7 +34,9 @@ const MODULOS_BASE = [
   { id: "Historico", title: "Gerenciamento do POP", img: "/historico.png", tag: "Auditoria" },
   { id: "Cliente", title: "SISTEMA CS & NPS", img: "/local-na-rede-internet.png", tag: "Comercial" },
   { id: "Senhas", title: "Gerenciamento de Acessos", img: "/senha.png", tag: "Administração" },
-  { id: "Perse", title: "Alpha Connect", img: "/planejamento-tributario.png", tag: "Connect"}
+  { id: "Perse", title: "Alpha Connect", img: "/planejamento-tributario.png", tag: "Connect"},
+  { id: "Extratos", title: "Sistema de Extratos Bancarios", img: "/taxa.png", tag: "Financeiro"},
+  { id: "ServiçosGerais", title: "Serviços Gerais", img: "/cleaning.png", tag: "Serviços Gerais"}
 ];
 
 export default function AtalhosPage() {

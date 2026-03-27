@@ -891,9 +891,9 @@ export default function PaginaDocumentos() {
 
 
                 {/* MARCA D'ÁGUA DINÂMICA */}
-                <div className="fixed inset-0 z-0 pointer-events-none opacity-[0.03] overflow-hidden select-none flex flex-wrap gap-20 p-10 rotate-[-15deg]">
+                <div className="fixed inset-0 z-0 pointer-events-none opacity-[0.1] overflow-hidden select-none flex flex-wrap gap-20 p-10 rotate-[-15deg]">
                     {Array.from({ length: 50 }).map((_, i) => (
-                        <span key={i} className="text-white font-black text-2xl uppercase tracking-widest">
+                        <span key={i} className="text-red-500 font-black text-2xl  ">
                             {session?.user?.nome || "ACESSO RESTRITO ALPHA"}
                         </span>
                     ))}

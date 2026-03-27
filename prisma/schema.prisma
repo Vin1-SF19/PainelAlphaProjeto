@@ -34,11 +34,13 @@ model usuarios {
   reset_token   String?
   reset_expires DateTime?
 
-  mensagensEnviadas   mensagens[] @relation("Enviadas")
+  mensagensEnviadas  mensagens[] @relation("Enviadas")
   mensagensRecebidas mensagens[] @relation("Recebidas")
 
-  conversasP1     conversas[] @relation("ConversaP1")
-  conversasP2     conversas[] @relation("ConversaP2")
+  tarefas Tarefa[]
+
+  conversasP1 conversas[] @relation("ConversaP1")
+  conversasP2 conversas[] @relation("ConversaP2")
 }
 
 model chamados {
@@ -311,14 +313,105 @@ model mensagens {
 }
 
 model conversas {
-  id            Int      @id @default(autoincrement())
-  p1Id          Int
-  p2Id          Int
-  ultimaMsg     String?
-  updatedAt     DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  p1Id      Int
+  p2Id      Int
+  ultimaMsg String?
+  updatedAt DateTime @default(now())
 
-  user1         usuarios @relation("ConversaP1", fields: [p1Id], references: [id])
-  user2         usuarios @relation("ConversaP2", fields: [p2Id], references: [id])
+  user1 usuarios @relation("ConversaP1", fields: [p1Id], references: [id])
+  user2 usuarios @relation("ConversaP2", fields: [p2Id], references: [id])
 
   @@unique([p1Id, p2Id])
+}
+
+model Extratos {
+  id               Int     @id @default(autoincrement())
+  cnpj             String  @unique
+  razaoSocial      String
+  nomeFantasia     String?
+  dataConstituicao String?
+  municipio        String?
+  uf               String?
+  regimeTributario String?
+
+  criadoPorNome String?
+  periodos      PeriodosAnalise[]
+
+  analistaResponsavel String?
+  dataExito           String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([criadoPorNome])
+  @@map("Extratos")
+}
+
+model BancosVinculados {
+  id        Int     @id @default(autoincrement())
+  bancoId   String
+  nomeBanco String
+  logo      String
+  descricao String?
+  anotacao  String?
+  status    String  @default("Ativo / Sincronizado")
+
+  periodoId Int
+  periodo   PeriodosAnalise @relation(fields: [periodoId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transacoes Transacao[]
+
+  @@map("BancosVinculados")
+}
+
+model PeriodosAnalise {
+  id  Int    @id @default(autoincrement())
+  mes String
+  ano String
+
+  extratoId Int
+  empresa   Extratos @relation(fields: [extratoId], references: [id], onDelete: Cascade)
+
+  bancos BancosVinculados[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("PeriodosAnalise")
+}
+
+model Transacao {
+  id            String   @id @default(cuid())
+  data          String
+  descricao     String
+  valor         Float
+  bancoId       String
+  mesReferencia String
+  origemArquivo String?
+  createdAt     DateTime @default(now())
+
+  BancosVinculadosId Int
+  BancosVinculados   BancosVinculados @relation(fields: [BancosVinculadosId], references: [id], onDelete: Cascade)
+}
+
+model Tarefa {
+  id        String  @id @default(cuid())
+  texto     String
+  descricao String?
+  fixa      Boolean @default(false)
+  feita     Boolean @default(false)
+  diaSemana Int     @default(0)
+
+  userId   Int
+  usuarios usuarios @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+
+  @@index([userId])
 }
