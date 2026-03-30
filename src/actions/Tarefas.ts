@@ -110,3 +110,39 @@ export async function DeletarTarefa(id: string) {
         return { success: false };
     }
 }
+
+export async function EditarTarefa(id: string, data: { 
+    texto: string, 
+    descricao?: string, 
+    fixa: boolean, 
+    diasSemana?: number[]; 
+    intervaloDias?: number | null;
+    dataInicio?: Date;
+    prioridade: string;
+    horario?: string | null;
+}) {
+    try {
+        
+        const feitaStatus = 0;
+        const diaSemanaFinal = data.diasSemana && data.diasSemana.length > 0 ? data.diasSemana[0] : null;
+
+        await db.$executeRawUnsafe(`
+            UPDATE "Tarefa" 
+            SET "texto" = '${data.texto.replace(/'/g, "''")}', 
+                "descricao" = '${(data.descricao || "").replace(/'/g, "''")}', 
+                "prioridade" = '${data.prioridade}',
+                "fixa" = ${data.fixa ? 1 : 0},
+                "diaSemana" = ${diaSemanaFinal !== null ? diaSemanaFinal : 'NULL'},
+                "intervaloDias" = ${data.intervaloDias !== null ? data.intervaloDias : 'NULL'},
+                "horario" = ${data.horario ? `'${data.horario}'` : 'NULL'},
+                "dataInicio" = '${data.dataInicio?.toISOString()}'
+            WHERE "id" = '${id}'
+        `);
+
+        revalidatePath("/PainelAlpha/PainelTarefas");
+        return { success: true };
+    } catch (error) {
+        console.error("ERRO AO EDITAR:", error);
+        return { success: false };
+    }
+}

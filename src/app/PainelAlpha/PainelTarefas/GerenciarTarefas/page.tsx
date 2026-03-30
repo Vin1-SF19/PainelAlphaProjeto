@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CriarTarefa, BuscarTarefasPorUsuario, DeletarTarefa } from '@/actions/Tarefas';
+import { CriarTarefa, BuscarTarefasPorUsuario, DeletarTarefa, EditarTarefa } from '@/actions/Tarefas';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import { CheckCircle, Clock, Info, Plus, Search, Trash2, UserCheck, BarChart3, ChevronDown, Calendar, AlertCircle, X, Settings, Loader2, ChevronRight, ChevronLeft, Edit3 } from 'lucide-react';
@@ -39,15 +39,9 @@ export default function AdminTarefas() {
     const [reservas, setReservas] = useState<any[]>([]);
     const [reservasConcluidas, setReservasConcluidas] = useState<string[]>([]);
     const [dataSelecionada, setDataSelecionada] = useState(new Date());
-    const [modalEdicao, setModalEdicao] = useState({ show: false, tarefa: null as any });
+    const [editandoId, setEditandoId] = useState<string | null>(null);
 
-    const [formEdit, setFormEdit] = useState({
-        texto: '',
-        descricao: '',
-        horario: '',
-        dataInicio: '',
-        intervaloDias: 0
-    });
+
 
     const [novaTarefa, setNovaTarefa] = useState({
         texto: "",
@@ -59,18 +53,6 @@ export default function AdminTarefas() {
         prioridade: "baixa",
         horario: ""
     });
-
-
-    const handleEditar = (t: any) => {
-        setFormEdit({
-            texto: t.texto || '',
-            descricao: t.descricao || '',
-            horario: t.horario || '',
-            dataInicio: t.dataInicio ? new Date(t.dataInicio).toISOString().split('T')[0] : '',
-            intervaloDias: t.intervaloDias || 0
-        });
-        setModalEdicao({ show: true, tarefa: t });
-    };
 
 
 
@@ -276,24 +258,54 @@ export default function AdminTarefas() {
         setIsPending(false);
     };
 
-    const salvarEdicao = () => {
-        if (!formEdit.texto.trim()) return;
-
-        const tarefaEditada = {
-            ...modalEdicao.tarefa,
-            texto: formEdit.texto,
-            descricao: formEdit.descricao,
-            horario: formEdit.horario,
-            dataInicio: formEdit.dataInicio,
-            intervaloDias: Number(formEdit.intervaloDias)
-        };
-
-        setTarefas((prev: any[]) =>
-            prev.map((t) => (t.id === modalEdicao.tarefa.id ? tarefaEditada : t))
-        );
-
-        setModalEdicao({ show: false, tarefa: null });
+    const handleAbrirEdicao = (tarefa: any) => {
+        setEditandoId(tarefa.id);
+        setNovaTarefa({
+            texto: tarefa.texto,
+            descricao: tarefa.descricao || "",
+            prioridade: tarefa.prioridade,
+            fixa: tarefa.fixa,
+            intervaloDias: tarefa.intervaloDias,
+            diasSemana: tarefa.diasSemana || [],
+            dataInicio: new Date(tarefa.dataInicio),
+            horario: tarefa.horario || ""
+        });
+        setShowModalAdd(true);
     };
+
+    const handleEditar = async (id: string) => {
+        try {
+            const res = await EditarTarefa(id, novaTarefa);
+
+            if (res.success) {
+                toast.success("Diretriz atualizada com sucesso!");
+                setShowModalAdd(false);
+                setEditandoId(null);
+                carregarDados();
+            } else {
+                toast.error("Erro ao processar atualização no banco.");
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("Falha catastrófica na edição.");
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsPending(true);
+
+        try {
+            if (editandoId) {
+                await handleEditar(editandoId);
+            } else {
+                await handleCriar(e);
+            }
+        } finally {
+            setIsPending(false);
+        }
+    };
+
 
     return (
         <div className="max-w-7xl mx-auto p-6 space-y-8 min-h-screen pb-20">
@@ -438,6 +450,7 @@ export default function AdminTarefas() {
                                 <th className="px-10 py-7 text-center">Horario de Termino</th>
                                 <th className="px-10 py-7 text-center">Prioridade</th>
                                 <th className="px-10 py-7 text-right">Ação</th>
+                                <th className='px-10 py-7 text-right'>Edição</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/[0.02]">
@@ -496,6 +509,15 @@ export default function AdminTarefas() {
                                                     <Trash2 size={18} />
                                                 </button>
                                             </td>
+                                            <td className="px-10 py-6 text-right">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleAbrirEdicao(t); }}
+                                                    className="p-3 bg-white/5 hover:bg-amber-500/20 border border-white/10 hover:border-amber-500/50 rounded-xl text-slate-500 hover:text-amber-500 transition-all group"
+                                                    title="Editar Diretriz"
+                                                >
+                                                    <Edit3 size={18} className="group-active:scale-90 transition-transform" />
+                                                </button>
+                                            </td>
                                         </tr>
                                         <AnimatePresence>
                                             {expandedId === t.id && (
@@ -533,12 +555,15 @@ export default function AdminTarefas() {
                                                                                 </div>
                                                                             )}
                                                                         </div>
+
                                                                     </div>
+
                                                                 </div>
 
                                                             </div>
                                                         </motion.div>
                                                     </td>
+
                                                 </tr>
                                             )}
                                         </AnimatePresence>
@@ -669,6 +694,99 @@ export default function AdminTarefas() {
                                 )}
                             </button>
                         </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {showModalAdd && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => { setShowModalAdd(false); setEditandoId(null); }}
+                            className="absolute inset-0 bg-slate-950/95 backdrop-blur-xl"
+                        />
+
+                        <motion.form
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                            onSubmit={handleSubmit}
+                            className={`relative w-full max-w-lg bg-slate-900 border ${editandoId ? 'border-amber-500/30' : 'border-indigo-500/30'} p-8 rounded-[3rem] space-y-6 shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] max-h-[90vh] overflow-y-auto custom-scrollbar`}
+                        >
+                            {/* Header Dinâmico */}
+                            <div className="flex items-center justify-between border-b border-white/5 pb-6">
+                                <div>
+                                    <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter">
+                                        {editandoId ? 'Ajustar' : 'Nova'} <span className={`${editandoId ? 'text-amber-500' : 'text-indigo-500'}`}>Diretriz</span>
+                                    </h2>
+                                    <p className="text-[9px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1">
+                                        {editandoId ? 'Modificando parâmetros existentes' : 'Lançamento de nova instrução'}
+                                    </p>
+                                </div>
+                                <button type="button" onClick={() => { setShowModalAdd(false); setEditandoId(null); }} className="h-10 w-10 flex items-center justify-center rounded-full bg-white/5 text-slate-500 hover:text-white transition-colors">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="group">
+                                    <label className="text-[9px] font-black text-slate-500 uppercase px-4 mb-2 block tracking-widest">O que deve ser feito?</label>
+                                    <input required placeholder="TÍTULO DA TAREFA..." value={novaTarefa.texto} onChange={e => setNovaTarefa({ ...novaTarefa, texto: e.target.value })} className="w-full bg-black/40 border border-white/5 p-5 rounded-2xl text-white text-xs font-black uppercase outline-none focus:border-indigo-500 focus:bg-black/60 transition-all shadow-inner" />
+                                </div>
+
+                                <div className="group">
+                                    <label className="text-[9px] font-black text-slate-500 uppercase px-4 mb-2 block tracking-widest">Instruções Técnicas</label>
+                                    <textarea placeholder="DETALHAMENTO DO PROCESSO..." value={novaTarefa.descricao} onChange={e => setNovaTarefa({ ...novaTarefa, descricao: e.target.value })} className="w-full bg-black/40 border border-white/5 p-5 rounded-2xl text-white text-xs font-medium h-24 outline-none focus:border-indigo-500 focus:bg-black/60 transition-all resize-none shadow-inner" />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4">
+                                <div className="relative">
+                                    <select value={novaTarefa.prioridade} onChange={(e) => setNovaTarefa({ ...novaTarefa, prioridade: e.target.value })} className="w-full bg-black/40 border border-white/5 p-5 rounded-2xl text-[10px] font-black uppercase text-white outline-none appearance-none focus:border-indigo-500">
+                                        <option value="baixa">🟢 Baixa Prioridade</option>
+                                        <option value="media">🟡 Prioridade Média</option>
+                                        <option value="alta">🟠 Alta Prioridade</option>
+                                        <option value="urgente">🔴 Urgência Máxima</option>
+                                    </select>
+                                    <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none" size={16} />
+                                </div>
+                            </div>
+
+                            {/* Bloco de Agendamento */}
+                            <div className={`space-y-4 p-6 rounded-[2.5rem] border transition-colors ${editandoId ? 'bg-amber-500/5 border-amber-500/10' : 'bg-indigo-500/5 border-indigo-500/10'}`}>
+                                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                                    {[{ l: "Única", v: 0 }, { l: "Rotina", v: 7 }, { l: "10D", v: 10 }, { l: "15D", v: 15 }, { l: "30D", v: 30 }].map((opt) => (
+                                        <button key={opt.v} type="button" onClick={() => setNovaTarefa({ ...novaTarefa, fixa: opt.v > 0, intervaloDias: (opt.v > 0 && opt.v !== 7) ? opt.v : null, diasSemana: opt.v === 7 ? [new Date().getDay()] : [], dataInicio: new Date() })} className={`py-3 rounded-xl text-[8px] font-black uppercase border transition-all ${((opt.v === 0 && !novaTarefa.fixa) || (opt.v === 7 && novaTarefa.fixa && !novaTarefa.intervaloDias) || (opt.v === novaTarefa.intervaloDias)) ? (editandoId ? 'bg-amber-600 border-amber-400 text-white shadow-lg' : 'bg-indigo-600 border-indigo-400 text-white shadow-lg') : 'bg-black/20 border-white/5 text-slate-500 hover:border-white/20'}`}>{opt.l}</button>
+                                    ))}
+                                </div>
+
+                                {(novaTarefa.intervaloDias !== null || !novaTarefa.fixa) ? (
+                                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
+                                        <div className="space-y-2">
+                                            <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest px-1">Horário</label>
+                                            <input type="time" value={novaTarefa.horario} onChange={e => setNovaTarefa({ ...novaTarefa, horario: e.target.value })} className="w-full bg-black/40 border border-white/5 p-4 rounded-xl text-white text-[10px] font-black outline-none focus:border-indigo-500 [color-scheme:dark]" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest px-1">Data Início</label>
+                                            <input type="date" required value={novaTarefa.dataInicio instanceof Date ? novaTarefa.dataInicio.toISOString().split('T')[0] : ''} onChange={(e) => setNovaTarefa({ ...novaTarefa, dataInicio: new Date(e.target.value + 'T00:00:00') })} className="w-full bg-black/40 border border-white/5 p-4 rounded-xl text-white text-[10px] font-black outline-none focus:border-indigo-500 [color-scheme:dark]" />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-7 gap-1 pt-4 border-t border-white/5">
+                                        {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((dia, idx) => (
+                                            <button key={idx} type="button" onClick={() => { const novos = novaTarefa.diasSemana.includes(idx) ? novaTarefa.diasSemana.filter(d => d !== idx) : [...novaTarefa.diasSemana, idx]; setNovaTarefa({ ...novaTarefa, diasSemana: novos }); }} className={`h-10 rounded-lg text-[9px] font-black border transition-all ${novaTarefa.diasSemana.includes(idx) ? (editandoId ? 'bg-amber-600 border-amber-400 text-white' : 'bg-indigo-600 border-indigo-400 text-white') : 'bg-black/20 border-white/5 text-slate-600'}`}>{dia}</button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <button type="submit" className={`w-full ${editandoId ? 'bg-amber-600 hover:bg-amber-500 shadow-amber-500/20' : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-500/20'} p-6 rounded-[2rem] text-white text-[11px] font-black uppercase tracking-[0.3em] transition-all active:scale-95 shadow-2xl`}>
+                                {editandoId ? 'Salvar Alterações' : 'Efetivar Lançamento'}
+                            </button>
+                        </motion.form>
                     </div>
                 )}
             </AnimatePresence>
