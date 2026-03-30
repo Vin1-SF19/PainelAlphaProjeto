@@ -12,7 +12,7 @@ export const authConfig = {
 
       if (isPrivateRoute) {
         if (isLoggedIn) return true;
-        return false; // Redireciona para o login (/)
+        return false; 
       }
       return true;
     },

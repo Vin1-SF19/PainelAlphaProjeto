@@ -307,7 +307,7 @@ export default function AdminTarefas() {
                             Gestão de <span className="text-indigo-500">Diretrizes</span>
                         </h1>
                         <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] mt-1">
-                            Análise Estrutural: <span className="text-indigo-400">{userIdUrl}</span>
+                            Rotina para: <span className="text-indigo-400">{session?.user.nome}</span>
                         </p>
                     </div>
                 </div>
