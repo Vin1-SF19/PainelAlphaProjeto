@@ -40,6 +40,7 @@ export default function AdminTarefas() {
     const [reservasConcluidas, setReservasConcluidas] = useState<string[]>([]);
     const [dataSelecionada, setDataSelecionada] = useState(new Date());
     const [editandoId, setEditandoId] = useState<string | null>(null);
+    const [modoHistorico, setModoHistorico] = useState(false);
 
 
 
@@ -59,11 +60,16 @@ export default function AdminTarefas() {
 
     const carregarDados = async () => {
         if (!userIdUrl) return;
+
         setLoading(true);
         try {
-            const data = await BuscarTarefasPorUsuario(String(userIdUrl));
+            const userRole = session?.user?.role || "USER";
+
+            const data = await BuscarTarefasPorUsuario(String(userIdUrl), userRole);
+
             setTarefas(Array.isArray(data) ? data : []);
         } catch (error) {
+            console.error(error);
             toast.error("Erro na sincronização.");
         } finally {
             setLoading(false);
@@ -166,9 +172,12 @@ export default function AdminTarefas() {
 
     const tarefasFiltradas = useMemo(() => {
         if (!tarefas || !Array.isArray(tarefas)) return [];
+
         return tarefas.filter(t => {
             const correspondeBusca = t.texto?.toLowerCase().includes(busca.toLowerCase());
-            const correspondeData = calcularOcorrencia(t, diaFiltro);
+
+            const correspondeData = modoHistorico ? true : calcularOcorrencia(t, diaFiltro);
+
             const correspondeStatus =
                 filtroStatus === 'todas' ? true :
                     filtroStatus === 'pendentes' ? !t.feita :
@@ -177,7 +186,7 @@ export default function AdminTarefas() {
 
             return correspondeBusca && correspondeData && correspondeStatus;
         });
-    }, [tarefas, busca, filtroStatus, diaFiltro]);
+    }, [tarefas, busca, filtroStatus, diaFiltro, modoHistorico]);
 
     const statsGeral = useMemo(() => {
         if (!tarefas || !Array.isArray(tarefas)) return { total: 0, concluidas: 0, percent: 0 };
@@ -319,7 +328,7 @@ export default function AdminTarefas() {
                             Gestão de <span className="text-indigo-500">Diretrizes</span>
                         </h1>
                         <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] mt-1">
-                            Rotina para: <span className="text-indigo-400">{session?.user.nome}</span>
+                            Rotina para: <span className="text-indigo-400">{userIdUrl}</span>
                         </p>
                     </div>
                 </div>
@@ -413,6 +422,7 @@ export default function AdminTarefas() {
 
             <div className="space-y-4">
                 <div className="flex flex-col lg:flex-row gap-4 bg-black/20 p-3 rounded-3xl border border-white/5 backdrop-blur-md">
+                    {/* SEARCH */}
                     <div className="relative flex-1">
                         <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-600" size={18} />
                         <input
@@ -423,12 +433,32 @@ export default function AdminTarefas() {
                             className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-14 text-[11px] font-bold text-white uppercase outline-none focus:border-indigo-500/30 transition-all"
                         />
                     </div>
+
+                    {/* BOTÃO HISTÓRICO (MODO GLOBAL) */}
+                    <button
+                        onClick={() => setModoHistorico(!modoHistorico)}
+                        className={`flex items-center gap-2 px-6 py-4 rounded-2xl border transition-all duration-300 ${modoHistorico
+                            ? 'bg-amber-500/20 border-amber-500/50 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.1)]'
+                            : 'bg-white/5 border-white/5 text-slate-500 hover:text-white'
+                            }`}
+                    >
+                        <Clock size={16} className={modoHistorico ? "animate-pulse" : ""} />
+                        <span className="text-[9px] font-black uppercase tracking-widest">
+                            {modoHistorico ? "Ver Agenda" : "Ver Histórico"}
+                        </span>
+                    </button>
+
+                    {/* FILTROS DE STATUS */}
                     <div className="flex bg-white/5 p-1 rounded-2xl border border-white/5">
                         {['todas', 'pendentes', 'concluidas', 'fixas'].map((f) => (
                             <button
                                 key={f}
-                                onClick={() => setFiltroStatus(f)}
-                                className={`px-6 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${filtroStatus === f ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-white'}`}
+                                onClick={() => {
+                                    setModoHistorico(false); 
+                                    setFiltroStatus(f);      
+                                }}
+                                className={`px-6 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${filtroStatus === f ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-white'
+                                    }`}
                             >
                                 {f}
                             </button>
@@ -465,7 +495,7 @@ export default function AdminTarefas() {
                                             <td className="px-10 py-6">
                                                 <div className={`flex items-center gap-2 text-[9px] font-black uppercase ${t.feita ? 'text-emerald-500' : 'text-amber-500'}`}>
                                                     <div className={`w-1.5 h-1.5 rounded-full ${t.feita ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : 'bg-amber-500 animate-pulse'}`} />
-                                                    {t.feita ? 'Finalizado' : 'Em Aberto'}
+                                                    {t.feita ? 'Finalizado' : 'Aberto'}
                                                 </div>
                                             </td>
                                             <td className="px-10 py-6">

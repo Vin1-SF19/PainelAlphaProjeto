@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { X, Plus, ThumbsUp, ThumbsDown, Minus, Calendar, User, MessageSquare, Save, Star, Search, CheckCircle2, TrendingUp, LockOpen, Edit3, Check } from "lucide-react";
-import { adicionarSocio, salvarAlteracoesGeral, salvarAlteracoesGestao, salvarLogCS, salvarLogFeedback } from '@/actions/Clientes';
+import { X, Plus, ThumbsUp, ThumbsDown, Minus, Calendar, User, MessageSquare, Save, Star, Search, CheckCircle2, TrendingUp, LockOpen, Edit3, Check, Trash2, AlertTriangle } from "lucide-react";
+import { adicionarSocio, atualizarStatusCliente, excluirLogCS, excluirLogFeedback, salvarAlteracoesGeral, salvarAlteracoesGestao, salvarLogCS, salvarLogFeedback } from '@/actions/Clientes';
 import { toast } from 'sonner';
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { getTema } from '@/lib/temas';
+
 
 interface ModalDadosProps {
     editandoDados: boolean;
@@ -36,6 +37,7 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
 
     const [servicosSelecionados, setServicosSelecionados] = useState<string[]>([]);
     const [analistaSelecionado, setAnalistaSelecionado] = useState("");
+    const [showConfirmarOcultar, setShowConfirmarOcultar] = useState(false);
 
     const router = useRouter();
     const [showNovoCS, setShowNovoCS] = useState(false);
@@ -64,7 +66,8 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
     const listaServicos = ["Habilitação RADAR - 50K", "Revisão RADAR - 150K", "Revisão RADAR - ILIMITADO", "TTD 409", "Recuperação AFRMM", "Outras Recuperaçoes Tributarias"];
 
 
-
+    const [dataCS, setDataCS] = useState(new Date().toISOString().split('T')[0]);
+    const [dataFeedback, setDataFeedback] = useState(new Date().toISOString().split('T')[0]);
 
 
     const [obsFeedback, setObsFeedback] = useState("");
@@ -88,6 +91,7 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
     const [listaSocios, setListaSocios] = useState<any[]>([]);
     const [showNovoSocio, setShowNovoSocio] = useState(false);
     const [novoSocio, setNovoSocio] = useState({ nome: "", telefone: "", obs: "" });
+    const [enviandoFeedback, setEnviandoFeedback] = useState(false);
 
 
     useEffect(() => {
@@ -110,11 +114,13 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
 
         setEnviandoCS(true);
 
+        const dataSelecionada = new Date(`${dataCS}T12:00:00`).toISOString();
+
         const novoLog = {
             colaborador: session?.user?.nome || "Analista",
             sentimento: feedbackCS,
             observacao: obsCS,
-            data_registro: new Date().toISOString()
+            data_registro: dataSelecionada
         };
 
         const res = await salvarLogCS(cliente.id, novoLog);
@@ -128,9 +134,31 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
             setObsCS("");
             setFeedbackCS(null);
 
+            setDataCS(new Date().toISOString().split('T')[0]);
+
             if (aoSalvar) aoSalvar();
         }
         setEnviandoCS(false);
+    };
+
+    const handleExcluirCS = async (logId: number) => {
+        if (!confirm("Deseja realmente apagar este relato de CS?")) return;
+
+        try {
+            const res = await excluirLogCS(logId);
+
+            if (res.success) {
+                toast.success("Relato removido!");
+
+                setListaLogsCS((prev: any[]) => prev.filter((log) => log.id !== logId));
+
+                if (aoSalvar) aoSalvar();
+            } else {
+                toast.error("Erro ao excluir.");
+            }
+        } catch (error) {
+            toast.error("Falha na conexão.");
+        }
     };
 
     useEffect(() => {
@@ -244,25 +272,56 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
     };
 
     const handleSalvarFeedback = async () => {
-        if (!sentimentoFeedback || obsFeedback.length < 10) return;
+        if (!sentimentoFeedback || !isTextoValido(obsFeedback)) return;
+
+        setEnviandoFeedback(true);
+
+        const dataSelecionada = new Date(`${dataFeedback}T12:00:00`).toISOString();
 
         const novoLog = {
-            id: Math.random(),
-            data_registro: new Date().toISOString(),
             colaborador: session?.user?.nome || "Analista",
             sentimento: sentimentoFeedback,
             observacao: obsFeedback,
+            data_registro: dataSelecionada
         };
 
         const res = await salvarLogFeedback(cliente.id, novoLog);
 
         if (res.success) {
             toast.success("Pedido registrado!");
-            setListaLogsFeedback((prev: any[]) => [novoLog, ...prev]);
+
+            setListaLogsFeedback((prev: any[]) => [
+                { ...novoLog, id: Date.now() },
+                ...prev
+            ]);
+
             setShowNovoFeedback(false);
             setObsFeedback("");
             setSentimentoFeedback(null);
+            setDataFeedback(new Date().toISOString().split('T')[0]);
+
             if (aoSalvar) aoSalvar();
+        } else {
+            toast.error("Erro ao salvar no banco.");
+        }
+        setEnviandoFeedback(false);
+    };
+
+    const handleExcluirFeedback = async (logId: number) => {
+        if (!logId) return toast.error("ID do log não encontrado");
+        if (!confirm("Deseja realmente excluir este pedido de feedback?")) return;
+
+        try {
+            const res = await excluirLogFeedback(logId);
+
+            if (res.success) {
+                toast.success("Excluído com sucesso!");
+                setListaLogsFeedback((prev: any[]) => prev.filter(item => item.id !== logId));
+            } else {
+                toast.error("Erro ao excluir do banco de dados.");
+            }
+        } catch (error) {
+            toast.error("Erro de conexão.");
         }
     };
 
@@ -297,6 +356,25 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
         }
     };
 
+    const handleOcultarCliente = async (id: number) => {
+        if (!confirm("Deseja ocultar este cliente?")) return;
+
+        try {
+            const res = await atualizarStatusCliente(id, "Arquivado");
+
+            if (res.success) {
+                toast.success("Cliente arquivado!");
+
+                onClose(false);
+
+                router.refresh();
+
+            }
+        } catch (error) {
+            toast.error("Erro ao ocultar");
+        }
+    };
+
 
 
 
@@ -315,15 +393,24 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                         <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mt-1">Gestão de Operação e CS</p>
                     </div>
                     <div className="flex gap-4">
-                        <button
-                            onClick={() => setEditandoDados(!editandoDados)}
-                            className={`cursor-pointer flex items-center gap-2 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all border ${editandoDados
-                                ? "bg-amber-500/20 text-amber-500 border-amber-500/50"
-                                : "bg-slate-800 text-slate-400 border-white/5 hover:bg-slate-700"
-                                }`}
-                        >
-                            {editandoDados ? <><LockOpen size={12} /> Edição Liberada</> : <><Edit3 size={12} /> Editar Dados</>}
-                        </button>
+                        <div className="flex gap-4">
+                            <button
+                                onClick={() => setShowConfirmarOcultar(true)}
+                                className="cursor-pointer flex items-center gap-2 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all border bg-slate-800 text-slate-400 border-white/5 hover:bg-rose-500/20 hover:text-rose-500 hover:border-rose-500/50"
+                            >
+                                <Trash2 size={12} /> Excluir
+                            </button>
+
+                            <button
+                                onClick={() => setEditandoDados(!editandoDados)}
+                                className={`cursor-pointer flex items-center gap-2 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all border ${editandoDados
+                                    ? "bg-amber-500/20 text-amber-500 border-amber-500/50"
+                                    : "bg-slate-800 text-slate-400 border-white/5 hover:bg-slate-700"
+                                    }`}
+                            >
+                                {editandoDados ? <><LockOpen size={12} /> Edição Liberada</> : <><Edit3 size={12} /> Editar Dados</>}
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -640,6 +727,7 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                                         <th className="px-6 py-4">Colaborador</th>
                                         <th className="px-6 py-4 text-center">Sentimento</th>
                                         <th className="px-6 py-4">Observação</th>
+                                        <th className='px-6 py-4 text-center'>Ação</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
@@ -666,6 +754,7 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                                                 <td className="px-6 py-4 text-xs font-bold text-white uppercase tracking-tighter">
                                                     {log.colaborador || "---"}
                                                 </td>
+
                                                 <td className="px-6 py-4 text-center">
                                                     <div className="flex justify-center scale-110">
                                                         {log.sentimento === "pos" && <ThumbsUp size={14} className="text-emerald-500 drop-shadow-[0_0_5px_rgba(16,185,129,0.3)]" />}
@@ -673,16 +762,32 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                                                         {log.sentimento === "na" && <Minus size={14} className="text-slate-500" />}
                                                     </div>
                                                 </td>
+
                                                 <td className="px-6 py-4">
                                                     <p className="text-[11px] text-slate-400 italic max-w-xs truncate hover:text-white transition-colors cursor-help" title={log.observacao}>
                                                         {log.observacao || "---"}
                                                     </p>
                                                 </td>
+
+                                                <td className="px-6 py-4 text-center">
+                                                    <div className="flex items-center justify-center">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleExcluirCS(log.id || log.ID);
+                                                            }}
+                                                            className="cursor-pointer p-2 text-slate-500 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all duration-200 active:scale-90"
+                                                            title="Excluir Registro"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </div>
+                                                </td>
                                             </tr>
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={4} className="p-12 text-center text-[10px] uppercase font-black tracking-[0.4em] opacity-20 italic">
+                                            <td colSpan={5} className="p-12 text-center text-[10px] uppercase font-black tracking-[0.4em] opacity-20 italic">
                                                 Nenhum histórico de CS detectado
                                             </td>
                                         </tr>
@@ -801,48 +906,58 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
 
                         {/* TABELA DE PEDIDOS DE FEEDBACK */}
                         <div className="bg-slate-950/50 border border-white/5 rounded-2xl overflow-hidden">
-                            <table className="w-full text-left">
-                                <thead className="bg-white/5 text-[9px] font-black uppercase text-slate-500 tracking-[0.2em]">
+                            <table className="w-full text-left border-collapse">
+                                <thead className="bg-white/5 text-[10px] font-black uppercase text-slate-500 tracking-widest">
                                     <tr>
                                         <th className="px-6 py-4">Data</th>
                                         <th className="px-6 py-4">Colaborador</th>
                                         <th className="px-6 py-4 text-center">Sentimento</th>
                                         <th className="px-6 py-4">Observação</th>
+                                        <th className="px-6 py-4 text-center">Ação</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
                                     {listaLogsFeedback && listaLogsFeedback.length > 0 ? (
-                                        listaLogsFeedback.map((log:
-
-                                            any, i: number) => (
-                                            <tr key={log.id || i} className="hover:bg-white/[0.02] transition-colors">
-                                                <td className="px-6 py-4 text-[10px] font-mono text-slate-500">
+                                        listaLogsFeedback.map((log: any, index: number) => (
+                                            <tr key={log.id || index} className="hover:bg-white/[0.02] transition-colors group">
+                                                <td className="px-6 py-4 text-[11px] font-black text-blue-300">
                                                     {new Date(log.data_registro || log.dataRegistro).toLocaleDateString('pt-BR')}
                                                 </td>
-                                                <td className="px-6 py-4 text-xs font-bold text-white uppercase tracking-tighter">
+                                                <td className="px-6 py-4 text-xs font-bold text-white uppercase">
                                                     {log.colaborador}
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
-                                                    {log.sentimento === "pos" && <ThumbsUp size={14} className="text-blue-500 mx-auto" />}
-                                                    {log.sentimento === "neg" && <ThumbsDown size={14} className="text-rose-500 mx-auto" />}
-                                                    {log.sentimento === "na" && <Minus size={14} className="text-slate-500 mx-auto" />}
+                                                    <div className="flex justify-center">
+                                                        {log.sentimento === "pos" && <ThumbsUp size={14} className="text-blue-500" />}
+                                                        {log.sentimento === "neg" && <ThumbsDown size={14} className="text-rose-500" />}
+                                                        {log.sentimento === "na" && <Minus size={14} className="text-slate-500" />}
+                                                    </div>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <p className="text-[11px] text-slate-400 italic max-w-xs truncate" title={log.observacao}>
-                                                        {log.observacao || "---"}
+                                                    <p className="text-[11px] text-slate-400 italic truncate max-w-xs" title={log.observacao}>
+                                                        {log.observacao}
                                                     </p>
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <div className="flex items-center justify-center">
+                                                        <button
+                                                            onClick={() => handleExcluirFeedback(log.id)}
+                                                            className="cursor-pointer p-2 text-slate-500 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all active:scale-90"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={4} className="p-10 text-center opacity-20 uppercase font-black tracking-[0.3em] text-[10px]">
-                                                Nenhum pedido de feedback registrado
+                                            <td colSpan={5} className="p-12 text-center text-[10px] uppercase font-black opacity-20 italic tracking-[0.4em]">
+                                                Nenhum pedido de feedback detectado
                                             </td>
                                         </tr>
                                     )}
                                 </tbody>
-
                             </table>
                         </div>
                     </section>
@@ -930,6 +1045,18 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                                         </button>
                                     </div>
 
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-2 px-1">
+                                            <Calendar size={12} className="text-emerald-500" /> Data do Atendimento
+                                        </label>
+                                        <input
+                                            type="date"
+                                            value={dataCS}
+                                            onChange={(e) => setDataCS(e.target.value)}
+                                            className="w-full bg-slate-950/80 border-2 border-slate-800 rounded-2xl p-4 text-sm text-white outline-none transition-all duration-300 focus:border-emerald-500 [color-scheme:dark]"
+                                        />
+                                    </div>
+
                                 </div>
 
                                 <div className="flex gap-3 pt-4">
@@ -973,6 +1100,7 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                                 <div className="p-2 bg-blue-500/20 rounded-xl"><TrendingUp className="text-blue-400 w-5 h-5" /></div>
                                 <h4 className="text-xl font-black text-white uppercase italic tracking-tighter">Solicitar <span className="text-blue-500">Google</span></h4>
                             </div>
+
                             <button onClick={() => { setShowNovoFeedback(false); setObsFeedback(""); setSentimentoFeedback(null); }} className="cursor-pointer text-slate-500 hover:text-white"><X size={24} /></button>
                         </div>
 
@@ -1018,6 +1146,15 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                                 />
                             </div>
 
+                            <div className="relative group">
+                                <input
+                                    type="date"
+                                    value={dataFeedback}
+                                    onChange={(e) => setDataFeedback(e.target.value)}
+                                    className="w-full bg-slate-950 border-2 border-slate-800 rounded-2xl p-4 text-sm text-white outline-none transition-all duration-300 focus:border-blue-500 focus:shadow-[0_0_15px_rgba(59,130,246,0.1)] [color-scheme:dark] cursor-pointer font-bold"
+                                />
+                            </div>
+
                             <div className="flex gap-4">
                                 <button onClick={() => setShowNovoFeedback(false)} className="cursor-pointer flex-1 py-4 bg-slate-900 text-slate-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-colors">Cancelar</button>
                                 <button
@@ -1028,6 +1165,37 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                                     Confirmar Pedido
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showConfirmarOcultar && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="bg-slate-900 border border-rose-500/30 w-full max-w-sm rounded-[2rem] p-8 shadow-2xl shadow-rose-900/20 text-center">
+                        <div className="flex justify-center mb-6">
+                            <div className="p-4 bg-rose-500/10 rounded-full animate-pulse">
+                                <AlertTriangle size={40} className="text-rose-500" />
+                            </div>
+                        </div>
+
+                        <h3 className="text-xl font-black text-white uppercase mb-2 tracking-tighter">Atenção Total</h3>
+                        <p className="text-sm text-slate-400 mb-8 px-4">
+                            Você está prestes a <span className="text-rose-500 font-bold">Excluir</span> este cliente da listagem principal. 
+                        </p>
+                        <div className="flex flex-col gap-3">
+                            <button
+                                onClick={() => handleOcultarCliente(cliente.id)}
+                                className="cursor-pointer w-full py-4 bg-rose-600 hover:bg-rose-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all active:scale-95 shadow-lg shadow-rose-900/40"
+                            >
+                                Sim, Excluir Agora
+                            </button>
+                            <button
+                                onClick={() => setShowConfirmarOcultar(false)}
+                                className="cursor-pointer w-full py-4 bg-slate-800 text-slate-400 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-slate-700 transition-all"
+                            >
+                                Cancelar e Voltar
+                            </button>
                         </div>
                     </div>
                 </div>

@@ -41,13 +41,12 @@ export async function CadastrarCliente(dados: any, socios: any[]) {
 export async function buscarClientes() {
   try {
     const lista = await db.clientes.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: {
-        socios: true,
-        log_cs: true,
-        logFeedback: true,
-        logAlteracao: true,
-      }
+      where: {
+        status: {
+          not: "Arquivado"
+        }
+      },
+      orderBy: { createdAt: 'desc' }
     });
     return lista;
   } catch (error: any) {
@@ -58,21 +57,22 @@ export async function buscarClientes() {
   }
 }
 
-export async function salvarLogCS(clienteId: number, dados: { colaborador: string, sentimento: string, observacao: string }) {
+export async function salvarLogCS(clienteId: number, dados: { colaborador: string, sentimento: string, observacao: string, data_registro: string }) {
   try {
     await db.$executeRawUnsafe(
       `INSERT INTO log_cs (colaborador, sentimento, observacao, clienteId, dataRegistro) 
-         VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+         VALUES (?, ?, ?, ?, ?)`,
       dados.colaborador,
       dados.sentimento,
       dados.observacao,
-      clienteId
+      clienteId,
+      dados.data_registro 
     );
 
     revalidatePath("/PainelAlpha/CadastroClientes");
     return { success: true };
   } catch (error: any) {
-    console.error("ERRO NO SQL DIRETO:", error.message);
+    console.error("ERRO NO SQL AO SALVAR CS:", error.message);
     return { success: false, error: "Erro crítico no banco." };
   }
 }
@@ -100,20 +100,22 @@ export async function salvarLogFeedback(clienteId: number, dados: any) {
     const colaborador = dados.colaborador || "Analista";
     const sentimento = dados.sentimento || "N/A";
     const observacao = dados.observacao || "";
+    const dataRegistro = dados.data_registro; 
 
     await db.$executeRawUnsafe(
-      `INSERT INTO logFeedback (colaborador, sentimento, observacao, clienteId) 
-       VALUES (?, ?, ?, ?)`,
+      `INSERT INTO logFeedback (colaborador, sentimento, observacao, clienteId, dataRegistro) 
+       VALUES (?, ?, ?, ?, ?)`,
       colaborador,
       sentimento,
       observacao,
-      Number(clienteId)
+      Number(clienteId),
+      dataRegistro 
     );
 
     revalidatePath("/PainelAlpha/CadastroClientes");
     return { success: true };
   } catch (error: any) {
-    console.error("ERRO CRÍTICO TURSO FEEDBACK:", error.message);
+    console.error("ERRO CRÍTICO FEEDBACK:", error.message);
     return { success: false, error: error.message };
   }
 }
@@ -277,3 +279,51 @@ export async function adicionarSocio(clienteId: number, dadosSocio: { nome: stri
 }
 
 
+export async function excluirLogCS(logId: number) {
+  try {
+    await db.$executeRawUnsafe(
+      `DELETE FROM log_cs WHERE id = ?`,
+      logId
+    );
+
+    revalidatePath("/PainelAlpha/CadastroClientes");
+    return { success: true };
+  } catch (error: any) {
+    console.error("ERRO AO EXCLUIR LOG CS:", error.message);
+    return { success: false, error: "Não foi possível excluir o registro." };
+  }
+}
+
+
+export async function excluirLogFeedback(logId: number) {
+  try {
+    await db.$executeRawUnsafe(
+      `DELETE FROM logFeedback WHERE id = ?`, 
+      logId
+    );
+
+    revalidatePath("/PainelAlpha/CadastroClientes");
+    return { success: true };
+  } catch (error: any) {
+    console.error("ERRO AO EXCLUIR FEEDBACK:", error.message);
+    return { success: false };
+  }
+}
+
+export async function atualizarStatusCliente(clienteId: number, novoStatus: string) {
+  try {
+    await db.clientes.update({
+      where: { id: clienteId },
+      data: {
+        status: novoStatus, 
+        updatedAt: new Date().toISOString(),
+      }
+    });
+
+    revalidatePath("/PainelAlpha/CadastroClientes");
+    return { success: true };
+  } catch (error: any) {
+    console.error("ERRO AO OCULTAR:", error.message);
+    return { success: false };
+  }
+}

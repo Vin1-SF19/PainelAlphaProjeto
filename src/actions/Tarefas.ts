@@ -44,8 +44,12 @@ export async function CriarTarefa(data: {
     }
 }
 
-export async function BuscarTarefasPorUsuario(userId: string) {
+export async function BuscarTarefasPorUsuario(userId: string, role: string) {
     try {
+        const filtroSql = role === "Admin" 
+            ? "" 
+            : `WHERE "userId" = ${parseInt(userId, 10)}`;
+
         const tarefas: any[] = await db.$queryRawUnsafe(`
             SELECT 
                 id, 
@@ -62,7 +66,7 @@ export async function BuscarTarefasPorUsuario(userId: string) {
                 CAST(createdAt AS TEXT) as createdAt,
                 CAST(concluidaEm AS TEXT) as concluidaEm
             FROM "Tarefa" 
-            WHERE "userId" = ${parseInt(userId, 10)}
+            ${filtroSql}
             ORDER BY "feita" ASC, "horario" ASC
         `);
 
