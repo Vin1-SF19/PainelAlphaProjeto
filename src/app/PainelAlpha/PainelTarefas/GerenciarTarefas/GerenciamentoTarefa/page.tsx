@@ -23,7 +23,7 @@ export default function PaginaUsuarios() {
         carregarUsuarios();
     }, []);
 
-    const UsuariosRH = ["Weslei Silva - TESTE", "Vinicius Floriano"];
+    const UsuariosRH = ["Rejane Rizzotto"];
 
     const usuariosFiltrados = useMemo(() => {
         return usuarios.filter(u =>
