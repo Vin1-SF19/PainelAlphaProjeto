@@ -67,6 +67,8 @@ export default function AdminTarefas() {
 
             const data = await BuscarTarefasPorUsuario(String(userIdUrl), userRole);
 
+    
+
             setTarefas(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error(error);
@@ -75,6 +77,7 @@ export default function AdminTarefas() {
             setLoading(false);
         }
     };
+
 
     useEffect(() => { carregarDados(); }, [userIdUrl]);
 
@@ -328,7 +331,7 @@ export default function AdminTarefas() {
                             Gestão de <span className="text-indigo-500">Diretrizes</span>
                         </h1>
                         <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] mt-1">
-                            Rotina para: <span className="text-indigo-400">{userIdUrl}</span>
+                        Rotina para: <span className="text-indigo-400 uppercase">Rejane Rizzotto</span>
                         </p>
                     </div>
                 </div>
