@@ -4,24 +4,73 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     ChevronLeft, ChevronRight, CheckCircle2,
-    Circle, Star, Clock, Calendar as CalendarIcon, Filter, CheckCircle, CircleDashed,
-    Loader2
+    Circle, Star, Clock, Calendar as CalendarIcon, CheckCircle,
+    Loader2, CalendarDays, Info, Trash2, Filter, XCircle, AlertTriangle
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { BotaoVoltar } from '@/components/BotaoVoltar';
-import { BuscarTarefasPorUsuario, AlternarStatusTarefa } from '@/actions/Tarefas'; 
+import { BuscarTarefasPorUsuario, AlternarStatusTarefa } from '@/actions/Tarefas';
 import { toast } from 'sonner';
+import { buscarReservasAtivas, BuscarTodasDiretrizes } from '@/actions/Reservas';
 
 export default function PainelTarefas() {
     const { data: session } = useSession();
 
-    // Estados
     const [agora, setAgora] = useState(new Date());
-    const [diaAtivo, setDiaAtivo] = useState(new Date().getDay() === 0 ? 6 : new Date().getDay() - 1);
+    const [dataSelecionada, setDataSelecionada] = useState<Date>(new Date());
     const [tarefas, setTarefas] = useState<any[]>([]);
+    const [reservas, setReservas] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [filtro, setFiltro] = useState<'todas' | 'pendentes' | 'concluidas'>('todas');
-    
+    const [filtro, setFiltro] = useState<'todas' | 'pendentes' | 'concluidas'>('pendentes');
+    const [modalConfirmacao, setModalConfirmacao] = useState<{ show: boolean, tarefa: any | null }>({ show: false, tarefa: null });
+    const [modalDescricao, setModalDescricao] = useState<{ show: boolean, tarefa: any | null }>({ show: false, tarefa: null });
+
+    useEffect(() => {
+        const timer = setInterval(() => setAgora(new Date()), 60000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const pulse = (horarioTarefa: string, isReserva: boolean) => {
+        if (!isReserva || !horarioTarefa) return false;
+
+        const [horas, minutos] = horarioTarefa.split(':').map(Number);
+        const dataTarefa = new Date(dataSelecionada);
+        dataTarefa.setHours(horas, minutos, 0, 0);
+
+        const diferencaMilissegundos = dataTarefa.getTime() - agora.getTime();
+        const diferencaMinutos = diferencaMilissegundos / (1000 * 60);
+
+        return diferencaMinutos <= 30 && diferencaMinutos > 0;
+    };
+
+
+    const [mounted, setMounted] = useState(false);
+
+    const [diretrizes, setDiretrizes] = useState<any[]>([]); const [modalDiretriz, setModalDiretriz] = useState<{
+        show: boolean;
+        tarefa: {
+            texto: string;
+            id: string;
+            descricao: string;
+            horario: string;
+            responsavel: string;
+        } | null;
+    }>({ show: false, tarefa: null });
+
+    const [reservasConcluidas, setReservasConcluidas] = useState<string[]>([]);
+
+    const toggleConcluirReserva = (id: string) => {
+        setReservasConcluidas(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    };
+
+
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     const DIAS = [
         { nome: "Segunda-feira", curto: "SEG" },
         { nome: "Terça-feira", curto: "TER" },
@@ -29,20 +78,46 @@ export default function PainelTarefas() {
         { nome: "Quinta-feira", curto: "QUI" },
         { nome: "Sexta-feira", curto: "SEX" },
         { nome: "Sábado", curto: "SAB" },
-        { nome: "Domingo", curto: "DOM" },
     ];
-    
-    const temAcesso = session?.user.role === "Admin" || session?.user.role === "RECURSOS HUMANOS";
 
-    // Carregar tarefas do banco
+    const carregarTudo = async () => {
+        const currentUserId = (session?.user as any)?.id;
+        if (!currentUserId) return;
+
+        setLoading(true);
+        try {
+            const [dadosTarefas, dadosReservas, dadosDiretrizes] = await Promise.all([
+                BuscarTarefasPorUsuario(String(currentUserId)),
+                buscarReservasAtivas(),
+                BuscarTodasDiretrizes()
+            ]);
+
+            setTarefas(dadosTarefas);
+            setReservas(dadosReservas);
+            setDiretrizes(dadosDiretrizes);
+        } catch (error) {
+            toast.error("Erro ao sincronizar dados");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
+    const diaAtivo = useMemo(() => {
+        const d = dataSelecionada.getDay();
+        if (d === 0) return 0;
+        return d - 1;
+    }, [dataSelecionada]);
+
     const carregarTarefas = async () => {
         if (!session?.user?.id) return;
         setLoading(true);
         try {
-            const data = await BuscarTarefasPorUsuario(String(session.user.id));
+            const idLimpo = String(session.user.id).replace('.0', '');
+            const data = await BuscarTarefasPorUsuario(idLimpo);
             setTarefas(data || []);
         } catch (error) {
-            toast.error("Erro ao sincronizar atividades.");
+            toast.error("Erro ao sincronizar.");
         } finally {
             setLoading(false);
         }
@@ -55,35 +130,180 @@ export default function PainelTarefas() {
     }, [session]);
 
     const tarefasExibidas = useMemo(() => {
-        return tarefas.filter(t => {
-            const eODiaCorreto = t.diaSemana === diaAtivo;
-            
-            if (!eODiaCorreto) return false;
-    
-            if (filtro === 'pendentes') return !t.feita;
-            if (filtro === 'concluidas') return t.feita;
-            
-            return true;
+        const dataAlvo = new Date(dataSelecionada);
+        dataAlvo.setHours(0, 0, 0, 0);
+
+        const reservasComoTarefas = reservas.filter(res => {
+            const dataReserva = new Date(res.inicio);
+            const dataReservaFormatada = new Date(dataReserva.getFullYear(), dataReserva.getMonth(), dataReserva.getDate()).getTime();
+            return dataReservaFormatada === dataAlvo.getTime();
+        }).map(res => {
+            const diretrizDaSala = diretrizes.find(d => d.sala === res.sala);
+
+            return {
+                id: `reserva-${res.id}`,
+                texto: `OCUPAÇÃO: ${res.sala.toUpperCase()}`,
+                descricao: diretrizDaSala?.descricao || `RESERVADO POR @${res.usuario.toUpperCase()}`,
+                responsavel: res.usuario,
+                feita: false,
+                prioridade: "media",
+                horario: new Date(res.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+                isReserva: true
+            };
         });
-    }, [tarefas, diaAtivo, filtro]);
 
-    
+        const tarefasFiltradas = tarefas.filter(t => {
+            const passaFiltroStatus =
+                filtro === 'todas' ? true :
+                    filtro === 'pendentes' ? !t.feita :
+                        filtro === 'concluidas' ? t.feita : true;
 
-    const navegar = (direcao: number) => {
-        setDiaAtivo((prev) => (prev + direcao + 7) % 7);
+            if (!passaFiltroStatus) return false;
+
+            if (t.fixa && t.diaSemana !== null && !t.intervaloDias) {
+                const diaSemanaAlvo = dataAlvo.getDay() === 0 ? 6 : dataAlvo.getDay() - 1;
+                return Number(t.diaSemana) === diaSemanaAlvo;
+            }
+
+            if (t.dataInicio) {
+                const dataLimpa = String(t.dataInicio).split('T')[0];
+                let dataOcorrencia = new Date(dataLimpa + 'T00:00:00');
+
+                if (!t.intervaloDias || t.intervaloDias === 0) {
+                    return dataOcorrencia.getTime() === dataAlvo.getTime();
+                }
+
+                if (dataAlvo < dataOcorrencia) return false;
+
+                while (dataOcorrencia < dataAlvo) {
+                    dataOcorrencia.setDate(dataOcorrencia.getDate() + Number(t.intervaloDias));
+                    const diaSemana = dataOcorrencia.getDay();
+                    if (diaSemana === 6) dataOcorrencia.setDate(dataOcorrencia.getDate() - 1);
+                    if (diaSemana === 0) dataOcorrencia.setDate(dataOcorrencia.getDate() + 1);
+                }
+
+                return dataOcorrencia.getTime() === dataAlvo.getTime();
+            }
+            return false;
+        });
+
+        return [...tarefasFiltradas, ...reservasComoTarefas].sort((a, b) => {
+            if (a.isReserva && !b.isReserva) return -1;
+            if (!a.isReserva && b.isReserva) return 1;
+
+            if (a.feita !== b.feita) return a.feita ? 1 : -1;
+
+            if (a.horario && b.horario) return a.horario.localeCompare(b.horario);
+            if (a.horario && !b.horario) return -1;
+            if (!a.horario && b.horario) return 1;
+
+            const pesos: Record<string, number> = { urgente: 4, alta: 3, media: 2, baixa: 1 };
+            const pesoA = pesos[a.prioridade?.toLowerCase()] || 0;
+            const pesoB = pesos[b.prioridade?.toLowerCase()] || 0;
+
+            if (pesoA !== pesoB) return pesoB - pesoA;
+
+            return 0;
+        });
+    }, [tarefas, reservas, diretrizes, dataSelecionada, filtro]);
+
+    const navegarDias = (direcao: number) => {
+        const novaData = new Date(dataSelecionada);
+        novaData.setDate(novaData.getDate() + direcao);
+
+        if (novaData.getDay() === 0) {
+            novaData.setDate(novaData.getDate() + direcao);
+        }
+
+        setDataSelecionada(novaData);
     };
 
-    const handleToggle = async (id: string, statusAtual: boolean) => {
-        setTarefas(prev => prev.map(t => t.id === id ? { ...t, feita: !statusAtual } : t));
+    const confirmarAcao = async () => {
+        if (!modalConfirmacao.tarefa) return;
 
         try {
-            const res = await AlternarStatusTarefa(id, !statusAtual);
-            if (!res.success) throw new Error();
+            const res = await AlternarStatusTarefa(
+                modalConfirmacao.tarefa.id,
+                !modalConfirmacao.tarefa.feita
+            );
+
+            if (res.success) {
+                toast.success(modalConfirmacao.tarefa.feita ? "Estornado!" : "Concluído!");
+                setModalConfirmacao({ show: false, tarefa: null });
+
+                carregarTarefas();
+            }
         } catch (error) {
-            toast.error("Erro ao atualizar status");
-            carregarTarefas(); // Reverte se der erro
+            toast.error("Erro ao processar.");
         }
     };
+
+    useEffect(() => {
+        carregarTudo();
+    }, [dataSelecionada, session]);
+
+
+    const [diaFiltro, setDiaFiltro] = useState<Date>(new Date());
+
+    const calcularOcorrencia = (t: any, dataAlvo: Date) => {
+        const alvo = new Date(dataAlvo);
+        alvo.setHours(0, 0, 0, 0);
+
+        if (t.fixa && t.diaSemana !== null && (!t.intervaloDias || t.intervaloDias === 0)) {
+            const diaSemanaAlvo = alvo.getDay() === 0 ? 6 : alvo.getDay() - 1;
+            const diasConfigurados = Array.isArray(t.diaSemana) ? t.diaSemana : [Number(t.diaSemana)];
+            return diasConfigurados.includes(diaSemanaAlvo);
+        }
+
+        if (t.dataInicio) {
+            const dataLimpa = String(t.dataInicio).split('T')[0];
+            let dataOcorrencia = new Date(dataLimpa + 'T00:00:00');
+
+            if (!t.intervaloDias || t.intervaloDias === 0) {
+                return dataOcorrencia.getTime() === alvo.getTime();
+            }
+
+            if (alvo < dataOcorrencia) return false;
+
+            while (dataOcorrencia < alvo) {
+                dataOcorrencia.setDate(dataOcorrencia.getDate() + Number(t.intervaloDias));
+                const ds = dataOcorrencia.getDay();
+                if (ds === 6) dataOcorrencia.setDate(dataOcorrencia.getDate() - 1);
+                if (ds === 0) dataOcorrencia.setDate(dataOcorrencia.getDate() + 1);
+            }
+            return dataOcorrencia.getTime() === alvo.getTime();
+        }
+        return false;
+    };
+
+    const statsDia = useMemo(() => {
+        const tarefasDoDia = tarefas.filter(t => calcularOcorrencia(t, dataSelecionada));
+
+        const reservasDoDia = reservas.filter((res: any) => {
+            const dRes = new Date(res.inicio);
+            return dRes.getFullYear() === dataSelecionada.getFullYear() &&
+                dRes.getMonth() === dataSelecionada.getMonth() &&
+                dRes.getDate() === dataSelecionada.getDate();
+        });
+
+        const total = tarefasDoDia.length + reservasDoDia.length;
+
+        const concluidasTarefas = tarefasDoDia.filter(t => t.feita).length;
+        const concluidasReservas = reservasDoDia.filter((res: any) =>
+            reservasConcluidas.includes(String(res.id)) ||
+            reservasConcluidas.includes(`reserva-${res.id}`)
+        ).length;
+
+        const concluidas = concluidasTarefas + concluidasReservas;
+
+        return {
+            total,
+            concluidas,
+            percent: total > 0 ? Math.round((concluidas / total) * 100) : 0
+        };
+    }, [tarefas, reservas, reservasConcluidas, dataSelecionada]);
+
+
 
     return (
         <div className="max-w-2xl mx-auto p-4 md:p-8 space-y-10 min-h-screen pb-20">
@@ -91,109 +311,470 @@ export default function PainelTarefas() {
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div className="flex items-center gap-4">
                         <div className="relative group">
-                            <img
-                                src={session?.user.imagemUrl || '/panda.png'}
-                                alt='Avatar'
-                                className="w-14 h-14 object-cover rounded-[1.3rem] border-2 border-indigo-500/20 shadow-lg"
-                            />
-                            <div className="absolute inset-0 rounded-[1.3rem] bg-indigo-500/20 blur-md -z-10 group-hover:opacity-100 transition-opacity" />
+                            <img src={session?.user.imagemUrl || '/panda.png'} alt='Avatar' className="w-14 h-14 object-cover rounded-[1.3rem] border-2 border-indigo-500/20 shadow-lg" />
+                            <div className="absolute inset-0 rounded-[1.3rem] bg-indigo-500/20 blur-md -z-10" />
                         </div>
                         <div>
                             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Operador(a):</p>
-                            <h1 className="text-xl font-black text-white uppercase italic tracking-tighter leading-none">
-                                {session?.user.nome || "Usuário"}
-                            </h1>
-                            <span className='text-indigo-400 font-bold text-[12px] uppercase tracking-widest'>
-                                {session?.user.role}
-                            </span>
+                            <h1 className="text-xl font-black text-white uppercase italic tracking-tighter leading-none">{session?.user.nome || "Usuário"}</h1>
+                            <span className='text-indigo-400 font-bold text-[12px] uppercase tracking-widest'>{session?.user.role}</span>
                         </div>
                     </div>
 
-                    <div className="bg-white/5 border border-white/10 p-4 rounded-[2rem] min-w-[200px] text-right">
-                        <div className="text-xl font-black text-indigo-400 font-mono">
-                            {agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                        </div>
-                        <div className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">
-                            {agora.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
+                    <div className="bg-white/5 border border-white/10 p-4 rounded-[2rem] min-w-[220px] text-right relative group cursor-pointer hover:bg-white/[0.08] transition-all">
+                        <input
+                            type="date"
+                            className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                            onChange={(e) => setDataSelecionada(new Date(e.target.value + 'T00:00:00'))}
+                        />
+                        <div className="text-xl font-black text-indigo-400 font-mono flex items-center justify-center gap-2">
+                            <Clock size={18} />
+                            {mounted ? (
+                                agora.toLocaleTimeString('pt-BR', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    second: '2-digit'
+                                })
+                            ) : (
+                                "00:00:00"
+                            )}
                         </div>
                     </div>
                 </div>
 
-                    <BotaoVoltar/>
-                <div className="flex flex-wrap items-center gap-2">
-                    <div className="flex bg-black/20 p-1 rounded-full border border-white/5">
-                        {(['todas', 'pendentes', 'concluidas'] as const).map((f) => (
+                <BotaoVoltar />
+                <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex bg-[#050a18]/60 p-1.5 rounded-full border border-white/5 backdrop-blur-md shadow-inner">
+                        {(['pendentes', 'concluidas', 'todas'] as const).map((f) => (
                             <button
                                 key={f}
                                 onClick={() => setFiltro(f)}
-                                className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${filtro === f ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-slate-500 hover:text-white'}`}
+                                className={`px-5 py-2 rounded-full text-[9px] font-black uppercase tracking-[0.15em] transition-all duration-300 ${filtro === f
+                                    ? 'bg-indigo-600 text-white shadow-[0_0_15px_rgba(79,70,229,0.4)] scale-105'
+                                    : 'text-slate-500 hover:text-slate-300'
+                                    }`}
                             >
                                 {f}
                             </button>
                         ))}
                     </div>
+
+                    <div className="flex-1 min-w-[200px] bg-white/[0.03] border border-white/5 p-4 rounded-[2rem] relative overflow-hidden group">
+
+                        <div className="absolute -right-4 -top-4 w-20 h-20 bg-emerald-500/5 blur-3xl rounded-full transition-opacity group-hover:opacity-100 opacity-50" />
+
+                        <div className="flex items-center justify-between mb-2 px-1">
+                            <p className="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] italic">
+                                Performance <span className="text-emerald-500/50">Sincronizada</span>
+                            </p>
+                            <span className="text-[10px] font-black text-emerald-500 italic tracking-tighter">
+                                {statsDia.percent}%
+                            </span>
+                        </div>
+
+                        <div className="relative h-1.5 bg-white/5 rounded-full overflow-hidden shadow-inner">
+                            <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${statsDia.percent}%` }}
+                                transition={{ duration: 1, ease: "easeOut" }}
+                                className="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full"
+                            >
+                                <div className="absolute right-0 top-0 bottom-0 w-8 bg-white/20 blur-sm" />
+                            </motion.div>
+                        </div>
+
+                        <div className="flex justify-between mt-2 px-1">
+                            <div className="flex gap-1">
+                                {[...Array(5)].map((_, i) => (
+                                    <div
+                                        key={i}
+                                        className={`w-1 h-1 rounded-full ${i < (statsDia.percent / 20) ? 'bg-emerald-500' : 'bg-white/5'}`}
+                                    />
+                                ))}
+                            </div>
+                            <p className="text-[7px] font-bold text-slate-600 uppercase tracking-tighter">
+                                {statsDia.concluidas}/{statsDia.total} Tarefas
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </header>
 
-            {/* Seletor de Dia */}
-            <div className="flex items-center justify-between bg-white/5 border border-white/10 p-2 rounded-[3rem]">
-                <button onClick={() => navegar(-1)} className="p-4 hover:bg-white/10 rounded-full text-slate-400"><ChevronLeft /></button>
+            <div className="flex items-center justify-between bg-white/5 border border-white/10 p-2 rounded-[3rem] shadow-2xl">
+                <button onClick={() => navegarDias(-1)} className="p-4 hover:bg-white/10 rounded-full text-slate-400 transition-all active:scale-90"><ChevronLeft /></button>
                 <div className="text-center">
-                    <span className="text-[10px] font-black tracking-widest text-indigo-500 uppercase">{DIAS[diaAtivo].curto}</span>
-                    <h2 className="text-lg font-black text-white uppercase italic leading-tight">{DIAS[diaAtivo].nome}</h2>
+                    <span className="text-[10px] font-black tracking-[0.4em] text-indigo-500 uppercase">
+                        {dataSelecionada.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                    </span>
+                    <h2 className="text-lg font-black text-white uppercase italic leading-tight">
+                        {dataSelecionada.toDateString() === new Date().toDateString()
+                            ? `Hoje - ${DIAS[dataSelecionada.getDay() - 1].nome}`
+                            : (dataSelecionada.getDay() === 0 ? "Domingo" : DIAS[dataSelecionada.getDay() - 1].nome)
+                        }
+                    </h2>
                 </div>
-                <button onClick={() => navegar(1)} className="p-4 hover:bg-white/10 rounded-full text-slate-400"><ChevronRight /></button>
+                <button onClick={() => navegarDias(1)} className="p-4 hover:bg-white/10 rounded-full text-slate-400 transition-all active:scale-90"><ChevronRight /></button>
             </div>
 
-            {/* Lista de Tarefas */}
-            <div className="space-y-4">
-                <div className="flex items-center justify-between px-2">
-                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Diretrizes de Hoje</h3>
-                    <span className="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full">
-                        {tarefasExibidas.filter(t => t.feita).length}/{tarefasExibidas.length} OK
-                    </span>
-                </div>
+            <div className="grid gap-4">
+                {loading ? (
+                    <div className="flex justify-center p-20"><Loader2 className="animate-spin text-indigo-500" /></div>
+                ) : tarefasExibidas.length > 0 ? (
+                    <AnimatePresence mode="popLayout">
+                        {tarefasExibidas.map((tarefa) => {
+                            const isConcluida = reservasConcluidas.includes(tarefa.id);
 
-                <div className="grid gap-3">
-                    {loading ? (
-                        <div className="flex justify-center p-20"><Loader2 className="animate-spin text-indigo-500" /></div>
-                    ) : tarefasExibidas.length > 0 ? (
-                        <AnimatePresence mode="popLayout">
-                            {tarefasExibidas.map((tarefa) => (
+                            const devePulsar = () => {
+                                if (!tarefa.isReserva || !tarefa.horario || isConcluida) return false;
+                                const [horas, minutos] = tarefa.horario.split(':').map(Number);
+                                const dataTarefa = new Date(dataSelecionada);
+                                dataTarefa.setHours(horas, minutos, 0, 0);
+                                const diferencaMinutos = (dataTarefa.getTime() - agora.getTime()) / (1000 * 60);
+                                return diferencaMinutos <= 30 && diferencaMinutos > 0;
+                            };
+
+                            const alertaAtivo = devePulsar();
+
+                            return (
                                 <motion.div
                                     layout
                                     key={tarefa.id}
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    onClick={() => handleToggle(tarefa.id, tarefa.feita)}
-                                    className={`group cursor-pointer p-5 rounded-[2rem] border transition-all ${tarefa.feita ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-white/5 border-white/10 hover:border-indigo-500/30'}`}
+                                    exit={{ opacity: 0, scale: 0.95 }}
+                                    onClick={() => {
+                                        if (tarefa.isReserva) {
+                                            setModalDiretriz({ show: true, tarefa });
+                                        } else {
+                                            setModalDescricao({ show: true, tarefa });
+                                        }
+                                    }}
+                                    className={`cursor-pointer group p-6 rounded-[2.5rem] border transition-all relative overflow-hidden ${isConcluida
+                                        ? 'bg-emerald-500/10 border-emerald-500 animate-[pulse_2s_infinite] shadow-[0_0_20px_rgba(16,185,129,0.2)]'
+                                        : alertaAtivo
+                                            ? 'bg-rose-500/20 border-rose-500 animate-pulse shadow-[0_0_20px_rgba(244,63,94,0.3)]'
+                                            : tarefa.isReserva
+                                                ? 'bg-indigo-500/10 border-indigo-500/30 hover:bg-indigo-500/20'
+                                                : tarefa.feita
+                                                    ? 'bg-emerald-500/5 border-emerald-500/20 opacity-80'
+                                                    : 'bg-white/5 border-white/10 hover:border-indigo-500/40 hover:bg-white/[0.07]'
+                                        }`}
                                 >
-                                    <div className="flex items-center gap-4">
-                                        <div className={tarefa.feita ? 'text-emerald-500' : 'text-slate-700'}>
-                                            {tarefa.feita ? <CheckCircle2 size={24} /> : <Circle size={24} />}
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className={`text-sm font-bold uppercase tracking-tight ${tarefa.feita ? 'line-through text-slate-600' : 'text-slate-200'}`}>
-                                                {tarefa.texto}
-                                            </p>
-                                            {tarefa.descricao && (
-                                                <p className="text-[10px] text-slate-500 mt-1 lowercase font-medium italic">
-                                                    {tarefa.descricao}
-                                                </p>
+                                    <div className={`absolute left-0 top-0 bottom-0 w-1.5 transition-colors duration-500 ${isConcluida
+                                        ? 'bg-emerald-500 shadow-[2px_0_10px_rgba(16,185,129,0.6)]'
+                                        : alertaAtivo
+                                            ? 'bg-rose-500 shadow-[2px_0_10px_rgba(244,63,94,0.6)]'
+                                            : tarefa.isReserva
+                                                ? 'bg-indigo-500 shadow-[2px_0_10px_rgba(99,102,241,0.4)]'
+                                                : tarefa.prioridade === 'urgente'
+                                                    ? 'bg-rose-600 shadow-[2px_0_10px_rgba(225,29,72,0.4)]'
+                                                    : tarefa.prioridade === 'alta'
+                                                        ? 'bg-orange-500'
+                                                        : tarefa.prioridade === 'media'
+                                                            ? 'bg-amber-500'
+                                                            : 'bg-emerald-500'
+                                        }`} />
+
+                                    <div className="flex items-center gap-5">
+                                        <div
+                                            onClick={(e) => { e.stopPropagation(); !tarefa.isReserva && setModalConfirmacao({ show: true, tarefa }); }}
+                                            className={`transition-all duration-500 ${isConcluida
+                                                ? 'text-emerald-500'
+                                                : alertaAtivo
+                                                    ? 'text-rose-500'
+                                                    : tarefa.isReserva
+                                                        ? 'text-indigo-400 opacity-50'
+                                                        : tarefa.feita
+                                                            ? 'text-emerald-500 active:scale-75'
+                                                            : 'text-slate-700 hover:text-indigo-400 active:scale-75'
+                                                }`}
+                                        >
+                                            {isConcluida ? (
+                                                <CheckCircle2 size={28} strokeWidth={3} />
+                                            ) : alertaAtivo ? (
+                                                <AlertTriangle size={28} className="animate-bounce" />
+                                            ) : tarefa.isReserva ? (
+                                                <CalendarIcon size={28} />
+                                            ) : tarefa.feita ? (
+                                                <CheckCircle2 size={28} />
+                                            ) : (
+                                                <Circle size={28} />
                                             )}
                                         </div>
-                                        {tarefa.fixa && <Star size={14} className="fill-amber-500 text-amber-500 opacity-50" />}
+
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                                                {tarefa.isReserva ? (
+                                                    <span className={`text-white text-[7px] px-2 py-0.5 rounded-md font-black uppercase border transition-colors duration-500 ${isConcluida
+                                                        ? 'bg-emerald-500 border-emerald-400'
+                                                        : alertaAtivo ? 'bg-rose-600 border-rose-400' : 'bg-indigo-500 border-indigo-400'
+                                                        }`}>
+                                                        {isConcluida ? 'Concluído' : alertaAtivo ? 'Início Próximo' : 'Reserva de Sala'}
+                                                    </span>
+                                                ) : (
+                                                    <>
+                                                        {tarefa.intervaloDias && (
+                                                            <span className="bg-indigo-500/10 text-indigo-400 text-[7px] px-2 py-0.5 rounded-md font-black uppercase border border-indigo-500/20">
+                                                                Ciclo {tarefa.intervaloDias}d
+                                                            </span>
+                                                        )}
+                                                        {!tarefa.fixa && (
+                                                            <span className="bg-amber-500/10 text-amber-500 text-[7px] px-2 py-0.5 rounded-md font-black uppercase border border-amber-500/20">
+                                                                Eventual
+                                                            </span>
+                                                        )}
+                                                    </>
+                                                )}
+                                                <span className="text-[7px] font-black uppercase text-slate-500 tracking-tighter ml-auto">
+                                                    {tarefa.isReserva ? 'Ocupação Técnica' : `Nível ${tarefa.prioridade || 'Prioridade'}`}
+                                                </span>
+                                            </div>
+                                            <p className={`text-[13px] font-bold uppercase tracking-tight leading-snug truncate transition-all ${(tarefa.feita || (tarefa.isReserva && isConcluida)) ? 'line-through text-slate-600 italic' : 'text-white'
+                                                }`}>
+                                                {tarefa.texto}
+                                            </p>
+                                            <div className="flex items-center gap-3 mt-1">
+                                                {tarefa.horario && (
+                                                    <span className={`flex items-center gap-1 text-[10px] font-black uppercase transition-colors ${isConcluida ? 'text-emerald-500/50' : alertaAtivo ? 'text-rose-400' : 'text-slate-400'
+                                                        }`}>
+                                                        <Clock size={12} className={
+                                                            isConcluida ? 'text-emerald-500' : alertaAtivo ? 'text-rose-500' : tarefa.isReserva ? "text-indigo-400" : "text-emerald-400"
+                                                        } />
+                                                        {tarefa.horario}
+                                                    </span>
+                                                )}
+                                                {tarefa.isReserva && (
+                                                    <span className={`text-[9px] font-black uppercase italic truncate transition-colors ${isConcluida ? 'text-emerald-500/40' : alertaAtivo ? 'text-rose-400/80' : 'text-indigo-400/60'
+                                                        }`}>
+                                                        {isConcluida ? 'Tarefa Finalizada' : tarefa.descricao}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {!tarefa.isReserva && <ChevronRight size={16} className="text-white/10 group-hover:text-white/30 transition-colors" />}
+                                        {tarefa.isReserva && isConcluida && <CheckCircle2 size={16} className="text-emerald-500/50" />}
                                     </div>
                                 </motion.div>
-                            ))}
-                        </AnimatePresence>
-                    ) : (
-                        <div className="p-20 text-center border-2 border-dashed border-white/5 rounded-[3rem]">
-                            <p className="text-[10px] font-black text-slate-700 uppercase italic">Nenhuma atividade agendada</p>
-                        </div>
-                    )}
-                </div>
+                            );
+                        })}
+                    </AnimatePresence>
+                ) : (
+                    <div className="p-20 text-center border-2 border-dashed border-white/5 rounded-[3.5rem]">
+                        <CalendarIcon size={32} className="mx-auto text-white/5 mb-4" />
+                        <p className="text-[10px] font-black text-slate-700 uppercase italic">Cronograma vazio para esta data</p>
+                    </div>
+                )}
             </div>
+
+            <AnimatePresence>
+                {modalConfirmacao.show && (
+                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-6">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setModalConfirmacao({ show: false, tarefa: null })} className="absolute inset-0 bg-black/90 backdrop-blur-md" />
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative w-full max-w-xs bg-slate-950 border border-white/10 p-10 rounded-[3rem] text-center shadow-2xl">
+                            <div className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-6 ${modalConfirmacao.tarefa?.feita ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                                {modalConfirmacao.tarefa?.feita ? <Clock size={40} /> : <CheckCircle size={40} />}
+                            </div>
+                            <h2 className="text-xl font-black text-white uppercase italic tracking-tighter mb-2">{modalConfirmacao.tarefa?.feita ? "Estornar?" : "Concluir?"}</h2>
+                            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-8 leading-relaxed">
+                                {modalConfirmacao.tarefa?.feita ? "A atividade voltará para a lista de pendências." : "O RH registrará sua conclusão imediatamente."}
+                            </p>
+                            <div className="flex flex-col gap-3">
+                                <button onClick={confirmarAcao} className={`w-full py-5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${modalConfirmacao.tarefa?.feita ? 'bg-amber-600' : 'bg-emerald-600'} text-white shadow-xl`}>Confirmar</button>
+                                <button onClick={() => setModalConfirmacao({ show: false, tarefa: null })} className="w-full py-4 text-[11px] font-black uppercase text-slate-500">Cancelar</button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+
+                {modalDescricao.show && modalDescricao.tarefa && (
+                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6">
+
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setModalDescricao({ show: false, tarefa: null })}
+                            className="absolute inset-0 bg-black/95 backdrop-blur-md"
+                        />
+
+                        <motion.div
+                            initial={{ y: 50, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: 50, opacity: 0 }}
+                            className="relative w-full max-w-md bg-slate-950 border border-white/10 p-6 sm:p-10 rounded-[2.5rem] sm:rounded-[3.5rem] shadow-2xl flex flex-col max-h-[90vh]"
+                        >
+                            {/* Área de conteúdo com Scroll */}
+                            <div className="overflow-y-auto pr-2 custom-scrollbar">
+                                <div className="flex justify-between items-start mb-8 sticky top-0 bg-slate-950 z-10 pt-2 pb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-2 h-8 bg-indigo-500 rounded-full" />
+                                        <h2 className="text-xl sm:text-2xl font-black text-white uppercase italic tracking-tighter leading-none">
+                                            Diretriz<br /><span className="text-indigo-500 text-2xl sm:text-3xl">Técnica</span>
+                                        </h2>
+                                    </div>
+                                    <div className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase border shrink-0 ${modalDescricao.tarefa.prioridade === 'urgente' ? 'bg-rose-500/10 text-rose-500 border-rose-500/30 shadow-[0_0_15px_rgba(244,63,94,0.2)]' : 'bg-white/5 text-slate-500 border-white/10'}`}>
+                                        {modalDescricao.tarefa.prioridade || 'baixa'}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-6 sm:space-y-8">
+                                    <div>
+                                        <p className="text-lg font-bold text-white uppercase italic leading-tight mb-2">
+                                            {modalDescricao.tarefa.texto}
+                                        </p>
+                                        <div className="flex items-center gap-2">
+                                            <Clock size={12} className="text-indigo-500" />
+                                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                                                {modalDescricao.tarefa.intervaloDias ? `Frequência: Ciclo de ${modalDescricao.tarefa.intervaloDias} dias` : 'Demanda Pontual'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white/5 border border-white/5 p-5 sm:p-6 rounded-[2rem]">
+                                        <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3">Especificações:</p>
+                                        <p className="text-slate-300 text-sm font-medium leading-relaxed italic whitespace-pre-wrap">
+                                            {modalDescricao.tarefa.descricao || "Executar conforme diretrizes gerais da unidade de operação."}
+                                        </p>
+                                    </div>
+
+                                    <div className="bg-white/5 border border-white/5 p-5 sm:p-6 rounded-[2rem]">
+                                        <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3">Horário previsto para início:</p>
+                                        <p className="flex items-center gap-2 text-slate-300 text-sm font-medium leading-relaxed italic">
+                                            <Clock size={12} className="text-indigo-500" />
+                                            {modalDescricao.tarefa.horario || "Sem horário de início"}
+                                        </p>
+                                    </div>
+
+                                    {modalDescricao.tarefa.dataInicio && (
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="bg-white/[0.02] p-4 sm:p-5 rounded-2xl border border-white/5">
+                                                <p className="text-[8px] font-black text-slate-600 uppercase mb-1">Iniciado Em</p>
+                                                <p className="text-xs sm:text-sm font-black text-white">
+                                                    {new Date(String(modalDescricao.tarefa.dataInicio).split('T')[0] + 'T00:00:00').toLocaleDateString('pt-BR')}
+                                                </p>
+                                            </div>
+                                            <div className="bg-indigo-600/10 p-4 sm:p-5 rounded-2xl border border-indigo-500/20">
+                                                <p className="text-[8px] font-black text-indigo-400 uppercase mb-1 text-center">Próximo Salto</p>
+                                                <div className="text-center">
+                                                    {(() => {
+                                                        const intervalo = Number(modalDescricao.tarefa?.intervaloDias);
+                                                        if (!intervalo) return <p className="text-xs sm:text-sm font-black text-white">Único</p>;
+
+                                                        let proxima = new Date(String(modalDescricao.tarefa?.dataInicio).split('T')[0] + 'T00:00:00');
+                                                        const ref = new Date(dataSelecionada);
+                                                        ref.setHours(0, 0, 0, 0);
+
+                                                        while (proxima <= ref) {
+                                                            proxima.setDate(proxima.getDate() + intervalo);
+                                                            if (proxima.getDay() === 6) proxima.setDate(proxima.getDate() - 1);
+                                                            if (proxima.getDay() === 0) proxima.setDate(proxima.getDate() + 1);
+                                                        }
+                                                        return (
+                                                            <>
+                                                                <p className="text-xs sm:text-sm font-black text-white">{proxima.toLocaleDateString('pt-BR')}</p>
+                                                                <p className="text-[9px] font-bold text-indigo-400/60 uppercase italic">Salto Programado</p>
+                                                            </>
+                                                        );
+                                                    })()}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="pt-6 mt-auto">
+                                <button
+                                    onClick={() => setModalDescricao({ show: false, tarefa: null })}
+                                    className="cursor-pointer w-full py-4 sm:py-5 bg-indigo-600 hover:bg-indigo-500 rounded-2xl text-[12px] font-black uppercase text-white shadow-xl shadow-indigo-500/20 transition-all active:scale-95"
+                                >
+                                    Fechar Diretriz
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+
+            <AnimatePresence>
+                {modalDiretriz.show && modalDiretriz.tarefa && (
+                    <div className="fixed inset-0 z-[120] flex items-center justify-center p-6">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setModalDiretriz({ show: false, tarefa: null })}
+                            className="absolute inset-0 bg-black/90 backdrop-blur-md"
+                        />
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="relative w-full max-w-lg bg-[#050a18] border border-indigo-500/20 p-10 rounded-[3rem] shadow-2xl overflow-hidden"
+                        >
+                            <div className={`absolute top-0 left-0 w-full h-1.5 transition-colors ${reservasConcluidas.includes(modalDiretriz.tarefa.id) ? 'bg-emerald-500' : 'bg-indigo-500'}`} />
+
+                            <div className="flex justify-between items-start mb-8">
+                                <div>
+                                    <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">Diretriz de Ambiente</span>
+                                    <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter mt-1">
+                                        {modalDiretriz.tarefa.texto.replace("OCUPAÇÃO: ", "")}
+                                    </h2>
+                                </div>
+                            </div>
+
+                            <div className="space-y-6">
+                                <div className="bg-indigo-500/5 border border-indigo-500/10 p-6 rounded-3xl">
+                                    <p className="text-[9px] font-black text-indigo-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                        <Info size={14} /> Rotina
+                                    </p>
+                                    <p className="text-slate-300 text-sm leading-relaxed font-medium whitespace-pre-wrap">
+                                        {modalDiretriz.tarefa.descricao}
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center justify-between px-2">
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-8 w-8 rounded-full bg-white/5 flex items-center justify-center text-indigo-400">
+                                            <Clock size={14} />
+                                        </div>
+                                        <div>
+                                            <p className="text-[8px] font-black text-slate-500 uppercase">Horário Reservado</p>
+                                            <p className="text-[10px] font-bold text-white uppercase">{modalDiretriz.tarefa.horario}</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[8px] font-black text-slate-500 uppercase">Responsável</p>
+                                        <p className="text-[10px] font-bold text-indigo-400 uppercase italic">@{modalDiretriz.tarefa.responsavel}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 mt-10">
+                                <button
+                                    onClick={() => setModalDiretriz({ show: false, tarefa: null })}
+                                    className="cursor-pointer py-5 bg-white/5 hover:bg-white/10 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/5"
+                                >
+                                    Fechar
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        toggleConcluirReserva(modalDiretriz.tarefa!.id);
+                                        setModalDiretriz({ show: false, tarefa: null });
+                                    }}
+                                    className={`cursor-pointer py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border shadow-lg ${reservasConcluidas.includes(modalDiretriz.tarefa.id)
+                                        ? 'bg-amber-500/20 border-amber-500/50 text-amber-500'
+                                        : 'bg-emerald-600 border-emerald-400 text-white shadow-emerald-500/20'
+                                        }`}
+                                >
+                                    {reservasConcluidas.includes(modalDiretriz.tarefa.id) ? 'Reabrir' : 'Concluir'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

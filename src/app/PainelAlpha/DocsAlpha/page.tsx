@@ -2,16 +2,18 @@
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { FileText, Eye, Search, ShieldCheck, Globe, ChevronRight, Folder, Trash2, ShieldAlert, Lock, Video, Settings, Star, ChevronDown, ChevronUp, GripVertical, Edit3, Check, X, PlayCircle } from "lucide-react";
+import {
+    FileText, Eye, Search, ShieldCheck, Globe, ChevronRight, Folder,
+    Trash2, ShieldAlert, Lock, Video, Settings, Star, ChevronDown,
+    ChevronUp, GripVertical, Edit3, Check, X, PlayCircle
+} from "lucide-react";
 import { BotaoVoltar } from "@/components/BotaoVoltar";
 import { toast } from "sonner";
 import AntiCapture from 'react-anticapture';
 import { buscarOrdemPastas, salvarOrdemPastas } from "@/actions/OrdemPastas";
 import { renomearPasta } from "@/actions/RenamePastas";
 
-
 export const dynamic = 'force-dynamic';
-
 
 interface Documento {
     id: number;
@@ -26,7 +28,6 @@ interface Documento {
     ordem_manual: number;
 }
 
-
 const SETORES = ["Diretrizes", "T.I", "OPERACIONAL", "COMERCIAL", "RECURSOS HUMANOS", "FINANCEIRO", "JURÍDICO", "PARCEIRO", "SERVIÇOS GERAIS"];
 const SENHA_MESTRA = "@Alpha2562";
 
@@ -39,45 +40,33 @@ export default function PaginaDocumentos() {
     const [loadingDocs, setLoadingDocs] = useState(true);
     const [modalExcluir, setModalExcluir] = useState(false);
     const [senhaInput, setSenhaInput] = useState("");
-
+    const [isTouch, setIsTouch] = useState(false);
+    const [pastaConfig, setPastaConfig] = useState<string | null>(null);
+    const [ordemPastas, setOrdemPastas] = useState<string[]>([]);
+    const [pastasAbertas, setPastasAbertas] = useState<Record<string, boolean>>({});
+    const [ordem, setOrdem] = useState<"PADRAO" | "recentes" | "az" | "za">("PADRAO");
+    const [editandoNomePasta, setEditandoNomePasta] = useState<string | null>(null);
+    const [novoNomeInput, setNovoNomeInput] = useState("");
+    const [docParaExcluir, setDocParaExcluir] = useState<any>(null);
 
     const roleUser = session?.user?.role?.toUpperCase().trim() || "USER";
-
     const isAdmin = roleUser === "ADMIN";
+    const isCeo = roleUser === "CEO";
     const rh = roleUser === "RECURSOS HUMANOS";
-
-    const [pastaConfig, setPastaConfig] = useState<string | null>(null);
-
-    const [ordemPastas, setOrdemPastas] = useState<string[]>([]);
-    const [isArrastando, setIsArrastando] = useState(false);
-    const [pastasAbertas, setPastasAbertas] = useState<Record<string, boolean>>({});
-
-
-
-    const iframeContainerRef = useRef<HTMLDivElement>(null);
-    const handleEscudoScroll = (e: React.WheelEvent) => {
-        if (iframeContainerRef.current) {
-            iframeContainerRef.current.scrollTop += e.deltaY;
-        }
-    };
-
-    const [ordem, setOrdem] = useState<"PADRAO" | "recentes" | "az" | "za">("PADRAO");
-
-
-    const [hasWindow, setHasWindow] = useState(false);
-    const [ficharioAtivo, setFicharioAtivo] = useState("Financeiro");
+    const ficharioAtivo = setorAtivo;
 
     useEffect(() => {
-        setHasWindow(true);
+        const checkTouch = () => setIsTouch(window.innerWidth < 1024);
+        checkTouch();
+        window.addEventListener('resize', checkTouch);
+        return () => window.removeEventListener('resize', checkTouch);
     }, []);
-
 
     useEffect(() => {
         carregarDocumentos();
     }, [status]);
 
     useEffect(() => {
-
         const restoreScreen = () => {
             document.body.style.filter = "none";
             document.body.style.opacity = "1";
@@ -91,26 +80,21 @@ export default function PaginaDocumentos() {
 
             if (isPrintKey || isForbiddenShortcut || isDevTools || isSystemCapture) {
                 e.preventDefault();
-
-                try {
-                    await navigator.clipboard.writeText("ACESSO RESTRITO ALPHA");
-                } catch (err) { }
-
+                try { await navigator.clipboard.writeText("ACESSO RESTRITO ALPHA"); } catch (err) { }
                 toast.error("SEGURANÇA ALPHA", {
                     description: "AÇÃO BLOQUEADA: CONTEÚDO RESTRITO",
                     duration: 4000,
                     style: { background: '#450a0a', border: '2px solid #ff0000', color: '#fff' }
                 });
-
                 setTimeout(restoreScreen, 2000);
             }
         };
 
         const handleBlur = () => {
             setTimeout(() => {
-                if (document.activeElement?.classList.contains('documento-liberado')) {
-                    restoreScreen();
+                if (!document.activeElement?.classList.contains('documento-liberado')) {
                 } else {
+                    restoreScreen();
                 }
             }, 150);
         };
@@ -118,9 +102,6 @@ export default function PaginaDocumentos() {
         const disableRightClick = (e: MouseEvent) => e.preventDefault();
 
         window.addEventListener('keydown', handleSecurity);
-        window.addEventListener('keyup', (e) => {
-            if (e.key === 'PrintScreen' || e.keyCode === 44) handleSecurity(e);
-        });
         window.addEventListener('blur', handleBlur);
         window.addEventListener('focus', restoreScreen);
         window.addEventListener('contextmenu', disableRightClick);
@@ -132,26 +113,6 @@ export default function PaginaDocumentos() {
             window.removeEventListener('contextmenu', disableRightClick);
         };
     }, []);
-
-
-
-
-
-
-
-    useEffect(() => {
-        document.body.style.overflow = 'hidden';
-        document.documentElement.style.overflow = 'hidden';
-
-        return () => {
-            document.body.style.overflow = 'unset';
-            document.documentElement.style.overflow = 'unset';
-        };
-    }, []);
-
-
-
-
 
     async function carregarDocumentos() {
         try {
@@ -165,17 +126,12 @@ export default function PaginaDocumentos() {
         }
     }
 
-    const [docParaExcluir, setDocParaExcluir] = useState<any>(null);
-
-
     const handleExcluirLogico = async () => {
         if (senhaInput !== SENHA_MESTRA) return toast.error("Senha Administrativa Incorreta!");
-
         if (!docParaExcluir?.id) return toast.error("Nenhum documento alvo identificado!");
 
         try {
             const idParaExcluir = docParaExcluir.id;
-
             const res = await fetch(`/api/documentos`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
@@ -183,9 +139,7 @@ export default function PaginaDocumentos() {
             });
 
             if (!res.ok) throw new Error("Falha na resposta do servidor");
-
             setDocumentos(prev => prev.filter(d => d.id !== idParaExcluir));
-
             setDocParaExcluir(null);
             setModalExcluir(false);
             setSenhaInput("");
@@ -196,27 +150,17 @@ export default function PaginaDocumentos() {
         }
     };
 
-
-
-
     const documentosAgrupados = useMemo(() => {
         const filtrados = documentos.filter(d => {
             const setorDoc = d.setor?.toUpperCase().trim();
             const abaSelecionada = setorAtivo?.toUpperCase().trim();
-            const role = roleUser?.toUpperCase().trim();
-            const rh = roleUser === "RECURSOS HUMANOS";
-
-            const temAcessoTotal = isAdmin || rh || role === "RECURSOS HUMANOS";
+            const temAcessoTotal = isAdmin || rh || isCeo;
 
             if (!d.titulo.toLowerCase().includes(busca.toLowerCase())) return false;
-
-            if (temAcessoTotal) {
-                return setorDoc === abaSelecionada;
-            }
+            if (temAcessoTotal) return setorDoc === abaSelecionada;
 
             const ehRegrasGerais = setorDoc === "Diretrizes";
-            const ehProprioSetor = setorDoc === role;
-
+            const ehProprioSetor = setorDoc === roleUser;
             return setorDoc === abaSelecionada && (ehRegrasGerais || ehProprioSetor);
         });
 
@@ -238,674 +182,311 @@ export default function PaginaDocumentos() {
         });
 
         return agrupados;
-    }, [documentos, setorAtivo, busca, isAdmin, rh, roleUser, ordem]);
-
-
-    const [editandoNomePasta, setEditandoNomePasta] = useState<string | null>(null);
-    const [novoNomeInput, setNovoNomeInput] = useState("");
-
-
-
-    const handleSalvarNovoNome = async (nomeAntigo: string) => {
-
-        console.log("ENVIANDO PARA ACTION:", { ficharioAtivo, nomeAntigo, novoNomeInput });
-        const res = await renomearPasta(ficharioAtivo, nomeAntigo, novoNomeInput);
-
-
-        if (res.success && res.count! > 0) {
-            toast.success(`Pasta renomeada! ${res.count} arquivos movidos.`);
-            setPastaConfig(null);
-            setEditandoNomePasta(null);
-            await carregarDocumentos();
-        } else if (res.success && res.count === 0) {
-            toast.warning("Nenhum arquivo encontrado com esse nome de pasta.");
-            setEditandoNomePasta(null);
-        } else {
-            toast.error("Erro técnico ao salvar.");
-        }
-    };
-
-
-    const pastasOrdenadas = useMemo(() => {
-        return Object.keys(documentosAgrupados).sort((a, b) => {
-            if (ordem === "az") return a.localeCompare(b);
-            if (ordem === "za") return b.localeCompare(a);
-            return 0;
-        });
-    }, [documentosAgrupados, ordem]);
-
-
-    const [pdfHeight, setPdfHeight] = useState("1000px");
-
-    useEffect(() => {
-        if (docSelecionado && docSelecionado.tipo !== "VIDEO") {
-            setPdfHeight("20000px");
-        }
-    }, [docSelecionado]);
-
-    useEffect(() => {
-        const chaves = Object.keys(documentosAgrupados);
-        setOrdemPastas(chaves);
-    }, [documentosAgrupados]);
-
-    useEffect(() => {
-        setOrdemPastas([]);
-    }, [setorAtivo]);
+    }, [documentos, setorAtivo, busca, isAdmin, rh, isCeo, roleUser, ordem]);
 
     useEffect(() => {
         const sincronizarOrdem = async () => {
-            const ordemSalva: string[] | null = await buscarOrdemPastas(ficharioAtivo);
+            const ordemSalva = await buscarOrdemPastas(ficharioAtivo);
             const pastasExistentes = Object.keys(documentosAgrupados);
 
             if (ordemSalva && Array.isArray(ordemSalva)) {
-                const ordemFiltrada = ordemSalva.filter((p: string) => pastasExistentes.includes(p));
-                const novasPastas = pastasExistentes.filter((p: string) => !ordemSalva.includes(p));
-
+                const ordemFiltrada = ordemSalva.filter(p => pastasExistentes.includes(p));
+                const novasPastas = pastasExistentes.filter(p => !ordemSalva.includes(p));
                 setOrdemPastas([...ordemFiltrada, ...novasPastas]);
             } else {
                 setOrdemPastas(pastasExistentes);
             }
         };
-
         if (ficharioAtivo) sincronizarOrdem();
     }, [ficharioAtivo, documentosAgrupados]);
 
-
-
-
-    useEffect(() => {
-        const carregarPostas = async () => {
-            const ordem = await buscarOrdemPastas(ficharioAtivo);
-            setOrdemPastas(ordem || Object.keys(documentosAgrupados));
-        };
-        carregarPostas();
-    }, [ficharioAtivo]);
-
-
-
+    const handleSalvarNovoNome = async (nomeAntigo: string) => {
+        const res = await renomearPasta(ficharioAtivo, nomeAntigo, novoNomeInput);
+        if (res.success && res.count! > 0) {
+            toast.success("Pasta renomeada com sucesso!");
+            setPastaConfig(null);
+            setEditandoNomePasta(null);
+            await carregarDocumentos();
+        } else {
+            toast.error("Erro ao renomear pasta.");
+        }
+    };
 
     if (loadingDocs) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-blue-500 font-black animate-pulse">SINCRONIZANDO ESTRUTURA...</div>;
 
     return (
+        <div className="min-h-screen bg-slate-950 text-white p-4 md:p-8 select-none overflow-x-hidden">
+            <style dangerouslySetInnerHTML={{ __html: `@media print { body { display: none !important; } } .no-select { user-select: none; }` }} />
 
-        <>
-            <style dangerouslySetInnerHTML={{
-                __html: `
-            @media print { body { display: none !important; } }
-            .no-select { user-select: none; -webkit-user-drag: none; }
-          `}} />
-
-
-            <div className="min-h-screen bg-slate-950 text-white p-4 md:p-8 select-none">
-
-                <style jsx global>{`
-                @media print {
-                    body { display: none !important; }
-                    }
-                    `}</style>
-
-                <div className="max-w-7xl mx-auto space-y-6">
-                    <div className="p-5 bg-slate-900/40 rounded-[2rem] border border-white/5 backdrop-blur-xl flex flex-col lg:flex-row justify-between items-center gap-6">
-                        <div className="flex items-center gap-5">
-                            <div className="h-14 w-14 flex items-center justify-center rounded-2xl bg-blue-600 shadow-lg shadow-blue-600/20">
-                                <ShieldCheck size={28} />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl font-black uppercase tracking-tighter">POP</h1>
-                                <div className="flex items-center gap-2 mt-1">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-                                    <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Acesso: <span className="text-blue-400">{roleUser}</span></p>
-                                </div>
+            <div className="max-w-7xl mx-auto space-y-6">
+                <div className="p-5 bg-slate-900/40 rounded-[2rem] border border-white/5 backdrop-blur-xl flex flex-col lg:flex-row justify-between items-center gap-6">
+                    <div className="flex items-center gap-5">
+                        <div className="h-14 w-14 flex items-center justify-center rounded-2xl bg-blue-600 shadow-lg shadow-blue-600/20">
+                            <ShieldCheck size={28} />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl font-black uppercase tracking-tighter">POP</h1>
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                                <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Acesso: <span className="text-blue-400">{roleUser}</span></p>
                             </div>
                         </div>
-                        <div className="flex flex-wrap justify-center gap-6">
-                            {SETORES.map(s => {
-                                const podeVer = isAdmin || s === "Diretrizes" || roleUser === s || rh;
-                                if (!podeVer) return null;
-                                return (
-                                    <button key={s} onClick={() => { setSetorAtivo(s); setDocSelecionado(null); }} className={`cursor-pointer px-4 py-2 rounded-xl text-[9px] font-black uppercase transition-all ${setorAtivo === s ? "bg-blue-600 text-white scale-105" : "text-slate-500 hover:bg-white/5"}`}>{s}</button>
-                                );
-                            })}
-                        </div>
-                        <BotaoVoltar />
                     </div>
+                    <div className="flex flex-wrap justify-center gap-4 lg:gap-6">
+                        {SETORES.map(s => {
+                            const podeVer = isAdmin || s === "Diretrizes" || roleUser === s || rh || isCeo;
+                            if (!podeVer) return null;
+                            return (
+                                <button key={s} onClick={() => { setSetorAtivo(s); setDocSelecionado(null); }} className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase transition-all ${setorAtivo === s ? "bg-blue-600 text-white scale-105" : "text-slate-500 hover:bg-white/5"}`}>{s}</button>
+                            );
+                        })}
+                    </div>
+                    <BotaoVoltar />
+                </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-[700px]">
-
-                        <div className="lg:col-span-4 bg-slate-900/40 rounded-[2rem] border border-white/5 p-6 flex flex-col backdrop-blur-md h-[calc(90vh-120px)] sticky top-24">
-                            <div className="relative mb-4">
-                                <Search className="absolute left-4 top-3.5 text-slate-600" size={16} />
-                                <input
-                                    type="text"
-                                    placeholder="BUSCAR..."
-                                    autoComplete="off"
-                                    value={busca}
-                                    onChange={(e) => setBusca(e.target.value)}
-                                    className="w-full bg-black/40 border border-white/5 rounded-xl py-3.5 pl-12 text-[10px] font-bold uppercase outline-none focus:ring-1 focus:ring-blue-600/50"
-                                />
-                            </div>
-
-                            {/* BOTÕES DE FILTRO RÁPIDO */}
-                            <div className="flex gap-2 mb-6 overflow-x-auto pb-2 custom-scrollbar">
-                                <button
-                                    onClick={() => setOrdem("PADRAO")}
-                                    className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${ordem === 'PADRAO' ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-900/40' : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'}`}
-                                >
-                                    <Star size={10} className="inline mr-1" /> Padrão (Manual)
-                                </button>
-                                <button
-                                    onClick={() => setOrdem("recentes")}
-                                    className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${ordem === 'recentes' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'}`}
-                                >
-                                    Recentes
-                                </button>
-                                <button
-                                    onClick={() => setOrdem("az")}
-                                    className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${ordem === 'az' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'}`}
-                                >
-                                    A-Z
-                                </button>
-
-                                <button
-                                    onClick={() => setOrdem("za")}
-                                    className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${ordem === 'za' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'}`}
-                                >
-                                    A-Z
-                                </button>
-                            </div>
-
-
-                            <div className="flex-1 h-full min-h-0 overflow-y-auto pr-2 custom-scrollbar space-y-2">
-                                {(ordemPastas.length > 0 ? ordemPastas : Object.keys(documentosAgrupados)).map((pasta, index) => {
+                {isTouch ? (
+                    <div className="flex flex-col gap-4 min-h-[60vh]">
+                        {!docSelecionado ? (
+                            <div className="space-y-3">
+                                {ordemPastas.map((pasta) => {
                                     const docs = documentosAgrupados[pasta];
                                     if (!docs) return null;
-
                                     return (
-                                        <div
-                                            key={pasta}
-                                            draggable
-                                            onDragStart={(e) => {
-                                                setIsArrastando(true);
-                                                if (ordemPastas.length === 0) setOrdemPastas(Object.keys(documentosAgrupados));
-                                                e.dataTransfer.setData("index", index.toString());
-                                            }}
-                                            onDragEnd={() => {
-                                                setIsArrastando(false);
-                                            }}
-                                            onDragOver={(e) => e.preventDefault()}
-                                            onDrop={async (e) => {
-                                                setIsArrastando(false);
-                                                const deIndex = parseInt(e.dataTransfer.getData("index"));
-                                                const paraIndex = index;
-
-                                                const listaBase = ordemPastas.length > 0 ? [...ordemPastas] : Object.keys(documentosAgrupados);
-                                                const novaLista = [...listaBase];
-                                                const [itemRemovido] = novaLista.splice(deIndex, 1);
-                                                novaLista.splice(paraIndex, 0, itemRemovido);
-
-                                                setOrdemPastas(novaLista);
-
-                                                const res = await salvarOrdemPastas(ficharioAtivo, novaLista);
-
-                                                if (res.success) {
-                                                    toast.success("Ordem das pastas salva!");
-                                                } else {
-                                                    toast.error("Erro ao persistir ordem no banco.");
-                                                }
-                                            }}
-
-
-                                            className="space-y-1 group/pasta relative cursor-grab active:cursor-grabbing"
-                                        >
-                                            {/* CONTEÚDO DA PASTA*/}
-                                            <div className="relative flex items-center">
-                                                <button
-                                                    onClick={() => setPastasAbertas((p: any) => ({ ...p, [pasta]: !p[pasta] }))}
-                                                    className="w-full flex items-center justify-between p-3.5 rounded-xl bg-slate-950/40 border border-white/5 hover:bg-slate-900 transition-all"
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        <Folder size={16} className={pastasAbertas[pasta] ? "text-blue-500" : "text-slate-600"} />
-                                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">{pasta}</span>
-                                                    </div>
-                                                    <ChevronRight size={14} className={`transition-transform duration-300 ${pastasAbertas[pasta] ? "rotate-90" : "mr-6"}`} />
-                                                </button>
-
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setPastaConfig(pasta);
-                                                    }}
-                                                    className="cursor-pointer mr-4 absolute right-10 opacity-0 group-hover/pasta:opacity-100 p-2 hover:bg-blue-600/20 rounded-lg transition-all text-slate-500 hover:text-blue-400 z-10"
-                                                >
-                                                    <Settings size={14} />
-                                                </button>
-                                            </div>
-
-                                            {/* ARQUIVOS INTERNOS */}
+                                        <div key={pasta} className="bg-slate-900/60 border border-white/5 rounded-[2rem] overflow-hidden">
+                                            <button onClick={() => setPastasAbertas(p => ({ ...p, [pasta]: !p[pasta] }))} className="w-full flex items-center justify-between p-6 active:bg-white/5">
+                                                <div className="flex items-center gap-4">
+                                                    <Folder size={24} className={pastasAbertas[pasta] ? "text-blue-500" : "text-slate-600"} />
+                                                    <span className="text-xs font-black uppercase tracking-widest text-slate-200">{pasta}</span>
+                                                </div>
+                                                <ChevronRight size={20} className={`transition-transform ${pastasAbertas[pasta] ? "rotate-90" : ""} text-slate-700`} />
+                                            </button>
                                             {pastasAbertas[pasta] && (
-                                                <div className="ml-4 pl-4 border-l border-white/10 space-y-1 mt-1">
-                                                    {docs.map(doc => {
-                                                        // Lógica para definir o ícone
-                                                        const isVideo = doc.url?.match(/\.(mp4|webm|ogg|mov)$/i) || doc.tipo === 'video';
-
-                                                        return (
-                                                            <button
-                                                                key={doc.id}
-                                                                onClick={() => setDocSelecionado(doc)}
-                                                                className={`w-full flex items-center gap-3 p-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${docSelecionado?.id === doc.id
-                                                                        ? "bg-blue-600/20 text-blue-400 shadow-[0_0_15px_rgba(37,99,235,0.1)]"
-                                                                        : "text-slate-500 hover:bg-white/5 hover:text-slate-300"
-                                                                    }`}
-                                                            >
-                                                                {isVideo ? (
-                                                                    <Video size={14} className={docSelecionado?.id === doc.id ? "text-blue-400" : "text-slate-600"} />
-                                                                ) : (
-                                                                    <FileText size={14} className={docSelecionado?.id === doc.id ? "text-blue-400" : "text-slate-600"} />
-                                                                )}
-                                                                <span className="truncate">{doc.titulo}</span>
-                                                            </button>
-                                                        );
-                                                    })}
+                                                <div className="bg-black/20 border-t border-white/5 p-2 space-y-2">
+                                                    {docs.map(doc => (
+                                                        <button key={doc.id} onClick={() => setDocSelecionado(doc)} className="w-full flex items-center justify-between p-5 rounded-2xl bg-white/5">
+                                                            <div className="flex items-center gap-4">
+                                                                {doc.tipo === 'VIDEO' ? <Video size={18} className="text-blue-400" /> : <FileText size={18} className="text-slate-400" />}
+                                                                <span className="text-[10px] font-bold uppercase text-slate-300 text-left">{doc.titulo}</span>
+                                                            </div>
+                                                            <PlayCircle size={20} className="text-blue-600/50" />
+                                                        </button>
+                                                    ))}
                                                 </div>
                                             )}
                                         </div>
                                     );
                                 })}
                             </div>
+                        ) : (
+                            <div className="fixed inset-0 z-[100] bg-slate-950 flex flex-col">
+                                <div className="p-6 bg-black/40 border-b border-white/10 flex items-center justify-between">
+                                    <button onClick={() => setDocSelecionado(null)} className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full text-[10px] font-black uppercase text-blue-400">
+                                        <ChevronRight size={16} className="rotate-180" /> Voltar
+                                    </button>
+                                    <div className="text-right">
+                                        <p className="text-[9px] font-black text-white uppercase truncate max-w-[150px]">{docSelecionado.titulo}</p>
+                                        <p className="text-[7px] text-slate-500 uppercase">Segurança Ativa</p>
+                                    </div>
+                                </div>
+                                <div className="flex-1 bg-white relative overflow-auto">
+                                    <AntiCapture screenshotPrevent clipboardPrevent devtoolsPrevent userSelect={false}>
+                                        {docSelecionado.tipo === "VIDEO" ? (
+                                            <video controls className="w-full h-full bg-black" src={docSelecionado.url} />
+                                        ) : (
+                                            <iframe
+                                                src={docSelecionado.protecao === "ATIVO"
+                                                    ? `https://docs.google.com/viewer?url=${encodeURIComponent(docSelecionado.url)}&embedded=true`
+                                                    : `https://docs.google.com/viewer?url=${encodeURIComponent(docSelecionado.url)}&embedded=true`
+                                                }
+                                                className="w-full h-full border-none"
+                                                style={{
+                                                    minHeight: '80vh',
+                                                    pointerEvents: 'auto'
+                                                }}
+                                            />)}
+                                    </AntiCapture>
+                                    {docSelecionado.protecao === "ATIVO" && <div className="absolute inset-0 z-50 bg-transparent" onContextMenu={e => e.preventDefault()} />}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-[750px]">
+                        <div className="lg:col-span-4 bg-slate-900/40 rounded-[2rem] border border-white/5 p-6 flex flex-col backdrop-blur-md overflow-hidden">
+                            <div className="relative mb-4">
+                                <Search className="absolute left-4 top-3.5 text-slate-600" size={16} />
+                                <input type="text" placeholder="BUSCAR..." value={busca} onChange={(e) => setBusca(e.target.value)} className="w-full bg-black/40 border border-white/5 rounded-xl py-3.5 pl-12 text-[10px] font-bold uppercase outline-none focus:ring-1 focus:ring-blue-600/50" />
+                            </div>
 
+                            <div className="flex gap-2 mb-6 overflow-x-auto pb-2 custom-scrollbar">
+                                <button onClick={() => setOrdem("PADRAO")} className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase border ${ordem === 'PADRAO' ? 'bg-blue-600 border-blue-600 text-white shadow-lg' : 'bg-white/5 border-white/5 text-slate-500'}`}><Star size={10} className="inline mr-1" /> Padrão</button>
+                                <button onClick={() => setOrdem("recentes")} className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase border ${ordem === 'recentes' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white/5 border-white/5 text-slate-500'}`}>Recentes</button>
+                                <button onClick={() => setOrdem("az")} className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase border ${ordem === 'az' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white/5 border-white/5 text-slate-500'}`}>A-Z</button>
+                                <button onClick={() => setOrdem("za")} className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase border ${ordem === 'za' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white/5 border-white/5 text-slate-500'}`}>Z-A</button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-2">
+                                {ordemPastas.map((pasta, index) => {
+                                    const docs = documentosAgrupados[pasta];
+                                    if (!docs) return null;
+                                    return (
+                                        <div key={pasta} draggable onDragStart={(e) => e.dataTransfer.setData("index", index.toString())} onDrop={async (e) => {
+                                            const deIndex = parseInt(e.dataTransfer.getData("index"));
+                                            const novaLista = [...ordemPastas];
+                                            const [itemRemovido] = novaLista.splice(deIndex, 1);
+                                            novaLista.splice(index, 0, itemRemovido);
+                                            setOrdemPastas(novaLista);
+                                            await salvarOrdemPastas(ficharioAtivo, novaLista);
+                                            toast.success("Ordem salva!");
+                                        }} onDragOver={e => e.preventDefault()} className="group/pasta relative">
+                                            <button onClick={() => setPastasAbertas(p => ({ ...p, [pasta]: !p[pasta] }))} className="w-full flex items-center justify-between p-3.5 rounded-xl bg-slate-950/40 border border-white/5 hover:bg-slate-900">
+                                                <div className="flex items-center gap-3">
+                                                    <Folder size={16} className={pastasAbertas[pasta] ? "text-blue-500" : "text-slate-600"} />
+                                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">{pasta}</span>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <Settings onClick={(e) => { e.stopPropagation(); setPastaConfig(pasta); }} size={14} className="opacity-0 group-hover/pasta:opacity-100 text-slate-500 hover:text-blue-400" />
+                                                    <ChevronRight size={14} className={`transition-transform ${pastasAbertas[pasta] ? "rotate-90" : ""}`} />
+                                                </div>
+                                            </button>
+                                            {pastasAbertas[pasta] && (
+                                                <div className="ml-4 pl-4 border-l border-white/10 space-y-1 mt-1">
+                                                    {docs.map(doc => (
+                                                        <button key={doc.id} onClick={() => setDocSelecionado(doc)} className={`w-full flex items-center gap-3 p-3 rounded-xl text-[9px] font-black uppercase transition-all ${docSelecionado?.id === doc.id ? "bg-blue-600/20 text-blue-400" : "text-slate-500 hover:bg-white/5"}`}>
+                                                            {doc.tipo === 'VIDEO' ? <Video size={14} /> : <FileText size={14} />}
+                                                            <span className="truncate">{doc.titulo}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
 
                         <div className="lg:col-span-8 bg-slate-900/40 rounded-[2rem] border border-white/5 overflow-hidden flex flex-col relative shadow-2xl">
                             {docSelecionado ? (
                                 <>
-
-                                    <div className="lg:col-span-8 bg-slate-900/40 rounded-[2rem] border border-white/5 overflow-hidden flex flex-col relative shadow-2xl h-[750px]">
-                                        <style dangerouslySetInnerHTML={{
-                                            __html: `
-                                                @media print { body { display: none !important; } iframe { visibility: hidden !important; } }
-                                                * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
-                                            `}}
-                                        />
-
-
-                                        {docSelecionado ? (
-                                            <>
-                                                <div className="lg:col-span-8 bg-slate-900/40 rounded-[2rem] border border-white/5 overflow-hidden flex flex-col relative shadow-2xl h-[750px]">
-                                                    <style dangerouslySetInnerHTML={{
-                                                        __html: docSelecionado?.protecao === "ATIVO" ? `
-                                                        * { -webkit-user-select: none !important; user-select: none !important; }
-                                                        @media print { body { display: none !important; } }
-                                                    ` : ""
-                                                    }} />
-
-                                                    {docSelecionado ? (
-                                                        <>
-                                                            <div className="p-4 bg-black/60 border-b border-white/5 flex justify-between items-center px-8">
-                                                                <div className="flex items-center gap-3">
-                                                                    <Lock size={14} className={docSelecionado.protecao === "ATIVO" ? "text-blue-500" : "text-emerald-500"} />
-                                                                    <span className={`text-[10px] font-black uppercase tracking-widest ${docSelecionado.protecao === "ATIVO" ? "text-blue-400" : "text-emerald-400"}`}>
-                                                                        {docSelecionado.titulo}
-                                                                    </span>
-                                                                </div>
-                                                                <div className="flex items-center gap-5">
-                                                                    <div className={`flex items-center gap-2 text-[8px] font-black uppercase ${docSelecionado.protecao === "ATIVO" ? "text-red-500/40" : "text-emerald-500/60"}`}>
-                                                                        {docSelecionado.protecao === "ATIVO" ? <><ShieldAlert size={12} /> Arquivo Restrito</> : <><Globe size={12} /> Arquivo Livre</>}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="flex-1 bg-white overflow-auto relative">
-                                                                {docSelecionado.tipo === "VIDEO" ? (
-                                                                    <div className="w-full h-full flex items-center justify-center bg-black">
-                                                                        <video
-                                                                            controls
-                                                                            className="w-full h-auto max-h-full"
-                                                                            src={docSelecionado.url}
-                                                                            style={{
-                                                                                maxHeight: 'calc(750px - 120px)',
-                                                                                width: 'auto',
-                                                                                maxWidth: '100%'
-                                                                            }}
-                                                                        />
-                                                                        {docSelecionado.protecao === "ATIVO" && (
-                                                                            <div
-                                                                                className="absolute inset-0"
-                                                                                style={{ backgroundColor: 'transparent' }}
-                                                                                onContextMenu={(e) => e.preventDefault()}
-                                                                            />
-                                                                        )}
-                                                                    </div>
-                                                                ) : (
-                                                                    <>
-                                                                        <AntiCapture
-                                                                            screenshotPrevent={true}
-                                                                            clipboardPrevent={true}
-                                                                            devtoolsPrevent={true}
-                                                                            userSelect={false}
-                                                                        >
-
-                                                                            <iframe
-                                                                                key={docSelecionado.id}
-                                                                                src={docSelecionado.protecao ===
-
-                                                                                    "ATIVO"
-                                                                                    ? `${docSelecionado.url}#toolbar=0&navpanes=0&scrollbar=1`
-                                                                                    : `${docSelecionado.url}#toolbar=1&navpanes=1&scrollbar=1`
-                                                                                }
-                                                                                className={`w-full border-none ${docSelecionado.protecao !== "ATIVO" ? 'documento-liberado' : ''}`}
-                                                                                style={{
-                                                                                    height: '20000px',
-                                                                                    width: '100%',
-                                                                                    pointerEvents: docSelecionado.protecao === "ATIVO" ? 'none' : 'auto'
-                                                                                }}
-                                                                                title={docSelecionado.titulo}
-                                                                            />
-                                                                        </AntiCapture>
-
-                                                                        {docSelecionado.protecao === "ATIVO" && (
-                                                                            <div
-                                                                                className="absolute inset-0"
-                                                                                style={{ backgroundColor: 'transparent' }}
-                                                                                onContextMenu={(e) => e.preventDefault()}
-                                                                                onMouseDown={(e) => e.preventDefault()}
-                                                                                onMouseUp={(e) => e.preventDefault()}
-                                                                                onClick={(e) => e.preventDefault()}
-                                                                            />
-                                                                        )}
-                                                                    </>
-                                                                )}
-                                                            </div>
-
-                                                            <div className="absolute bottom-6 right-6 z-10 bg-black/80 backdrop-blur-xl px-4 py-2 rounded-xl border border-white/10 flex items-center gap-3 shadow-2xl pointer-events-none">
-                                                                <div className={`h-1.5 w-1.5 rounded-full ${docSelecionado.protecao === "ATIVO" ? "bg-red-500 animate-pulse" : "bg-emerald-500"}`}></div>
-                                                                <p className="text-[7px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                                                                    {docSelecionado.protecao === "ATIVO" ? "Cópia Bloqueada" : "Acesso Liberado"}
-                                                                </p>
-                                                            </div>
-                                                        </>
-                                                    ) : (
-                                                        <div className="flex-1 flex flex-col items-center justify-center opacity-20">
-                                                            <Eye size={80} className="mb-4" />
-                                                            <p className="text-[12px] font-black uppercase tracking-[0.5em]">Aguardando Seleção</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <div className="flex-1 flex flex-col items-center justify-center opacity-20">
-                                                <Eye size={80} className="mb-4" />
-                                                <p className="text-[12px] font-black uppercase tracking-[0.5em]">Aguardando Seleção</p>
-                                            </div>
-                                        )}
+                                    <div className="p-4 bg-black/60 border-b border-white/5 flex justify-between items-center px-8">
+                                        <div className="flex items-center gap-3">
+                                            <Lock size={14} className={docSelecionado.protecao === "ATIVO" ? "text-blue-500" : "text-emerald-500"} />
+                                            <span className={`text-[10px] font-black uppercase tracking-widest ${docSelecionado.protecao === "ATIVO" ? "text-blue-400" : "text-emerald-400"}`}>{docSelecionado.titulo}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-[8px] font-black uppercase">
+                                            {docSelecionado.protecao === "ATIVO" ? <><ShieldAlert size={12} className="text-red-500" /> Restrito</> : <><Globe size={12} className="text-emerald-500" /> Público</>}
+                                        </div>
                                     </div>
-
+                                    <div className="flex-1 bg-white relative overflow-auto">
+                                        <AntiCapture screenshotPrevent clipboardPrevent devtoolsPrevent userSelect={false}>
+                                            {docSelecionado.tipo === "VIDEO" ? (
+                                                <video controls className="w-full h-full bg-black" src={docSelecionado.url} />
+                                            ) : (
+                                                <iframe src={docSelecionado.protecao === "ATIVO" ? `${docSelecionado.url}#toolbar=0&navpanes=0` : docSelecionado.url} className="w-full h-full border-none" style={{ height: '20000px', pointerEvents: docSelecionado.protecao === "ATIVO" ? 'none' : 'auto' }} />
+                                            )}
+                                        </AntiCapture>
+                                        {docSelecionado.protecao === "ATIVO" && <div className="absolute inset-0 z-50 bg-transparent" onContextMenu={e => e.preventDefault()} />}
+                                    </div>
                                 </>
                             ) : (
                                 <div className="flex-1 flex flex-col items-center justify-center opacity-20"><Eye size={80} className="mb-4" /><p className="text-[12px] font-black uppercase tracking-[0.5em]">Aguardando Seleção</p></div>
                             )}
-
-                            {modalExcluir && (
-                                <div className="fixed inset-0 z-[999] flex items-center justify-center p-6 backdrop-blur-2xl bg-black/90">
-
-                                    <div className="absolute inset-0 bg-red-900/5 animate-pulse" />
-
-                                    <div className="relative bg-slate-950 border-2 border-red-500/20 p-8 rounded-[3rem] max-w-sm w-full shadow-[0_0_50px_rgba(239,68,68,0.2)] animate-in zoom-in duration-300">
-
-                                        <div className="flex flex-col items-center mb-8 text-center">
-                                            <div className="p-4 bg-red-500/10 rounded-full mb-4 border border-red-500/20">
-                                                <ShieldAlert size={44} className="text-red-500 animate-bounce" />
-                                            </div>
-                                            <h2 className="text-[14px] font-black uppercase text-white tracking-[0.3em] italic">
-                                                AUTENTICAÇÃO <span className="text-red-500">MESTRA</span>
-                                            </h2>
-                                            <div className="h-1 w-12 bg-red-600 my-3 rounded-full" />
-                                            <p className="text-[10px] text-slate-500 font-black uppercase leading-relaxed tracking-tighter">
-                                                Ação crítica detectada. Insira a chave de segurança para mover ao histórico inativo.
-                                            </p>
-                                        </div>
-
-                                        <input
-                                            type="password"
-                                            autoComplete="new-password"
-                                            autoFocus
-                                            placeholder="••••••••"
-                                            value={senhaInput}
-                                            onChange={e => setSenhaInput(e.target.value)}
-                                            className="w-full bg-black border-2 border-white/5 rounded-[1.5rem] px-5 py-5 text-center tracking-[1em] text-white outline-none mb-6 focus:border-red-600 transition-all shadow-inner placeholder:tracking-normal placeholder:text-slate-800 font-mono"
-                                        />
-
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <button
-                                                onClick={() => { setModalExcluir(false); setSenhaInput(""); }}
-                                                className="py-4 bg-slate-900 hover:bg-slate-800 border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-400 transition-all"
-                                            >
-                                                Abortar
-                                            </button>
-                                            <button
-                                                onClick={handleExcluirLogico}
-                                                className="py-4 bg-red-600 hover:bg-red-500 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white shadow-xl shadow-red-900/40 transition-all active:scale-95"
-                                            >
-                                                Confirmar
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
                         </div>
                     </div>
-                </div>
-                {pastaConfig && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/95 backdrop-blur-md">
-                        <div className="bg-slate-900 border border-white/10 w-full max-w-2xl rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in duration-200">
-                            <header className="flex flex-col items-center mb-8 text-center w-full">
-                                <div className="h-1.5 w-16 bg-blue-600 rounded-full mb-6"></div>
+                )}
 
-                                <div className="flex items-center justify-center gap-3 w-full">
-                                    {editandoNomePasta === pastaConfig ? (
-                                        <div className="flex items-center gap-2 bg-black/40 border border-blue-500/50 rounded-2xl p-2 w-full max-w-md animate-in slide-in-from-top-1">
-                                            <input
-                                                autoFocus
-                                                value={novoNomeInput}
-                                                onChange={(e) => setNovoNomeInput(e.target.value.toUpperCase())}
-                                                onKeyDown={(e) => e.key === "Enter" && handleSalvarNovoNome(pastaConfig)}
-                                                className="flex-1 bg-transparent border-none text-lg font-black uppercase text-white px-4 outline-none"
-                                            />
-                                            <button
-                                                onClick={() => handleSalvarNovoNome(pastaConfig)}
-                                                className="p-3 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-white transition-colors"
-                                            >
-                                                <Check size={18} />
-                                            </button>
-                                            <button
-                                                onClick={() => setEditandoNomePasta(null)}
-                                                className="p-3 bg-white/5 hover:bg-white/10 rounded-xl text-slate-400"
-                                            >
-                                                <X size={18} />
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <h2 className="text-xl font-black uppercase tracking-tighter text-white">
-                                                Configurar Pasta: {pastaConfig}
-                                            </h2>
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setEditandoNomePasta(pastaConfig);
-                                                    setNovoNomeInput(pastaConfig);
-                                                }}
-                                                className="p-2.5 bg-white/5 hover:bg-blue-600/20 rounded-full text-slate-500 hover:text-blue-400 transition-all border border-white/5"
-                                            >
-                                                <Edit3 size={18} />
-                                            </button>
-                                        </>
-                                    )}
-                                </div>
-
-                                {!editandoNomePasta && (
-                                    <p className="text-[10px] text-slate-500 font-bold uppercase mt-4 tracking-widest">
-                                        Arraste os itens ou use as setas para organizar
-                                    </p>
-                                )}
-                            </header>
-
-                            <div className="space-y-3 max-h-[450px] overflow-y-auto pr-4 custom-scrollbar">
-                                {documentosAgrupados[pastaConfig]?.map((doc, index) => (
-                                    <div
-                                        key={doc.id}
-                                        draggable
-                                        onDragStart={(e) => {
-                                            e.dataTransfer.setData("index", index.toString());
-                                            e.currentTarget.classList.add("opacity-40", "scale-95");
-                                        }}
-                                        onDragEnd={(e) => {
-                                            e.currentTarget.classList.remove("opacity-40", "scale-95");
-                                        }}
-                                        onDragOver={(e) => e.preventDefault()}
-                                        onDrop={(e) => {
-                                            e.preventDefault();
-                                            const deIndex = parseInt(e.dataTransfer.getData("index"));
-                                            const paraIndex = index;
-
-                                            if (deIndex === paraIndex) return;
-
-                                            const listaDaPasta = [...documentosAgrupados[pastaConfig!]];
-                                            const [itemRemovido] = listaDaPasta.splice(deIndex, 1);
-                                            listaDaPasta.splice(paraIndex, 0, itemRemovido);
-
-                                            const novosDocs = documentos.map(d => {
-                                                const idxInPasta = listaDaPasta.findIndex(item => item.id === d.id);
-                                                return idxInPasta !== -1 ? { ...d, ordem_manual: idxInPasta } : d;
-                                            });
-
-                                            setDocumentos(novosDocs);
-                                            setOrdem("PADRAO");
-                                        }}
-                                        className="flex items-center gap-4 p-4 bg-black/40 border border-white/5 rounded-2xl hover:border-blue-500/30 transition-all group cursor-grab active:cursor-grabbing"
-                                    >
-                                        <div className="flex flex-col gap-1 opacity-20 group-hover:opacity-100 transition-opacity">
-                                            <button
-                                                onClick={() => {
-                                                    const listaDaPasta = [...documentosAgrupados[pastaConfig!]];
-                                                    if (index === 0) return;
-                                                    const temp = listaDaPasta[index - 1];
-                                                    listaDaPasta[index - 1] = listaDaPasta[index];
-                                                    listaDaPasta[index] = temp;
-                                                    const novosDocs = documentos.map(d => {
-                                                        const idx = listaDaPasta.findIndex(item => item.id === d.id);
-                                                        return idx !== -1 ? { ...d, ordem_manual: idx } : d;
-                                                    });
-                                                    setDocumentos(novosDocs);
-                                                    setOrdem("PADRAO");
-                                                }}
-                                                className="p-1 hover:bg-blue-600/20 rounded text-slate-600 hover:text-blue-400"
-                                            >
-                                                <ChevronUp size={16} />
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    const listaDaPasta = [...documentosAgrupados[pastaConfig!]];
-                                                    if (index === listaDaPasta.length - 1) return;
-                                                    const temp = listaDaPasta[index + 1];
-                                                    listaDaPasta[index + 1] = listaDaPasta[index];
-                                                    listaDaPasta[index] = temp;
-                                                    const novosDocs = documentos.map(d => {
-                                                        const idx = listaDaPasta.findIndex(item => item.id === d.id);
-                                                        return idx !== -1 ? { ...d, ordem_manual: idx } : d;
-                                                    });
-                                                    setDocumentos(novosDocs);
-                                                    setOrdem("PADRAO");
-                                                }}
-                                                className="p-1 hover:bg-blue-600/20 rounded text-slate-600 hover:text-blue-400"
-                                            >
-                                                <ChevronDown size={16} />
-                                            </button>
-                                        </div>
-
-                                        <div className="flex-1">
-                                            <input
-                                                value={doc.titulo}
-                                                onChange={(e) => {
-                                                    const novoTitulo = e.target.value.toUpperCase();
-                                                    setDocumentos(prev => prev.map(d => d.id === doc.id ? { ...d, titulo: novoTitulo } : d));
-                                                }}
-                                                className="w-full bg-transparent border-none text-xs font-black uppercase text-slate-200 outline-none focus:text-blue-400 transition-colors cursor-text"
-                                            />
-                                        </div>
-
-                                        <button
-                                            onClick={() => {
-                                                setDocParaExcluir(doc);
-                                                setModalExcluir(true);
-                                            }}
-                                            className="cursor-pointer px-4 py-2 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white rounded-xl transition-all text-[9px] font-black uppercase border border-red-600/20 flex items-center gap-2 relative z-[70]"
-                                        >
-                                            <Trash2 size={14} /> Desativar
-                                        </button>
-
-                                        <div className="text-[10px] font-black text-blue-600 opacity-30 group-hover:opacity-100 flex items-center gap-2">
-                                            <GripVertical size={14} className="text-slate-700" />
-                                            #{index + 1}
-                                        </div>
-                                    </div>
-                                ))}
+                {modalExcluir && (
+                    <div className="fixed inset-0 z-[999] flex items-center justify-center p-6 backdrop-blur-2xl bg-black/90">
+                        <div className="relative bg-slate-950 border-2 border-red-500/20 p-8 rounded-[3rem] max-w-sm w-full">
+                            <div className="flex flex-col items-center mb-8 text-center">
+                                <div className="p-4 bg-red-500/10 rounded-full mb-4 border border-red-500/20"><ShieldAlert size={44} className="text-red-500 animate-bounce" /></div>
+                                <h2 className="text-[14px] font-black uppercase text-white italic">Autenticação <span className="text-red-500">Mestra</span></h2>
+                                <p className="text-[10px] text-slate-500 font-black uppercase mt-4">Ação crítica. Insira a chave para desativar.</p>
                             </div>
-
-                            <div className="grid grid-cols-2 gap-4 mt-10">
-                                <button
-                                    onClick={() => { setPastaConfig(null); carregarDocumentos(); }}
-                                    className="py-5 bg-white/5 text-slate-400 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-white/10 transition-all"
-                                >
-                                    Descartar
-                                </button>
-                                <button
-                                    onClick={async () => {
-                                        setLoadingDocs(true);
-                                        const docsParaSalvar = documentosAgrupados[pastaConfig!];
-                                        try {
-                                            await fetch('/api/documentos/ordenar', {
-                                                method: 'POST',
-                                                body: JSON.stringify({
-                                                    documentos: docsParaSalvar.map((d, i) => ({ id: d.id, titulo: d.titulo, ordem: i }))
-                                                }),
-                                            });
-                                            toast.success("Pasta sincronizada com sucesso!");
-                                            setPastaConfig(null);
-                                        } catch (err) {
-                                            toast.error("Erro ao salvar alterações");
-                                        } finally {
-                                            setLoadingDocs(false);
-                                        }
-                                    }}
-                                    className="py-5 bg-blue-600 text-white rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-blue-500 shadow-xl shadow-blue-900/40 transition-all"
-                                >
-                                    {loadingDocs ? "Salvando..." : "Salvar Alterações"}
-                                </button>
+                            <input type="password" placeholder="••••••••" value={senhaInput} onChange={e => setSenhaInput(e.target.value)} className="w-full bg-black border-2 border-white/5 rounded-[1.5rem] px-5 py-5 text-center text-white outline-none mb-6 focus:border-red-600" />
+                            <div className="grid grid-cols-2 gap-4">
+                                <button onClick={() => { setModalExcluir(false); setSenhaInput(""); }} className="py-4 bg-slate-900 text-slate-400 rounded-2xl text-[10px] font-black uppercase">Abortar</button>
+                                <button onClick={handleExcluirLogico} className="py-4 bg-red-600 text-white rounded-2xl text-[10px] font-black uppercase shadow-xl shadow-red-900/40">Confirmar</button>
                             </div>
                         </div>
                     </div>
                 )}
 
+                {pastaConfig && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/95 backdrop-blur-md">
+                        <div className="bg-slate-900 border border-white/10 w-full max-w-2xl rounded-[2.5rem] p-8 shadow-2xl">
+                            <header className="flex flex-col items-center mb-8 text-center">
+                                <div className="h-1.5 w-16 bg-blue-600 rounded-full mb-6"></div>
+                                <div className="flex items-center gap-3">
+                                    {editandoNomePasta === pastaConfig ? (
+                                        <div className="flex items-center gap-2 bg-black/40 border border-blue-500/50 rounded-2xl p-2">
+                                            <input autoFocus value={novoNomeInput} onChange={(e) => setNovoNomeInput(e.target.value.toUpperCase())} className="bg-transparent border-none text-lg font-black uppercase text-white px-4 outline-none" />
+                                            <button onClick={() => handleSalvarNovoNome(pastaConfig)} className="p-3 bg-emerald-600 rounded-xl text-white"><Check size={18} /></button>
+                                            <button onClick={() => setEditandoNomePasta(null)} className="p-3 bg-white/5 rounded-xl text-slate-400"><X size={18} /></button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <h2 className="text-xl font-black uppercase text-white">Configurar: {pastaConfig}</h2>
+                                            <Edit3 size={18} onClick={() => { setEditandoNomePasta(pastaConfig); setNovoNomeInput(pastaConfig); }} className="cursor-pointer text-slate-500 hover:text-blue-400" />
+                                        </>
+                                    )}
+                                </div>
+                            </header>
+                            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-4 custom-scrollbar">
+                                {documentosAgrupados[pastaConfig]?.map((doc, index) => (
+                                    <div key={doc.id} className="flex items-center gap-4 p-4 bg-black/40 border border-white/5 rounded-2xl group">
+                                        <div className="flex flex-col gap-1">
+                                            <button onClick={() => {
+                                                const lista = [...documentosAgrupados[pastaConfig!]];
+                                                if (index === 0) return;
+                                                [lista[index - 1], lista[index]] = [lista[index], lista[index - 1]];
+                                                setDocumentos(documentos.map(d => {
+                                                    const idx = lista.findIndex(item => item.id === d.id);
+                                                    return idx !== -1 ? { ...d, ordem_manual: idx } : d;
+                                                }));
+                                            }} className="text-slate-600 hover:text-blue-400"><ChevronUp size={16} /></button>
+                                            <button onClick={() => {
+                                                const lista = [...documentosAgrupados[pastaConfig!]];
+                                                if (index === lista.length - 1) return;
+                                                [lista[index + 1], lista[index]] = [lista[index], lista[index + 1]];
+                                                setDocumentos(documentos.map(d => {
+                                                    const idx = lista.findIndex(item => item.id === d.id);
+                                                    return idx !== -1 ? { ...d, ordem_manual: idx } : d;
+                                                }));
+                                            }} className="text-slate-600 hover:text-blue-400"><ChevronDown size={16} /></button>
+                                        </div>
+                                        <div className="flex-1 text-xs font-black uppercase text-slate-200">{doc.titulo}</div>
+                                        <button onClick={() => { setDocParaExcluir(doc); setModalExcluir(true); }} className="px-4 py-2 bg-red-600/10 text-red-500 rounded-xl text-[9px] font-black uppercase border border-red-600/20"><Trash2 size={14} /></button>
+                                        <GripVertical size={14} className="text-slate-700" />
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="grid grid-cols-2 gap-4 mt-10">
+                                <button onClick={() => { setPastaConfig(null); carregarDocumentos(); }} className="py-5 bg-white/5 text-slate-400 rounded-[1.5rem] text-[10px] font-black uppercase">Descartar</button>
+                                <button onClick={async () => {
+                                    setLoadingDocs(true);
+                                    try {
+                                        await fetch('/api/documentos/ordenar', {
+                                            method: 'POST',
+                                            body: JSON.stringify({ documentos: documentosAgrupados[pastaConfig!].map((d, i) => ({ id: d.id, titulo: d.titulo, ordem: i })) }),
+                                        });
+                                        toast.success("Pasta sincronizada!");
+                                        setPastaConfig(null);
+                                    } catch (err) { toast.error("Erro ao salvar"); } finally { setLoadingDocs(false); }
+                                }} className="py-5 bg-blue-600 text-white rounded-[1.5rem] text-[10px] font-black uppercase shadow-xl shadow-blue-900/40">Salvar Alterações</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
-
-                {/* MARCA D'ÁGUA DINÂMICA */}
-                <div className="fixed inset-0 z-0 pointer-events-none opacity-[0.1] overflow-hidden select-none flex flex-wrap gap-20 p-10 rotate-[-15deg]">
-                    {Array.from({ length: 50 }).map((_, i) => (
-                        <span key={i} className="text-red-500 font-black text-2xl  ">
+                <div className="fixed inset-0 z-0 pointer-events-none opacity-[0.1] overflow-hidden flex flex-wrap gap-20 p-10 rotate-[-15deg]">
+                    {Array.from({ length: 40 }).map((_, i) => (
+                        <span key={i} className="text-red-500 font-black text-2xl uppercase">
                             {session?.user?.nome || "ACESSO RESTRITO ALPHA"}
                         </span>
                     ))}
                 </div>
-
-
             </div>
-
-        </>
-
-
-
+        </div>
     );
-
 }

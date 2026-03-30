@@ -139,3 +139,36 @@ export async function buscarHistoricoReservas() {
     return [];
   }
 }
+
+export async function SalvarDiretrizSala(sala: string, descricao: string) {
+  try {
+      await db.diretrizSala.upsert({
+          where: { sala },
+          update: { descricao },
+          create: { sala, descricao }
+      });
+      return { success: true };
+  } catch (error) {
+      return { success: false };
+  }
+}
+
+export async function BuscarDiretrizPorSala(sala: string) {
+  try {
+      return await db.diretrizSala.findUnique({
+          where: { sala }
+      });
+  } catch (error) {
+      return null;
+  }
+}
+
+export async function BuscarTodasDiretrizes() {
+  try {
+      const diretrizes = await db.diretrizSala.findMany();
+      return diretrizes;
+  } catch (error) {
+      console.error("Erro ao buscar diretrizes:", error);
+      return [];
+  }
+}

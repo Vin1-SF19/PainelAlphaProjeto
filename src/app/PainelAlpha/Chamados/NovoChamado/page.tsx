@@ -12,24 +12,31 @@ import { toast } from "sonner";
 export default function NovoChamadoPage() {
   const [pending, setPending] = useState(false);
 
-  async function handleSubmit(formData: FormData) {
-    setPending(true);
-    try {
-        const res = await createChamadoAction(formData);
-        
-        if (res?.error) {
-            toast.error(res.error);
-            setPending(false);
-        } 
-        
-    } catch (err: any) {
-        if (err.message === 'NEXT_REDIRECT') return;
 
-        console.error(err);
-        toast.error("Falha ao processar requisição");
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (pending) return;
+
+    setPending(true);
+
+    try {
+      const formData = new FormData(event.currentTarget);
+
+      const res = await createChamadoAction(formData);
+
+      if (res?.error) {
+        toast.error(res.error);
         setPending(false);
+      }
+
+    } catch (err: any) {
+      if (err.message === 'NEXT_REDIRECT') return;
+      console.error(err);
+      toast.error("Falha ao processar requisição");
+      setPending(false);
     }
-}
+  }
 
 
   return (
@@ -57,7 +64,7 @@ export default function NovoChamadoPage() {
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.3em]">Sistema de Suporte Alpha v2.0</p>
           </header>
 
-          <form action={handleSubmit} className="space-y-8 relative">
+          <form onSubmit={handleSubmit} className="space-y-8 relative">
             <div className="grid gap-8 sm:grid-cols-2">
               <div className="space-y-3">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Título do Incidente</Label>
@@ -116,20 +123,20 @@ export default function NovoChamadoPage() {
             <Button
               type="submit"
               disabled={pending}
-              className={`w-full rounded-[2rem] h-16 font-black uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-3 ${pending
-                  ? "bg-slate-800 text-slate-500 cursor-not-allowed"
-                  : "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/40"
+              className={`w-full rounded-[2rem] h-16 font-black uppercase tracking-[0.2em] shadow-2xl transition-all flex items-center justify-center gap-3 ${pending
+                  ? "bg-slate-800 text-slate-500 cursor-not-allowed pointer-events-none"
+                  : "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/40 active:scale-95"
                 }`}
             >
               {pending ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Processando Transmissão...
+                  Processando...
                 </>
               ) : (
                 <>
                   <Send className="w-5 h-5" />
-                  Enviar Protocolo
+                  Abrir Chamado
                 </>
               )}
             </Button>

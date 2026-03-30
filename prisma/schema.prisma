@@ -404,14 +404,27 @@ model Tarefa {
   descricao String?
   fixa      Boolean @default(false)
   feita     Boolean @default(false)
-  diaSemana Int     @default(0)
+  prioridade String
+
+  diaSemana Int?   
+  intervaloDias Int?      
+  dataInicio    DateTime? @default(now())
+  horario       String?
 
   userId   Int
   usuarios usuarios @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  concluidaEm DateTime?
   
 
   @@index([userId])
+}
+
+model DiretrizSala {
+  id        Int      @id @default(autoincrement())
+  sala      String   @unique
+  descricao String   @default("")
+  updatedAt DateTime @updatedAt
 }

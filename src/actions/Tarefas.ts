@@ -3,85 +3,99 @@
 import db from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
-
 export async function CriarTarefa(data: { 
     texto: string, 
     descricao?: string, 
     userId: any, 
     fixa: boolean, 
-    diaSemana: number 
+    diaSemana: number | null; 
+    intervaloDias?: number | null;
+    dataInicio?: Date;
+    prioridade: string;
+    horario?: string | null;
 }) {
     try {
-        const idFinal = BigInt(Math.floor(Number(data.userId)));
-        
+        const idFinal = Number(data.userId);
 
-        const tarefa = await db.tarefa.create({ 
+        await db.tarefa.create({ 
             data: {
                 texto: data.texto,
                 descricao: data.descricao || "",
                 fixa: data.fixa,
                 diaSemana: data.diaSemana,
+                intervaloDias: data.intervaloDias || null,
+                dataInicio: data.dataInicio || new Date(),
                 feita: false,
-                userId: Number(idFinal),
+                userId: idFinal,
+                prioridade: data.prioridade,
+                horario: data.horario || null,
             }
         });
 
         revalidatePath("/PainelAlpha/PainelTarefas");
         return { success: true };
     } catch (error: any) {
-        if (error.code === 'P2023' || error.message.includes("Inconsistent column data")) {
-            console.warn("Aviso: Dado inserido, mas houve inconsistência no retorno do driver.");
+        if (error.code === 'P2023' || error.message?.includes("Inconsistent column data")) {
             revalidatePath("/PainelAlpha/PainelTarefas");
             return { success: true };
         }
-
         console.error("ERRO REAL NO CREATE:", error);
         return { success: false };
     }
 }
 
-
-export async function BuscarTarefasPorUsuario(userId: any) {
-    if (!userId) return [];
-    
+export async function BuscarTarefasPorUsuario(userId: string) {
     try {
-        const idBusca = String(userId);
-
-        const tarefas: any = await db.$queryRawUnsafe(`
+        const tarefas: any[] = await db.$queryRawUnsafe(`
             SELECT 
                 id, 
                 texto, 
                 descricao, 
                 feita, 
                 fixa, 
+                prioridade,
                 diaSemana, 
-                userId, 
-                CAST(createdAt AS TEXT) as createdAt, 
-                CAST(updatedAt AS TEXT) as updatedAt
+                intervaloDias,
+                horario,
+                CAST(dataInicio AS TEXT) as dataInicio,
+                userId,
+                CAST(createdAt AS TEXT) as createdAt,
+                CAST(concluidaEm AS TEXT) as concluidaEm
             FROM "Tarefa" 
-            WHERE "userId" = ? 
-            ORDER BY createdAt DESC
-        `, idBusca);
+            WHERE "userId" = ${parseInt(userId, 10)}
+            ORDER BY "feita" ASC, "horario" ASC
+        `);
 
         return Array.isArray(tarefas) ? tarefas : [];
     } catch (error) {
-        console.error("Erro na busca:", error);
+        console.error("Erro crítico no banco:", error);
         return [];
     }
 }
 
-
 export async function AlternarStatusTarefa(id: string, novoStatus: boolean) {
     try {
+        if (!id) {
+            return { success: false, error: "ID ausente" };
+        }
+
         const statusNumerico = novoStatus ? 1 : 0;
+        
+        const sqlHora = novoStatus 
+            ? "datetime('now', '-3 hours')" 
+            : "NULL";
 
-        await db.$executeRawUnsafe(
-            `UPDATE "Tarefa" SET "feita" = ${statusNumerico} WHERE "id" = '${id}'`
-        );
+        await db.$executeRawUnsafe(`
+            UPDATE "Tarefa" 
+            SET "feita" = ${statusNumerico}, 
+                "concluidaEm" = ${sqlHora}
+            WHERE "id" = '${id}'
+        `);
 
+        revalidatePath("/PainelAlpha/PainelTarefas");
         return { success: true };
     } catch (error) {
-        console.error("Erro ao atualizar status via SQL:", error);
+        console.error("Erro no status:", error);
         return { success: false };
     }
 }
@@ -89,7 +103,7 @@ export async function AlternarStatusTarefa(id: string, novoStatus: boolean) {
 export async function DeletarTarefa(id: string) {
     try {
         await db.$executeRawUnsafe(`DELETE FROM "Tarefa" WHERE "id" = '${id}'`);
-        
+        revalidatePath("/PainelAlpha/PainelTarefas");
         return { success: true }; 
     } catch (error) {
         console.error(error);

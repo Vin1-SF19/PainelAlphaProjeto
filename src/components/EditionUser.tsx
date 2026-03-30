@@ -60,6 +60,7 @@ const SETORES_LISTA = [
   { value: "FINANCEIRO", label: "FINANCEIRO", color: "text-slate-300" },
   { value: "JURÍDICO", label: "JURÍDICO", color: "text-slate-300" },
   { value: "PARCEIRO", label: "PARCEIRO", color: "text-slate-300" },
+  { value: "Serviços Gerais", label:"Serviços Gerais", color: "text-slate-300"}
 ];
 
 export default function EditionUser({ open, onOpenChange, user, onSubmit }: EditionUserProps) {

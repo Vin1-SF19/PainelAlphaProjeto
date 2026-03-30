@@ -33,6 +33,8 @@ export default function PainelAlphaClient({ session, chamadosIniciais, configBan
     const userName = session?.user?.nome || session?.user?.name || "Operador";
     const userRole = session?.user?.role || "USER";
     const isRh = session.user.role === "RECURSOS HUMANOS";
+    const isAdmin = session.user.role === "Admin";
+    const isCeo = session.user.role === "CEO";
 
     const userPermissions = session?.user?.permissoes || [];
     const esconderBloqueados = session?.user?.esconderBloqueados || false;
@@ -185,7 +187,7 @@ export default function PainelAlphaClient({ session, chamadosIniciais, configBan
                             icon: ShieldCheck,
                             color: `${style.text} ${style.glow}`,
                             active: false,
-                            href: isRh ? "/PainelAlpha/PainelTarefas/GerenciarTarefas/GerenciamentoTarefa" : undefined
+                            href: isRh || isAdmin || isCeo ? "/PainelAlpha/PainelTarefas/GerenciarTarefas/GerenciamentoTarefa" : undefined
                         },
                         {
                             label: "Alpha Comm",
