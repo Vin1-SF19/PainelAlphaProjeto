@@ -1,21 +1,15 @@
-import { auth } from "./auth";
+import NextAuth from "next-auth";
+import { authConfig } from "./auth.config";
 import { NextResponse } from "next/server";
+
+const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
   const session = req.auth;
   const pathname = req.nextUrl.pathname;
   const isLoggedIn = !!session;
 
-  if (pathname === "/") return NextResponse.next();
-
-  if (!isLoggedIn && pathname.startsWith("/PainelAlpha")) {
-    return NextResponse.redirect(new URL("/", req.nextUrl));
-  }
-
-  if (
-    pathname.startsWith("/PainelAlpha/cadastro") &&
-    session?.user?.role !== "Admin"
-  ) {
+  if (pathname.startsWith("/PainelAlpha/cadastro") && session?.user?.role !== "Admin") {
     return NextResponse.redirect(new URL("/PainelAlpha", req.nextUrl));
   }
 
