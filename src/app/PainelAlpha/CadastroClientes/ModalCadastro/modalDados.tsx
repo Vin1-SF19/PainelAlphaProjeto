@@ -90,7 +90,7 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
 
     const [listaSocios, setListaSocios] = useState<any[]>([]);
     const [showNovoSocio, setShowNovoSocio] = useState(false);
-    const [novoSocio, setNovoSocio] = useState({ nome: "", telefone: "", obs: "" });
+    const [novoSocio, setNovoSocio] = useState({ nome: "", telefone: "", dataNascimento: "", vinculo: "", obs: "" });
     const [enviandoFeedback, setEnviandoFeedback] = useState(false);
 
 
@@ -185,7 +185,7 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
             };
 
             setListaSocios(prev => [...prev, socioRender]);
-            setNovoSocio({ nome: "", telefone: "", obs: "" });
+            setNovoSocio({ nome: "", telefone: "", dataNascimento: "", vinculo: "", obs: "" });
             setShowNovoSocio(false);
 
             if (aoSalvar) await aoSalvar();
@@ -619,12 +619,12 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
 
                         {/* FORMULÁRIO PARA ADICIONAR SÓCIO - RENDERIZA NA HORA */}
                         {showNovoSocio && (
-                            <div className="p-4 bg-slate-900/50 border border-indigo-500/20 rounded-2xl grid grid-cols-1 md:grid-cols-3 gap-4 animate-in fade-in zoom-in duration-300">
+                            <div className="p-6 bg-slate-900/50 border border-indigo-500/20 rounded-[2rem] grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in zoom-in duration-300 mb-6 shadow-2xl">
                                 <input
                                     placeholder="NOME DO SÓCIO"
                                     value={novoSocio.nome}
                                     onChange={e => setNovoSocio({ ...novoSocio, nome: e.target.value.toUpperCase() })}
-                                    className="bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-indigo-500 transition-all"
+                                    className="bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-indigo-500 transition-all uppercase"
                                 />
                                 <input
                                     placeholder="TELEFONE (WHATSAPP)"
@@ -632,7 +632,30 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                                     onChange={e => setNovoSocio({ ...novoSocio, telefone: e.target.value })}
                                     className="bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-indigo-500 transition-all"
                                 />
-                                <div className="flex gap-2">
+                                <input
+                                    placeholder="DATA DE NASCIMENTO (DD/MM/AAAA)"
+                                    value={novoSocio.dataNascimento}
+                                    onChange={e => setNovoSocio({ ...novoSocio, dataNascimento: e.target.value })}
+                                    className="bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-indigo-500 transition-all"
+                                />
+
+                                {/* SELECT DE VÍNCULO ESTILIZADO */}
+                                <select
+                                    value={novoSocio.vinculo}
+                                    onChange={e => setNovoSocio({ ...novoSocio, vinculo: e.target.value })}
+                                    className="bg-black border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-indigo-500 transition-all cursor-pointer appearance-none"
+                                >
+                                    <option value="" className="text-slate-500">SELECIONE O VÍNCULO...</option>
+                                    <option value="Sócio Proprietário">Sócio Proprietário</option>
+                                    <option value="Sócio Oculto">Sócio Oculto</option>
+                                    <option value="Funcionário/Colaborador">Funcionário/Colaborador</option>
+                                    <option value="Contador Interno">Contador Interno</option>
+                                    <option value="Contador Externo">Contador Externo</option>
+                                    <option value="Despachante Aduaneiro">Despachante Aduaneiro</option>
+                                    <option value="Outro">Outro</option>
+                                </select>
+
+                                <div className="flex gap-2 lg:col-span-2">
                                     <input
                                         placeholder="OBSERVAÇÃO"
                                         value={novoSocio.obs}
@@ -641,9 +664,9 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                                     />
                                     <button
                                         onClick={handleAdicionarSocio}
-                                        className="p-3 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-white transition-colors"
+                                        className="px-6 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-white transition-all active:scale-95 flex items-center justify-center shadow-lg shadow-emerald-900/20"
                                     >
-                                        <Check size={16} />
+                                        <Check size={18} strokeWidth={3} />
                                     </button>
                                 </div>
                             </div>
@@ -654,7 +677,9 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                                 <thead>
                                     <tr className="bg-white/5 text-[10px] font-black uppercase text-slate-500 tracking-widest">
                                         <th className="px-6 py-4 border-b border-white/5">Nome do Socio</th>
-                                        <th className="px-6 py-4 border-b border-white/5">Telefone / WhatsApp</th>
+                                        <th className="px-6 py-4 border-b border-white/5">Telefone</th>
+                                        <th className="px-6 py-4 border-b border-white/5 text-center">Nascimento</th>
+                                        <th className="px-6 py-4 border-b border-white/5">Vinculo</th>
                                         <th className="px-6 py-4 border-b border-white/5">Observações</th>
                                     </tr>
                                 </thead>
@@ -673,18 +698,27 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                                                             href={`https://wa.me/${s.telefone.replace(/\D/g, '')}`}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
-                                                            className="text-xs font-mono text-indigo-400 hover:text-green-400 hover:bg-green-500/10 px-2 py-1 rounded-lg transition-all duration-200 inline-flex items-center gap-1"
-                                                            title="Abrir WhatsApp"
+                                                            className="text-[11px] font-mono text-indigo-400 hover:text-green-400 transition-all flex items-center gap-2"
                                                         >
-                                                            <span>📱</span>
-                                                            {s.telefone}
+                                                            <span className="opacity-50">WA:</span> {s.telefone}
                                                         </a>
                                                     ) : (
-                                                        <span className="text-xs font-mono text-indigo-400">
-                                                            (00) 00000-0000
-                                                        </span>
+                                                        <span className="text-xs font-mono text-slate-700">---</span>
                                                     )}
                                                 </td>
+
+                                                <td className="px-6 py-4 text-center">
+                                                    <span className="text-xs font-bold text-slate-400">
+                                                        {s.dataNascimento || "---"}
+                                                    </span>
+                                                </td>
+
+                                                <td className="px-6 py-4">
+                                                    <span className="text-[10px] font-black text-indigo-500/70 uppercase tracking-tighter bg-indigo-500/5 px-2 py-1 rounded-md border border-indigo-500/10">
+                                                        {s.vinculo || "NÃO INFORMADO"}
+                                                    </span>
+                                                </td>
+
                                                 <td className="px-6 py-4">
                                                     <span className="text-[11px] text-slate-500 italic leading-relaxed block max-w-xs truncate" title={s.obs}>
                                                         {s.obs || "---"}
@@ -694,7 +728,7 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={3} className="px-6 py-16 text-center text-slate-800 text-[10px] font-black uppercase tracking-[0.3em] italic opacity-40">
+                                            <td colSpan={5} className="px-6 py-16 text-center text-slate-800 text-[10px] font-black uppercase tracking-[0.3em] italic opacity-40">
                                                 Nenhum sócio vinculado a este CNPJ
                                             </td>
                                         </tr>
@@ -1181,7 +1215,7 @@ export default function ModalGestaoCliente({ isOpen, onClose, cliente, aoSalvar 
 
                         <h3 className="text-xl font-black text-white uppercase mb-2 tracking-tighter">Atenção Total</h3>
                         <p className="text-sm text-slate-400 mb-8 px-4">
-                            Você está prestes a <span className="text-rose-500 font-bold">Excluir</span> este cliente da listagem principal. 
+                            Você está prestes a <span className="text-rose-500 font-bold">Excluir</span> este cliente da listagem principal.
                         </p>
                         <div className="flex flex-col gap-3">
                             <button

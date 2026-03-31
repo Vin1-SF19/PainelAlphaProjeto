@@ -22,7 +22,9 @@ export async function CadastrarCliente(dados: any, socios: any[]) {
           create: socios.map(s => ({
             nome: s.nome,
             telefone: s.telefone || "",
-            obs: s.obs || ""
+            obs: s.obs || "",
+            dataNascimento: s.dataNascimento || "",
+            vinculo: s.vinculo
           }))
         }
       }
@@ -46,13 +48,14 @@ export async function buscarClientes() {
           not: "Arquivado"
         }
       },
+      include: {
+        socios: true 
+      },
       orderBy: { createdAt: 'desc' }
     });
     return lista;
   } catch (error: any) {
-    console.log("-----------------------------------------");
     console.error("ERRO DO PRISMA:", error);
-    console.log("-----------------------------------------");
     return [];
   }
 }
@@ -260,14 +263,16 @@ export async function salvarAlteracoesGeral(clienteId: number, dadosNovos: any, 
 
 
 
-export async function adicionarSocio(clienteId: number, dadosSocio: { nome: string; telefone?: string; obs?: string }) {
+export async function adicionarSocio(clienteId: number, dadosSocio: { nome: string; telefone?: string; obs?: string, dataNascimento: string, vinculo: string }) {
   try {
     const novoSocio = await db.socios.create({
       data: {
         clienteId: clienteId,
         nome: dadosSocio.nome,
         telefone: dadosSocio.telefone || "",
-        obs: dadosSocio.obs || ""
+        obs: dadosSocio.obs || "",
+        dataNascimento: dadosSocio.dataNascimento || "",
+        vinculo: dadosSocio.vinculo,
       }
     });
 

@@ -177,28 +177,44 @@ export default function AdminTarefas() {
     const tarefasFiltradas = useMemo(() => {
         if (!tarefas || !Array.isArray(tarefas)) return [];
 
-        const filtradas = tarefas.filter(t => {
-            const correspondeBusca = t.texto?.toLowerCase().includes(busca.toLowerCase()) ||
-                t.descricao?.toLowerCase().includes(busca.toLowerCase());
+        const dataAlvo = new Date(diaFiltro);
+        dataAlvo.setHours(0, 0, 0, 0);
+        const dataAlvoISO = dataAlvo.toISOString().split('T')[0];
+
+        const filtradas = tarefas.reduce((acc: any[], t) => {
+            let concluidaNoDia = false;
+            if (t.feita && t.concluidaEm) {
+                const dConcl = new Date(t.concluidaEm);
+                concluidaNoDia = dConcl.toISOString().split('T')[0] === dataAlvoISO;
+            }
+
+            const correspondeBusca =
+                (t.texto?.toLowerCase().includes(busca.toLowerCase()) ||
+                    t.descricao?.toLowerCase().includes(busca.toLowerCase()));
 
             const correspondeStatus =
                 filtroStatus === 'todas' ? true :
-                    filtroStatus === 'pendentes' ? !t.feita :
-                        filtroStatus === 'concluidas' ? t.feita :
+                    filtroStatus === 'pendentes' ? !concluidaNoDia :
+                        filtroStatus === 'concluidas' ? concluidaNoDia :
                             filtroStatus === 'fixas' ? t.fixa : true;
 
             const correspondeData = modoHistorico ? true : calcularOcorrencia(t, diaFiltro);
 
-            return correspondeBusca && correspondeStatus && correspondeData;
-        });
+            if (correspondeBusca && correspondeStatus && correspondeData) {
+                acc.push({
+                    ...t,
+                    feita: modoHistorico ? t.feita : concluidaNoDia,
+                    horarioReal: concluidaNoDia ? t.concluidaEm : null
+                });
+            }
+            return acc;
+        }, []);
 
         if (modoHistorico) {
             const vistos = new Set();
             return filtradas.filter(t => {
                 const chaveUnica = t.texto?.trim().toLowerCase();
-                if (vistos.has(chaveUnica)) {
-                    return false;
-                }
+                if (vistos.has(chaveUnica)) return false;
                 vistos.add(chaveUnica);
                 return true;
             });
@@ -206,7 +222,6 @@ export default function AdminTarefas() {
 
         return filtradas;
     }, [tarefas, busca, filtroStatus, diaFiltro, modoHistorico]);
-
 
     const statsGeral = useMemo(() => {
         if (!tarefas || !Array.isArray(tarefas)) return { total: 0, concluidas: 0, percent: 0 };
@@ -216,10 +231,23 @@ export default function AdminTarefas() {
     }, [tarefas]);
 
     const statsDia = useMemo(() => {
+        const dataAlvo = new Date(diaFiltro);
+        dataAlvo.setHours(0, 0, 0, 0);
+        const dataAlvoISO = dataAlvo.toISOString().split('T')[0];
+
         const tarefasDoDia = tarefas.filter(t => calcularOcorrencia(t, diaFiltro));
         const total = tarefasDoDia.length;
-        const concluidas = tarefasDoDia.filter(t => t.feita).length;
-        return { total, concluidas, percent: total > 0 ? Math.round((concluidas / total) * 100) : 0 };
+
+        const concluidas = tarefasDoDia.filter(t => {
+            if (!t.feita || !t.concluidaEm) return false;
+            return new Date(t.concluidaEm).toISOString().split('T')[0] === dataAlvoISO;
+        }).length;
+
+        return {
+            total,
+            concluidas,
+            percent: total > 0 ? Math.round((concluidas / total) * 100) : 0
+        };
     }, [tarefas, diaFiltro]);
 
     const handleCriar = async (e: React.FormEvent) => {
@@ -358,7 +386,7 @@ export default function AdminTarefas() {
                 <div className="flex items-center gap-3">
 
                     <div className="flex items-center gap-2 bg-black/20 p-1.5 rounded-[1.5rem] border border-white/5 backdrop-blur-xl shadow-2xl">
-           
+
                         <button
                             onClick={() => setDiaFiltro(new Date(diaFiltro.setDate(diaFiltro.getDate() - 1)))}
                             className="cursor-pointer p-3 hover:bg-white/5 rounded-xl text-slate-500 hover:text-indigo-400 transition-all"

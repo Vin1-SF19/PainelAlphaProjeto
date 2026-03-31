@@ -151,6 +151,11 @@ model socios {
   nome      String
   telefone  String?
   obs       String?
+  dataNascimento String?
+  vinculo String?
+
+
+
   clienteId Int
   cliente   clientes @relation(fields: [clienteId], references: [id], onDelete: Cascade)
 

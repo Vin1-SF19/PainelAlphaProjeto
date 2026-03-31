@@ -18,6 +18,7 @@ export default function ReservaSalas() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [reservaEditando, setReservaEditando] = useState<any>(null);
   const [erros, setErros] = useState<string[]>([]);
+  const [isPending, setIsPending] = useState(false);
 
   const temaNome = (session?.user as any)?.tema_interface || "blue";
   const style = getTema(temaNome);
@@ -59,7 +60,7 @@ export default function ReservaSalas() {
 
   const handleAgendar = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    setIsPending(true);
     const novosErros = [];
     if (!form.sala) novosErros.push('sala');
     if (!form.tipo) novosErros.push('tipo');
@@ -68,6 +69,8 @@ export default function ReservaSalas() {
     if (novosErros.length > 0) {
       setErros(novosErros);
       toast.error("Preencha todos os campos obrigatórios");
+
+      setIsPending(false);
       return;
     }
 
@@ -85,6 +88,8 @@ export default function ReservaSalas() {
     if (res.success) {
       toast.success("Protocolo de Reserva Confirmado!");
       setForm({ ...form, tipo: "", motivo: "" });
+
+      setIsPending(false);
       atualizar();
     } else {
       toast.error(res.error || "Erro ao agendar");
@@ -203,7 +208,7 @@ export default function ReservaSalas() {
 
 
               {form.tipo === "Cliente" && (
-                <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4 flex items-center justify-between animate-in zoom-in duration-300">
+                <div className="bg-amber-500/5 border bor'der-amber-500/20 rounded-2xl p-4 flex items-center justify-between animate-in zoom-in duration-300">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 bg-amber-500/20 rounded-xl flex items-center justify-center text-amber-500">
                       <Coffee size={20} />
@@ -239,7 +244,7 @@ export default function ReservaSalas() {
                       setForm({ ...form, motivo: e.target.value });
                       setErros(erros.filter(item => item !== 'motivo'));
                     }}
-                    className={`w-full h-14 bg-black/40 border ${erros.includes('motivo') ? 'border-rose-500/50 placeholder:text-rose-500/50' : 'border-white/5'} rounded-2xl pl-14 pr-5 text-[11px] font-black uppercase text-white outline-none focus:border-indigo-500/50 transition-all`}
+                    className={`w-full h-14 bg-black/40 border ${erros.includes('motivo') ? 'border-rose-500/50 placeholder:text-rose-500/50' : 'border-white/5'} rounded-2xl pl-14 pr-5 text-[11px] font-black  text-white outline-none focus:border-indigo-500/50 transition-all`}
                   />
                 </div>
               </div>
@@ -265,9 +270,22 @@ export default function ReservaSalas() {
                 </div>
               </div>
 
-              <button type="submit" className={`cursor-pointer w-full h-16 ${style.bg} hover:brightness-110 text-white font-black rounded-2xl transition-all active:scale-95 shadow-xl uppercase text-[11px] tracking-[0.4em] flex items-center justify-center gap-3 group mt-4`}>
-                Confirmar Reserva <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />
+              <button
+                type="submit"
+                disabled={isPending}
+                className={`cursor-pointer w-full h-16 ${style.bg} hover:brightness-110 text-white font-black rounded-2xl transition-all active:scale-95 shadow-xl uppercase text-[11px] tracking-[0.4em] flex items-center justify-center gap-3 group mt-4`}
+              >
+                {isPending ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Processando...
+                  </span>
+                ) : (
+                  "Confirmar Reserva "
+                )}
+                <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />
               </button>
+
             </form>
           </div>
         </div>

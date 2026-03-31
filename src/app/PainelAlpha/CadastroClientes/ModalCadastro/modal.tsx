@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { CadastrarCliente } from "@/actions/Clientes";
 
 export default function ModalCadastroCliente({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
-   
+
     const [dataContratacao, setDataContratacao] = useState(new Date().toISOString().split('T')[0]);
     const [showServicos, setShowServicos] = useState(false);
     const [showAnalistas, setShowAnalistas] = useState(false);
@@ -20,6 +20,7 @@ export default function ModalCadastroCliente({ isOpen, onClose }: { isOpen: bool
     const [novoAnalistaNome, setNovoAnalistaNome] = useState("");
     const [cnpj, setCnpj] = useState("");
     const [carregando, setCarregando] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [dadosEmpresa, setDadosEmpresa] = useState({
         razaoSocial: "",
         nomeFantasia: "",
@@ -28,9 +29,9 @@ export default function ModalCadastroCliente({ isOpen, onClose }: { isOpen: bool
         regimeTributario: ""
     });
     const [socios, setSocios] = useState([
-        { nome: "", telefone: "", obs: "" },
-        { nome: "", telefone: "", obs: "" },
-        { nome: "", telefone: "", obs: "" }
+        { nome: "", telefone: "", dataNascimento: "", vinculo: "", obs: "" },
+        { nome: "", telefone: "", dataNascimento: "", vinculo: "", obs: "" },
+        { nome: "", telefone: "", dataNascimento: "", vinculo: "", obs: "" }
     ]);
 
     const listaServicos = ["Habilitação RADAR - 50K", "Revisão RADAR - 150K", "Revisão RADAR - ILIMITADO", "TTD 409", "Recuperação AFRMM", "Outras Recuperaçoes Tributarias"];
@@ -72,7 +73,17 @@ export default function ModalCadastroCliente({ isOpen, onClose }: { isOpen: bool
         if (!dadosEmpresa.razaoSocial || !analistaSelecionado) {
             return toast.error("Preencha o CNPJ e o Analista!");
         }
+
         const sociosParaEnviar = socios.filter(s => s.nome && s.nome.trim() !== "");
+
+        const temSocioSemVinculo = sociosParaEnviar.some(s => !s.vinculo || s.vinculo.trim() === "");
+
+        if (temSocioSemVinculo) {
+            return toast.error("Selecione o Vínculo de todos os sócios preenchidos!");
+        }
+
+        setIsSaving(true);
+
         const payload = {
             cnpj,
             ...dadosEmpresa,
@@ -80,13 +91,16 @@ export default function ModalCadastroCliente({ isOpen, onClose }: { isOpen: bool
             analistaResponsavel: analistaSelecionado,
             dataContratacao
         };
+
         const res = await CadastrarCliente(payload, sociosParaEnviar);
+
         if (res.success) {
             toast.success("Cadastrado!");
             onClose();
             window.location.reload();
         } else {
             toast.error(res.error || "Erro ao salvar");
+            setIsSaving(false);
         }
     };
 
@@ -190,7 +204,7 @@ export default function ModalCadastroCliente({ isOpen, onClose }: { isOpen: bool
                                             <button
                                                 key={s}
                                                 onClick={() => {
-                                                    setServicosSelecionados([s]); 
+                                                    setServicosSelecionados([s]);
                                                     setShowServicos(false);
                                                 }}
                                                 className="w-full text-left p-3 rounded-xl text-xs font-bold text-slate-400 hover:bg-white/5 hover:text-indigo-400 transition-all"
@@ -322,40 +336,75 @@ export default function ModalCadastroCliente({ isOpen, onClose }: { isOpen: bool
 
                     {/* SEÇÃO 3: TABELA SÓCIOS */}
                     <section className="space-y-4 pt-6 border-t border-white/5">
-                        <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-2">SÓCIOS / RESPONSÁVEIS <Plus size={12} className="text-indigo-500 cursor-pointer" /></h3>
-                        <div className="bg-slate-950/50 border border-white/5 rounded-2xl overflow-hidden">
-                            <table className="w-full text-left">
+                        <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-2">
+                            SÓCIOS / RESPONSÁVEIS
+                            <Plus
+                                size={12}
+                                className="text-indigo-500 cursor-pointer hover:scale-125 transition-transform"
+                            />
+                        </h3>
+                        <div className="bg-slate-950/50 border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
+                            <table className="w-full text-left border-collapse">
                                 <thead className="bg-white/5 text-[9px] font-black uppercase text-slate-500">
                                     <tr>
-                                        <th className="px-6 py-3">Nome do Responsável</th>
-                                        <th className="px-6 py-3">Telefone / WhatsApp</th>
-                                        <th className="px-6 py-3">Observações</th>
+                                        <th className="px-6 py-4">Nome do Responsável</th>
+                                        <th className="px-6 py-4">Telefone / WhatsApp</th>
+                                        <th className="px-6 py-4 text-center">Data de Nascimento</th>
+                                        <th className="px-6 py-4">Vínculo</th>
+                                        <th className="px-6 py-4">Observações</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
                                     {socios.map((socio, i) => (
-                                        <tr key={i}>
+                                        <tr key={i} className="hover:bg-white/[0.02] transition-colors">
                                             <td className="px-4 py-2">
                                                 <input
-                                                    value={socio.nome}
+                                                    value={socio.nome || ""}
                                                     onChange={(e) => updateSocio(i, "nome", e.target.value)}
-                                                    className="w-full bg-transparent border-none text-xs text-white p-2 outline-none"
+                                                    className="w-full bg-transparent border-none text-xs text-white p-2 outline-none placeholder:text-slate-700"
                                                     placeholder="Nome..."
                                                 />
                                             </td>
                                             <td className="px-4 py-2">
                                                 <input
-                                                    value={socio.telefone}
+                                                    value={socio.telefone || ""}
                                                     onChange={(e) => updateSocio(i, "telefone", e.target.value)}
-                                                    className="w-full bg-transparent border-none text-xs text-white p-2 outline-none"
+                                                    className="w-full bg-transparent border-none text-xs text-white p-2 outline-none placeholder:text-slate-700"
                                                     placeholder="(00) 00000-0000"
                                                 />
                                             </td>
                                             <td className="px-4 py-2">
                                                 <input
-                                                    value={socio.obs}
+                                                    value={socio.dataNascimento || ""}
+                                                    onChange={(e) => updateSocio(i, "dataNascimento", e.target.value)}
+                                                    className="w-full bg-transparent border-none text-xs text-center text-white p-2 outline-none placeholder:text-slate-700"
+                                                    placeholder="DD/MM/AAAA"
+                                                />
+                                            </td>
+
+                                            <td className="px-4 py-2">
+                                                <select
+                                                    required
+                                                    value={socio.vinculo || ""}
+                                                    onChange={(e) => updateSocio(i, "vinculo", e.target.value)}
+                                                    className="w-full bg-transparent border-none text-xs text-white p-2 outline-none cursor-pointer appearance-none focus:ring-0"
+                                                >
+                                                    <option value="" className="bg-slate-900 text-slate-500">Selecione...</option>
+                                                    <option value="Sócio Proprietário" className="bg-slate-900">Sócio Proprietário</option>
+                                                    <option value="Sócio Oculto" className="bg-slate-900">Sócio Oculto</option>
+                                                    <option value="Funcionário/Colaborador" className="bg-slate-900">Funcionário/Colaborador</option>
+                                                    <option value="Contador Interno" className="bg-slate-900">Contador Interno</option>
+                                                    <option value="Contador Externo" className="bg-slate-900">Contador Externo</option>
+                                                    <option value="Despachante Aduaneiro" className="bg-slate-900">Despachante Aduaneiro</option>
+                                                    <option value="Outro" className="bg-slate-900">Outro</option>
+                                                </select>
+                                            </td>
+
+                                            <td className="px-4 py-2">
+                                                <input
+                                                    value={socio.obs || ""}
                                                     onChange={(e) => updateSocio(i, "obs", e.target.value)}
-                                                    className="w-full bg-transparent border-none text-xs text-white p-2 outline-none"
+                                                    className="w-full bg-transparent border-none text-xs text-white p-2 outline-none placeholder:text-slate-700"
                                                     placeholder="Obs..."
                                                 />
                                             </td>
@@ -366,11 +415,27 @@ export default function ModalCadastroCliente({ isOpen, onClose }: { isOpen: bool
                         </div>
                     </section>
 
-                    {/* RODAPÉ */}
+                    {/* RODAPÉ  */}
                     <div className="flex justify-end gap-4 pt-4">
                         <button onClick={onClose} className="px-8 py-4 bg-slate-900 hover:bg-slate-800 text-slate-500 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all">Cancelar</button>
-                        <button onClick={handleFinalizar} className="px-12 py-4 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-indigo-900/20 active:scale-95">Salvar Cliente</button>
-                    </div>
+                        <button
+                            onClick={handleFinalizar}
+                            disabled={isSaving}
+                            className={`px-12 py-4 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-indigo-900/20 flex items-center justify-center gap-3
+                                    ${isSaving
+                                    ? 'bg-indigo-400 cursor-not-allowed opacity-80'
+                                    : 'bg-indigo-600 hover:bg-indigo-500 active:scale-95'
+                                }`}
+                            >
+                            {isSaving ? (
+                                <>
+                                    <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    Salvando...
+                                </>
+                            ) : (
+                                "Salvar Cliente"
+                            )}
+                        </button></div>
                 </div>
             </div>
         </div>
