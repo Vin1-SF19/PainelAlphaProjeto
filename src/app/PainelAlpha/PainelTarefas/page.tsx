@@ -24,6 +24,7 @@ export default function PainelTarefas() {
     const [filtro, setFiltro] = useState<'todas' | 'pendentes' | 'concluidas'>('pendentes');
     const [modalConfirmacao, setModalConfirmacao] = useState<{ show: boolean, tarefa: any | null }>({ show: false, tarefa: null });
     const [modalDescricao, setModalDescricao] = useState<{ show: boolean, tarefa: any | null }>({ show: false, tarefa: null });
+    const [isPending, setIsPending] = useState(false);
 
     useEffect(() => {
         const timer = setInterval(() => setAgora(new Date()), 60000);
@@ -251,6 +252,7 @@ export default function PainelTarefas() {
 
     const confirmarAcao = async () => {
         if (!modalConfirmacao.tarefa) return;
+        setIsPending(true);
 
         try {
             const res = await AlternarStatusTarefa(
@@ -259,11 +261,14 @@ export default function PainelTarefas() {
             );
 
             if (res.success) {
+
                 toast.success(modalConfirmacao.tarefa.feita ? "Estornado!" : "Concluído!");
                 setModalConfirmacao({ show: false, tarefa: null });
-
-                carregarTarefas();
+                window.location.reload();
             }
+
+
+            setIsPending(false);
         } catch (error) {
             toast.error("Erro ao processar.");
         }
@@ -636,13 +641,30 @@ export default function PainelTarefas() {
                             <div className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-6 ${modalConfirmacao.tarefa?.feita ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
                                 {modalConfirmacao.tarefa?.feita ? <Clock size={40} /> : <CheckCircle size={40} />}
                             </div>
-                            <h2 className="text-xl font-black text-white uppercase italic tracking-tighter mb-2">{modalConfirmacao.tarefa?.feita ? "Estornar?" : "Concluir?"}</h2>
+                            <h2 className="text-xl font-black text-white uppercase italic tracking-tighter mb-2">{modalConfirmacao.tarefa?.feita ? "Estornar a tarefa: " : "Concluir a tarefa: "}</h2>
+                            <h1 className="text-2x1 font-bold  text-gray-200 uppercase italic tracking-tighter mb-5">{modalConfirmacao.tarefa.texto}</h1>
                             <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-8 leading-relaxed">
                                 {modalConfirmacao.tarefa?.feita ? "A atividade voltará para a lista de pendências." : "O RH registrará sua conclusão imediatamente."}
                             </p>
                             <div className="flex flex-col gap-3">
-                                <button onClick={confirmarAcao} className={`w-full py-5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${modalConfirmacao.tarefa?.feita ? 'bg-amber-600' : 'bg-emerald-600'} text-white shadow-xl`}>Confirmar</button>
-                                <button onClick={() => setModalConfirmacao({ show: false, tarefa: null })} className="w-full py-4 text-[11px] font-black uppercase text-slate-500">Cancelar</button>
+                                <button
+                                    onClick={confirmarAcao}
+                                    disabled={isPending}
+                                    className={`cursor-pointer w-full py-5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all shadow-xl
+                                    ${isPending ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-400'} 
+                                    ${modalConfirmacao.tarefa?.feita ? 'bg-amber-600' : 'bg-emerald-600'} 
+                                    text-white`}
+                                >
+                                    {isPending ? (
+                                        <span className="flex items-center justify-center gap-2">
+                                            <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            Processando...
+                                        </span>
+                                    ) : (
+                                        "Confirmar"
+                                    )}
+                                </button>
+                                <button onClick={() => setModalConfirmacao({ show: false, tarefa: null })} className="cursor-pointer w-full hover:text-red-600 py-4 text-[11px] font-black uppercase text-slate-500">Cancelar</button>
                             </div>
                         </motion.div>
                     </div>

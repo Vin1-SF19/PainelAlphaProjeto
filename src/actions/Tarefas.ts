@@ -83,13 +83,16 @@ export async function AlternarStatusTarefa(id: string, novoStatus: boolean) {
     try {
         if (!id) return { success: false, error: "ID ausente" };
 
-        await db.tarefa.update({
-            where: { id: id },
-            data: {
-                feita: novoStatus,
-                concluidaEm: novoStatus ? new Date() : null
-            }
-        });
+        const statusNumerico = novoStatus ? 1 : 0;
+        
+        const dataAgora = new Date().toISOString();
+
+        await db.$executeRawUnsafe(`
+            UPDATE "Tarefa" 
+            SET "feita" = ${statusNumerico}, 
+                "concluidaEm" = ${novoStatus ? `'${dataAgora}'` : 'NULL'}
+            WHERE "id" = '${id}'
+        `);
 
         revalidatePath("/PainelAlpha/PainelTarefas");
         return { success: true };
