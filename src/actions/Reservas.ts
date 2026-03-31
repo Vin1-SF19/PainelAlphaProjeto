@@ -12,7 +12,7 @@ const formatToISO = (date: Date) => {
   return new Date(date.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
 };
 
-export async function agendarSala(dados: { sala: string, usuario: string, data: string, inicio: string, fim: string }) {
+export async function agendarSala(dados: { sala: string, usuario: string, data: string, inicio: string, fim: string, tipo: string, paoDeQueijo: boolean, motivo: string }) {
   try {
     const dataHoraInicio = new Date(`${dados.data}T${dados.inicio}:00-03:00`);
     const dataHoraFim = new Date(`${dados.data}T${dados.fim}:00-03:00`);
@@ -38,7 +38,10 @@ export async function agendarSala(dados: { sala: string, usuario: string, data: 
         data: new Date(`${dados.data}T00:00:00-03:00`),
         inicio: dataHoraInicio,
         fim: dataHoraFim,
-        status: "Agendado"
+        status: "Agendado",
+        tipo: dados.tipo,
+        paoDeQueijo: dados.paoDeQueijo ?? false,
+        motivo: dados.motivo
       }
     });
 

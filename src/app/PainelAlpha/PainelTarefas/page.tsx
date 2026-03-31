@@ -65,7 +65,16 @@ export default function PainelTarefas() {
         );
     };
 
+    useEffect(() => {
+        carregarTudo();
 
+        const intervalo = setInterval(() => {
+            console.log("Sincronizando painel...");
+            carregarTudo();
+        }, 40000);
+
+        return () => clearInterval(intervalo);
+    }, [session]);
 
     useEffect(() => {
         setMounted(true);
@@ -83,11 +92,13 @@ export default function PainelTarefas() {
     const carregarTudo = async () => {
         const currentUserId = (session?.user as any)?.id;
         if (!currentUserId) return;
+        const user = session?.user as any;
+        if (!user?.id) return;
 
         setLoading(true);
         try {
             const [dadosTarefas, dadosReservas, dadosDiretrizes] = await Promise.all([
-                BuscarTarefasPorUsuario(String(currentUserId)),
+                BuscarTarefasPorUsuario(String(currentUserId), user.role),
                 buscarReservasAtivas(),
                 BuscarTodasDiretrizes()
             ]);
@@ -111,10 +122,14 @@ export default function PainelTarefas() {
 
     const carregarTarefas = async () => {
         if (!session?.user?.id) return;
+        const user = session?.user as any;
+        if (!user?.id) return;
+
+
         setLoading(true);
         try {
             const idLimpo = String(session.user.id).replace('.0', '');
-            const data = await BuscarTarefasPorUsuario(idLimpo);
+            const data = await BuscarTarefasPorUsuario(idLimpo, user.role);
             setTarefas(data || []);
         } catch (error) {
             toast.error("Erro ao sincronizar.");
@@ -132,78 +147,94 @@ export default function PainelTarefas() {
     const tarefasExibidas = useMemo(() => {
         const dataAlvo = new Date(dataSelecionada);
         dataAlvo.setHours(0, 0, 0, 0);
+        const dataAlvoTime = dataAlvo.getTime();
 
-        const reservasComoTarefas = reservas.filter(res => {
-            const dataReserva = new Date(res.inicio);
-            const dataReservaFormatada = new Date(dataReserva.getFullYear(), dataReserva.getMonth(), dataReserva.getDate()).getTime();
-            return dataReservaFormatada === dataAlvo.getTime();
-        }).map(res => {
-            const diretrizDaSala = diretrizes.find(d => d.sala === res.sala);
+        const anoAlvo = dataAlvo.getFullYear();
+        const mesAlvo = dataAlvo.getMonth();
+        const diaAlvo = dataAlvo.getDate();
 
-            return {
-                id: `reserva-${res.id}`,
-                texto: `OCUPAÇÃO: ${res.sala.toUpperCase()}`,
-                descricao: diretrizDaSala?.descricao || `RESERVADO POR @${res.usuario.toUpperCase()}`,
-                responsavel: res.usuario,
-                feita: false,
-                prioridade: "media",
-                horario: new Date(res.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-                isReserva: true
-            };
-        });
+        const reservasComoTarefas = reservas
+            .filter(res => {
+                const dRes = new Date(res.inicio);
+                return dRes.getFullYear() === anoAlvo &&
+                    dRes.getMonth() === mesAlvo &&
+                    dRes.getDate() === diaAlvo &&
+                    res.tipo === "Cliente";
+            })
+            .map(res => {
+                const diretrizDaSala = diretrizes.find(d => d.sala === res.sala);
+                const infoCopa = res.paoDeQueijo ? "🥐 COM PÃO DE QUEIJO" : "SEM PÃO DE QUEIJO";
+                return {
+                    id: `reserva-${res.id}`,
+                    texto: `OCUPAÇÃO: ${res.sala.toUpperCase()}`,
+                    descricao: `${infoCopa} | ${diretrizDaSala?.descricao || `RESERVADO POR @${res.usuario.toUpperCase()}`}`,
+                    responsavel: res.usuario,
+                    feita: false,
+                    prioridade: "media",
+                    horario: new Date(res.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+                    isReserva: true,
+                    temCopa: res.paoDeQueijo
+                };
+            });
 
-        const tarefasFiltradas = tarefas.filter(t => {
+        const tarefasFiltradas = tarefas.reduce((acc: any[], t) => {
+            let concluidaNoDia = false;
+
+            if (t.feita && t.concluidaEm) {
+                const dConcl = new Date(t.concluidaEm);
+                concluidaNoDia = dConcl.getFullYear() === anoAlvo &&
+                    dConcl.getMonth() === mesAlvo &&
+                    dConcl.getDate() === diaAlvo;
+            }
+
             const passaFiltroStatus =
                 filtro === 'todas' ? true :
-                    filtro === 'pendentes' ? !t.feita :
-                        filtro === 'concluidas' ? t.feita : true;
+                    filtro === 'pendentes' ? !concluidaNoDia :
+                        filtro === 'concluidas' ? concluidaNoDia : true;
 
-            if (!passaFiltroStatus) return false;
+            if (!passaFiltroStatus) return acc;
+
+            let deveAparecer = false;
 
             if (t.fixa && t.diaSemana !== null && !t.intervaloDias) {
                 const diaSemanaAlvo = dataAlvo.getDay() === 0 ? 6 : dataAlvo.getDay() - 1;
-                return Number(t.diaSemana) === diaSemanaAlvo;
-            }
-
-            if (t.dataInicio) {
+                if (Number(t.diaSemana) === diaSemanaAlvo) deveAparecer = true;
+            } else if (t.dataInicio) {
                 const dataLimpa = String(t.dataInicio).split('T')[0];
                 let dataOcorrencia = new Date(dataLimpa + 'T00:00:00');
 
                 if (!t.intervaloDias || t.intervaloDias === 0) {
-                    return dataOcorrencia.getTime() === dataAlvo.getTime();
+                    if (dataOcorrencia.getFullYear() === anoAlvo &&
+                        dataOcorrencia.getMonth() === mesAlvo &&
+                        dataOcorrencia.getDate() === diaAlvo) deveAparecer = true;
+                } else if (dataAlvoTime >= dataOcorrencia.getTime()) {
+                    let tempOcorrencia = new Date(dataOcorrencia);
+                    while (tempOcorrencia.getTime() <= dataAlvoTime) {
+                        if (tempOcorrencia.getTime() === dataAlvoTime) {
+                            deveAparecer = true;
+                            break;
+                        }
+                        tempOcorrencia.setDate(tempOcorrencia.getDate() + Number(t.intervaloDias));
+                        if (tempOcorrencia.getDay() === 6) tempOcorrencia.setDate(tempOcorrencia.getDate() - 1);
+                        if (tempOcorrencia.getDay() === 0) tempOcorrencia.setDate(tempOcorrencia.getDate() + 1);
+                    }
                 }
-
-                if (dataAlvo < dataOcorrencia) return false;
-
-                while (dataOcorrencia < dataAlvo) {
-                    dataOcorrencia.setDate(dataOcorrencia.getDate() + Number(t.intervaloDias));
-                    const diaSemana = dataOcorrencia.getDay();
-                    if (diaSemana === 6) dataOcorrencia.setDate(dataOcorrencia.getDate() - 1);
-                    if (diaSemana === 0) dataOcorrencia.setDate(dataOcorrencia.getDate() + 1);
-                }
-
-                return dataOcorrencia.getTime() === dataAlvo.getTime();
             }
-            return false;
-        });
+
+            if (deveAparecer) {
+                acc.push({ ...t, feita: concluidaNoDia });
+            }
+
+            return acc;
+        }, []);
 
         return [...tarefasFiltradas, ...reservasComoTarefas].sort((a, b) => {
             if (a.isReserva && !b.isReserva) return -1;
             if (!a.isReserva && b.isReserva) return 1;
-
             if (a.feita !== b.feita) return a.feita ? 1 : -1;
-
             if (a.horario && b.horario) return a.horario.localeCompare(b.horario);
-            if (a.horario && !b.horario) return -1;
-            if (!a.horario && b.horario) return 1;
-
             const pesos: Record<string, number> = { urgente: 4, alta: 3, media: 2, baixa: 1 };
-            const pesoA = pesos[a.prioridade?.toLowerCase()] || 0;
-            const pesoB = pesos[b.prioridade?.toLowerCase()] || 0;
-
-            if (pesoA !== pesoB) return pesoB - pesoA;
-
-            return 0;
+            return (pesos[b.prioridade?.toLowerCase()] || 0) - (pesos[a.prioridade?.toLowerCase()] || 0);
         });
     }, [tarefas, reservas, diretrizes, dataSelecionada, filtro]);
 
@@ -277,19 +308,50 @@ export default function PainelTarefas() {
     };
 
     const statsDia = useMemo(() => {
-        const tarefasDoDia = tarefas.filter(t => calcularOcorrencia(t, dataSelecionada));
+        const dataAlvo = new Date(dataSelecionada);
+        dataAlvo.setHours(0, 0, 0, 0);
+        const dataAlvoTime = dataAlvo.getTime();
+        const dataAlvoISO = dataAlvo.toISOString().split('T')[0];
 
-        const reservasDoDia = reservas.filter((res: any) => {
-            const dRes = new Date(res.inicio);
-            return dRes.getFullYear() === dataSelecionada.getFullYear() &&
-                dRes.getMonth() === dataSelecionada.getMonth() &&
-                dRes.getDate() === dataSelecionada.getDate();
+        const todasDoDia = tarefas.filter(t => {
+            if (t.fixa && t.diaSemana !== null && !t.intervaloDias) {
+                const diaSemanaAlvo = dataAlvo.getDay() === 0 ? 6 : dataAlvo.getDay() - 1;
+                return Number(t.diaSemana) === diaSemanaAlvo;
+            }
+            if (t.dataInicio) {
+                const dataLimpa = String(t.dataInicio).split('T')[0];
+                let dOcorrencia = new Date(dataLimpa + 'T00:00:00');
+                if (!t.intervaloDias || t.intervaloDias === 0) {
+                    return dOcorrencia.getTime() === dataAlvoTime;
+                }
+                if (dataAlvoTime < dOcorrencia.getTime()) return false;
+                let temp = new Date(dOcorrencia);
+                while (temp.getTime() <= dataAlvoTime) {
+                    if (temp.getTime() === dataAlvoTime) return true;
+                    temp.setDate(temp.getDate() + Number(t.intervaloDias));
+                    if (temp.getDay() === 6) temp.setDate(temp.getDate() - 1);
+                    if (temp.getDay() === 0) temp.setDate(temp.getDate() + 1);
+                }
+            }
+            return false;
         });
 
-        const total = tarefasDoDia.length + reservasDoDia.length;
+        const reservasDoDia = reservas.filter(res => {
+            const dRes = new Date(res.inicio);
+            return dRes.getFullYear() === dataAlvo.getFullYear() &&
+                dRes.getMonth() === dataAlvo.getMonth() &&
+                dRes.getDate() === dataAlvo.getDate() &&
+                res.tipo === "Cliente";
+        });
 
-        const concluidasTarefas = tarefasDoDia.filter(t => t.feita).length;
-        const concluidasReservas = reservasDoDia.filter((res: any) =>
+        const total = todasDoDia.length + reservasDoDia.length;
+
+        const concluidasTarefas = todasDoDia.filter(t => {
+            if (!t.feita || !t.concluidaEm) return false;
+            return String(t.concluidaEm).split('T')[0] === dataAlvoISO;
+        }).length;
+
+        const concluidasReservas = reservasDoDia.filter(res =>
             reservasConcluidas.includes(String(res.id)) ||
             reservasConcluidas.includes(`reserva-${res.id}`)
         ).length;
@@ -301,7 +363,7 @@ export default function PainelTarefas() {
             concluidas,
             percent: total > 0 ? Math.round((concluidas / total) * 100) : 0
         };
-    }, [tarefas, reservas, reservasConcluidas, dataSelecionada]);
+    }, [tarefas, reservas, dataSelecionada, reservasConcluidas]);
 
 
 

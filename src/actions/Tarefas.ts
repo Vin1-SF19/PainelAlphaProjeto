@@ -3,12 +3,12 @@
 import db from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
-export async function CriarTarefa(data: { 
-    texto: string, 
-    descricao?: string, 
-    userId: any, 
-    fixa: boolean, 
-    diaSemana: number | null; 
+export async function CriarTarefa(data: {
+    texto: string,
+    descricao?: string,
+    userId: any,
+    fixa: boolean,
+    diaSemana: number | null;
     intervaloDias?: number | null;
     dataInicio?: Date;
     prioridade: string;
@@ -17,7 +17,7 @@ export async function CriarTarefa(data: {
     try {
         const idFinal = Number(data.userId);
 
-        await db.tarefa.create({ 
+        await db.tarefa.create({
             data: {
                 texto: data.texto,
                 descricao: data.descricao || "",
@@ -46,9 +46,11 @@ export async function CriarTarefa(data: {
 
 export async function BuscarTarefasPorUsuario(userId: string, role: string) {
     try {
-        const filtroSql = role === "Admin" 
-            ? "" 
-            : `WHERE "userId" = ${parseInt(userId, 10)}`;
+        const condicaoUsuario = role === "Admin" 
+            ? "1=1" 
+            : `"userId" = ${parseInt(userId, 10)}`;
+
+        const filtroEquipe = `LOWER("descricao") NOT LIKE '%equipe%'`;
 
         const tarefas: any[] = await db.$queryRawUnsafe(`
             SELECT 
@@ -66,7 +68,7 @@ export async function BuscarTarefasPorUsuario(userId: string, role: string) {
                 CAST(createdAt AS TEXT) as createdAt,
                 CAST(concluidaEm AS TEXT) as concluidaEm
             FROM "Tarefa" 
-            ${filtroSql}
+            WHERE (${condicaoUsuario}) AND (${filtroEquipe})
             ORDER BY "feita" ASC, "horario" ASC
         `);
 
@@ -79,27 +81,20 @@ export async function BuscarTarefasPorUsuario(userId: string, role: string) {
 
 export async function AlternarStatusTarefa(id: string, novoStatus: boolean) {
     try {
-        if (!id) {
-            return { success: false, error: "ID ausente" };
-        }
+        if (!id) return { success: false, error: "ID ausente" };
 
-        const statusNumerico = novoStatus ? 1 : 0;
-        
-        const sqlHora = novoStatus 
-            ? "datetime('now', '-3 hours')" 
-            : "NULL";
-
-        await db.$executeRawUnsafe(`
-            UPDATE "Tarefa" 
-            SET "feita" = ${statusNumerico}, 
-                "concluidaEm" = ${sqlHora}
-            WHERE "id" = '${id}'
-        `);
+        await db.tarefa.update({
+            where: { id: id },
+            data: {
+                feita: novoStatus,
+                concluidaEm: novoStatus ? new Date() : null
+            }
+        });
 
         revalidatePath("/PainelAlpha/PainelTarefas");
         return { success: true };
     } catch (error) {
-        console.error("Erro no status:", error);
+        console.error("Erro ao atualizar status:", error);
         return { success: false };
     }
 }
@@ -108,25 +103,25 @@ export async function DeletarTarefa(id: string) {
     try {
         await db.$executeRawUnsafe(`DELETE FROM "Tarefa" WHERE "id" = '${id}'`);
         revalidatePath("/PainelAlpha/PainelTarefas");
-        return { success: true }; 
+        return { success: true };
     } catch (error) {
         console.error(error);
         return { success: false };
     }
 }
 
-export async function EditarTarefa(id: string, data: { 
-    texto: string, 
-    descricao?: string, 
-    fixa: boolean, 
-    diasSemana?: number[]; 
+export async function EditarTarefa(id: string, data: {
+    texto: string,
+    descricao?: string,
+    fixa: boolean,
+    diasSemana?: number[];
     intervaloDias?: number | null;
     dataInicio?: Date;
     prioridade: string;
     horario?: string | null;
 }) {
     try {
-        
+
         const feitaStatus = 0;
         const diaSemanaFinal = data.diasSemana && data.diasSemana.length > 0 ? data.diasSemana[0] : null;
 

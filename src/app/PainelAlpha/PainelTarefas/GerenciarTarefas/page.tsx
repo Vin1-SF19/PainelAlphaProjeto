@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import { CheckCircle, Clock, Info, Plus, Search, Trash2, UserCheck, BarChart3, ChevronDown, Calendar, AlertCircle, X, Settings, Loader2, ChevronRight, ChevronLeft, Edit3 } from 'lucide-react';
 import { BuscarDiretrizPorSala, SalvarDiretrizSala } from '@/actions/Reservas';
+import { ButtonLoading } from '@/components/ButtonLoading';
 
 const DIAS_NOMES = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
@@ -67,7 +68,7 @@ export default function AdminTarefas() {
 
             const data = await BuscarTarefasPorUsuario(String(userIdUrl), userRole);
 
-    
+
 
             setTarefas(Array.isArray(data) ? data : []);
         } catch (error) {
@@ -176,10 +177,9 @@ export default function AdminTarefas() {
     const tarefasFiltradas = useMemo(() => {
         if (!tarefas || !Array.isArray(tarefas)) return [];
 
-        return tarefas.filter(t => {
-            const correspondeBusca = t.texto?.toLowerCase().includes(busca.toLowerCase());
-
-            const correspondeData = modoHistorico ? true : calcularOcorrencia(t, diaFiltro);
+        const filtradas = tarefas.filter(t => {
+            const correspondeBusca = t.texto?.toLowerCase().includes(busca.toLowerCase()) ||
+                t.descricao?.toLowerCase().includes(busca.toLowerCase());
 
             const correspondeStatus =
                 filtroStatus === 'todas' ? true :
@@ -187,9 +187,26 @@ export default function AdminTarefas() {
                         filtroStatus === 'concluidas' ? t.feita :
                             filtroStatus === 'fixas' ? t.fixa : true;
 
-            return correspondeBusca && correspondeData && correspondeStatus;
+            const correspondeData = modoHistorico ? true : calcularOcorrencia(t, diaFiltro);
+
+            return correspondeBusca && correspondeStatus && correspondeData;
         });
+
+        if (modoHistorico) {
+            const vistos = new Set();
+            return filtradas.filter(t => {
+                const chaveUnica = t.texto?.trim().toLowerCase();
+                if (vistos.has(chaveUnica)) {
+                    return false;
+                }
+                vistos.add(chaveUnica);
+                return true;
+            });
+        }
+
+        return filtradas;
     }, [tarefas, busca, filtroStatus, diaFiltro, modoHistorico]);
+
 
     const statsGeral = useMemo(() => {
         if (!tarefas || !Array.isArray(tarefas)) return { total: 0, concluidas: 0, percent: 0 };
@@ -207,6 +224,7 @@ export default function AdminTarefas() {
 
     const handleCriar = async (e: React.FormEvent) => {
         e.preventDefault();
+        setIsPending(true);
         const isEventoUnico = !novaTarefa.fixa;
         const temFrequenciaRecorrente = novaTarefa.diasSemana.length > 0 || novaTarefa.intervaloDias !== null;
 
@@ -228,6 +246,7 @@ export default function AdminTarefas() {
             }
             toast.success("Diretriz lançada!");
             setShowModalAdd(false);
+            setIsPending(false);
             setNovaTarefa({ texto: "", descricao: "", fixa: false, diasSemana: [], intervaloDias: null, dataInicio: new Date(), prioridade: "baixa", horario: "" });
             carregarDados();
         } catch (error) {
@@ -331,21 +350,55 @@ export default function AdminTarefas() {
                             Gestão de <span className="text-indigo-500">Diretrizes</span>
                         </h1>
                         <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] mt-1">
-                        Rotina para: <span className="text-indigo-400 uppercase">Rejane Rizzotto</span>
+                            Rotina para: <span className="text-indigo-400 uppercase">Rejane Rizzotto</span>
                         </p>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <div className="bg-white/5 border border-white/10 px-6 py-3 rounded-2xl flex items-center gap-4">
-                        <Calendar size={18} className="text-indigo-500" />
-                        <input
-                            type="date"
-                            value={diaFiltro instanceof Date ? diaFiltro.toISOString().split('T')[0] : ''}
-                            onChange={(e) => setDiaFiltro(new Date(e.target.value + 'T00:00:00'))}
-                            className="bg-transparent text-white text-[11px] font-black uppercase outline-none cursor-pointer"
-                        />
+
+                    <div className="flex items-center gap-2 bg-black/20 p-1.5 rounded-[1.5rem] border border-white/5 backdrop-blur-xl shadow-2xl">
+           
+                        <button
+                            onClick={() => setDiaFiltro(new Date(diaFiltro.setDate(diaFiltro.getDate() - 1)))}
+                            className="cursor-pointer p-3 hover:bg-white/5 rounded-xl text-slate-500 hover:text-indigo-400 transition-all"
+                        >
+                            <ChevronLeft size={16} />
+                        </button>
+
+                        <div className="relative flex items-center gap-3 px-4 py-2 bg-white/5 border border-white/10 rounded-xl min-w-[200px] group hover:border-indigo-500/50 transition-all cursor-pointer">
+                            <Calendar size={16} className="text-indigo-500 group-hover:scale-110 transition-transform" />
+
+                            <div className="flex flex-col" >
+                                <span className="text-[8px] font-black text-slate-500 uppercase tracking-tighter leading-none mb-1">
+                                    Data de Consulta
+                                </span>
+                                <input
+                                    type="date"
+                                    value={diaFiltro instanceof Date ? diaFiltro.toISOString().split('T')[0] : ''}
+                                    onChange={(e) => setDiaFiltro(new Date(e.target.value + 'T00:00:00'))}
+                                    className="bg-transparent text-white text-[16px] font-black uppercase outline-none cursor-pointer [color-scheme:dark] appearance-none"
+                                />
+                            </div>
+
+                            {diaFiltro.toDateString() !== new Date().toDateString() && (
+                                <button
+                                    onClick={() => setDiaFiltro(new Date())}
+                                    className="cursor-pointer absolute -top-2 -right-2 bg-indigo-600 hover:bg-green-700 text-[8px] font-black px-2 py-1 rounded-md shadow-lg animate-in fade-in zoom-in duration-300"
+                                >
+                                    HOJE
+                                </button>
+                            )}
+                        </div>
+
+                        <button
+                            onClick={() => setDiaFiltro(new Date(diaFiltro.setDate(diaFiltro.getDate() + 1)))}
+                            className="cursor-pointer p-3 hover:bg-white/5 rounded-xl text-slate-500 hover:text-indigo-400 transition-all"
+                        >
+                            <ChevronRight size={16} />
+                        </button>
                     </div>
+
                     <button
                         onClick={() => setShowModalAdd(true)}
                         className="cursor-pointer flex items-center gap-3 bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all shadow-lg shadow-indigo-500/20"
@@ -457,8 +510,8 @@ export default function AdminTarefas() {
                             <button
                                 key={f}
                                 onClick={() => {
-                                    setModoHistorico(false); 
-                                    setFiltroStatus(f);      
+                                    setModoHistorico(false);
+                                    setFiltroStatus(f);
                                 }}
                                 className={`px-6 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${filtroStatus === f ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-white'
                                     }`}
@@ -509,10 +562,57 @@ export default function AdminTarefas() {
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td className="px-10 py-6 text-center">
-                                                <span className="text-[10px] font-black text-white bg-white/5 px-3 py-1 rounded-lg border border-white/10 uppercase">
-                                                    {diaFiltro.toLocaleDateString('pt-BR')}
-                                                </span>
+
+                                            <td className="px-10 py-6 text-center min-w-[180px]">
+                                                <div className="flex justify-center items-center h-full">
+                                                    {(() => {
+                                                        if (!t.fixa && (!t.intervaloDias || t.intervaloDias === 0)) {
+                                                            return (
+                                                                <span className="whitespace-nowrap text-[10px] font-black px-4 py-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 uppercase tracking-widest shadow-sm">
+                                                                    Única - Hoje
+                                                                </span>
+                                                            );
+                                                        }
+
+                                                        if (t.fixa && t.diaSemana !== null && (!t.intervaloDias || t.intervaloDias === 0)) {
+                                                            const diasMapa: { [key: number]: string } = { 0: 'SEG', 1: 'TER', 2: 'QUA', 3: 'QUI', 4: 'SEX', 5: 'SAB' };
+                                                            const diasArray = Array.isArray(t.diaSemana) ? t.diaSemana : [Number(t.diaSemana)];
+                                                            const diasTexto = diasArray.map((d: number) => diasMapa[d]).join(' / ');
+
+                                                            return (
+                                                                <span className="whitespace-nowrap text-[10px] font-black px-4 py-2 rounded-lg border border-indigo-500/20 bg-indigo-500/10 text-indigo-400 uppercase tracking-widest shadow-sm">
+                                                                    Rotina
+                                                                </span>
+                                                            );
+                                                        }
+
+                                                        if (t.intervaloDias && t.intervaloDias > 0) {
+                                                            const hoje = new Date();
+                                                            hoje.setHours(0, 0, 0, 0);
+                                                            let proximaData = "";
+
+                                                            for (let i = 0; i < 90; i++) {
+                                                                const dataTeste = new Date(hoje);
+                                                                dataTeste.setDate(hoje.getDate() + i);
+
+                                                                if (calcularOcorrencia(t, dataTeste)) {
+                                                                    proximaData = i === 0 ? "Hoje" : dataTeste.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                                                                    break;
+                                                                }
+                                                            }
+
+                                                            return (
+                                                                <div className="flex flex-col items-center gap-2 min-w-max">
+                                                                    <span className="whitespace-nowrap text-[10px] font-black px-4 py-2 rounded-lg border border-amber-500/20 bg-amber-500/10 text-amber-500 uppercase tracking-widest shadow-sm">
+                                                                        A cada {t.intervaloDias} dias
+                                                                    </span>
+                                                                </div>
+                                                            );
+                                                        }
+
+                                                        return <span className="text-slate-700 font-black">--</span>;
+                                                    })()}
+                                                </div>
                                             </td>
 
                                             <td className="px-10 py-6 text-center font-mono">
@@ -611,62 +711,6 @@ export default function AdminTarefas() {
             </div>
 
             <AnimatePresence>
-                {showModalAdd && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowModalAdd(false)} className="absolute inset-0 bg-black/90 backdrop-blur-md" />
-                        <motion.form initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onSubmit={handleCriar} className="relative w-full max-w-lg bg-slate-950 border border-white/10 p-8 rounded-[2.5rem] space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-                            <div className="flex items-center justify-between border-b border-white/5 pb-4">
-                                <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter">Nova <span className="text-indigo-500">Diretriz</span></h2>
-                                <button type="button" onClick={() => setShowModalAdd(false)} className="text-slate-500 hover:text-white"><Plus size={24} className="rotate-45" /></button>
-                            </div>
-                            <div className="space-y-4">
-                                <input required placeholder="O QUE DEVE SER FEITO?" value={novaTarefa.texto} onChange={e => setNovaTarefa({ ...novaTarefa, texto: e.target.value })} className="w-full bg-white/5 border border-white/10 p-5 rounded-2xl text-white text-xs font-black uppercase outline-none focus:border-indigo-500 transition-all" />
-                                <textarea placeholder="INSTRUÇÕES TÉCNICAS..." value={novaTarefa.descricao} onChange={e => setNovaTarefa({ ...novaTarefa, descricao: e.target.value })} className="w-full bg-white/5 border border-white/10 p-5 rounded-2xl text-white text-xs font-medium h-24 outline-none focus:border-indigo-500 transition-all resize-none" />
-                            </div>
-                            <select value={novaTarefa.prioridade} onChange={(e) => setNovaTarefa({ ...novaTarefa, prioridade: e.target.value })} className="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-[10px] font-black uppercase text-white outline-none">
-                                <option value="baixa" className="bg-slate-900">🟢 Baixa</option>
-                                <option value="media" className="bg-slate-900">🟡 Média</option>
-                                <option value="alta" className="bg-slate-900">🟠 Alta</option>
-                                <option value="urgente" className="bg-slate-900">🔴 Urgente</option>
-                            </select>
-                            <div className="space-y-4 bg-white/5 p-6 rounded-[2rem] border border-white/5">
-                                <div className="grid grid-cols-2 gap-2">
-                                    {[{ l: "Única", v: 0 }, { l: "Rotina", v: 7 }, { l: "10 Dias", v: 10 }, { l: "15 Dias", v: 15 }, { l: "30 Dias", v: 30 }].map((opt) => (
-                                        <button key={opt.v} type="button" onClick={() => setNovaTarefa({ ...novaTarefa, fixa: opt.v > 0, intervaloDias: (opt.v > 0 && opt.v !== 7) ? opt.v : null, diasSemana: opt.v === 7 ? [new Date().getDay() === 0 ? 6 : new Date().getDay() - 1] : [], dataInicio: opt.v === 7 ? (null as any) : new Date() })} className={`py-3 rounded-xl text-[9px] font-black uppercase border transition-all ${((opt.v === 0 && !novaTarefa.fixa) || (opt.v === 7 && novaTarefa.fixa && !novaTarefa.intervaloDias) || (opt.v === novaTarefa.intervaloDias)) ? 'bg-indigo-600 border-indigo-400 text-white shadow-lg' : 'bg-white/5 border-white/5 text-slate-500'}`}>{opt.l}</button>
-                                    ))}
-                                </div>
-                                {(novaTarefa.intervaloDias !== null || !novaTarefa.fixa) ? (
-                                    <div className="space-y-2 pt-2 border-t border-white/5">
-                                        <div className="space-y-2">
-                                            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-1">Horário Previsto (Opcional)</label>
-                                            <div className="relative">
-                                                <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500/50" size={14} />
-                                                <input
-                                                    type="time"
-                                                    value={novaTarefa.horario}
-                                                    onChange={e => setNovaTarefa({ ...novaTarefa, horario: e.target.value })}
-                                                    className="w-full bg-white/5 border border-white/10 p-4 pl-12 rounded-xl text-white text-xs font-black outline-none focus:border-indigo-500 transition-all [color-scheme:dark]"
-                                                />
-                                            </div>
-                                        </div>
-                                        <label className="text-[9px] font-black text-slate-500 uppercase">Início:</label>
-                                        <input type="date" required value={novaTarefa.dataInicio instanceof Date ? novaTarefa.dataInicio.toISOString().split('T')[0] : ''} onChange={(e) => setNovaTarefa({ ...novaTarefa, dataInicio: new Date(e.target.value + 'T00:00:00') })} className="w-full bg-slate-900 border border-white/10 p-4 rounded-xl text-white text-[10px] font-black outline-none" />
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-6 gap-1 pt-2 border-t border-white/5">
-                                        {DIAS_NOMES.map((dia, idx) => (
-                                            <button key={idx} type="button" onClick={() => { const novos = novaTarefa.diasSemana.includes(idx) ? novaTarefa.diasSemana.filter(d => d !== idx) : [...novaTarefa.diasSemana, idx]; setNovaTarefa({ ...novaTarefa, diasSemana: novos }); }} className={`h-10 rounded-lg text-[9px] font-black border transition-all ${novaTarefa.diasSemana.includes(idx) ? 'bg-indigo-600 border-indigo-400 text-white' : 'bg-white/5 border-white/5 text-slate-600'}`}>{dia.slice(0, 3)}</button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                            <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 p-5 rounded-2xl text-white text-[12px] font-black uppercase tracking-[0.2em] transition-all active:scale-95 shadow-xl shadow-indigo-500/20">Efetivar Lançamento</button>
-                        </motion.form>
-                    </div>
-                )}
-            </AnimatePresence>
-
-            <AnimatePresence>
                 {showModalRotina && (
                     <div className="fixed inset-0 z-[110] flex items-center justify-center p-6">
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowModalRotina(false)} className="absolute inset-0 bg-black/90 backdrop-blur-md" />
@@ -749,7 +793,6 @@ export default function AdminTarefas() {
                             onSubmit={handleSubmit}
                             className={`relative w-full max-w-lg bg-slate-900 border ${editandoId ? 'border-amber-500/30' : 'border-indigo-500/30'} p-8 rounded-[3rem] space-y-6 shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] max-h-[90vh] overflow-y-auto custom-scrollbar`}
                         >
-                            {/* Header Dinâmico */}
                             <div className="flex items-center justify-between border-b border-white/5 pb-6">
                                 <div>
                                     <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter">
@@ -759,7 +802,7 @@ export default function AdminTarefas() {
                                         {editandoId ? 'Modificando parâmetros existentes' : 'Lançamento de nova instrução'}
                                     </p>
                                 </div>
-                                <button type="button" onClick={() => { setShowModalAdd(false); setEditandoId(null); }} className="h-10 w-10 flex items-center justify-center rounded-full bg-white/5 text-slate-500 hover:text-white transition-colors">
+                                <button type="button" onClick={() => { setShowModalAdd(false); setEditandoId(null); }} className="cursor-pointer h-10 w-10 flex items-center justify-center rounded-full bg-white/5 text-slate-500 hover:text-white transition-colors">
                                     <X size={20} />
                                 </button>
                             </div>
@@ -788,7 +831,6 @@ export default function AdminTarefas() {
                                 </div>
                             </div>
 
-                            {/* Bloco de Agendamento */}
                             <div className={`space-y-4 p-6 rounded-[2.5rem] border transition-colors ${editandoId ? 'bg-amber-500/5 border-amber-500/10' : 'bg-indigo-500/5 border-indigo-500/10'}`}>
                                 <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                                     {[{ l: "Única", v: 0 }, { l: "Rotina", v: 7 }, { l: "10D", v: 10 }, { l: "15D", v: 15 }, { l: "30D", v: 30 }].map((opt) => (
@@ -796,29 +838,63 @@ export default function AdminTarefas() {
                                     ))}
                                 </div>
 
-                                {(novaTarefa.intervaloDias !== null || !novaTarefa.fixa) ? (
-                                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
-                                        <div className="space-y-2">
-                                            <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest px-1">Horário</label>
-                                            <input type="time" value={novaTarefa.horario} onChange={e => setNovaTarefa({ ...novaTarefa, horario: e.target.value })} className="w-full bg-black/40 border border-white/5 p-4 rounded-xl text-white text-[10px] font-black outline-none focus:border-indigo-500 [color-scheme:dark]" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest px-1">Data Início</label>
-                                            <input type="date" required value={novaTarefa.dataInicio instanceof Date ? novaTarefa.dataInicio.toISOString().split('T')[0] : ''} onChange={(e) => setNovaTarefa({ ...novaTarefa, dataInicio: new Date(e.target.value + 'T00:00:00') })} className="w-full bg-black/40 border border-white/5 p-4 rounded-xl text-white text-[10px] font-black outline-none focus:border-indigo-500 [color-scheme:dark]" />
-                                        </div>
+                                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
+                                    <div className="space-y-2">
+                                        <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest px-1">Horário</label>
+                                        <input
+                                            type="time"
+                                            value={novaTarefa.horario || ""}
+                                            onChange={e => setNovaTarefa({ ...novaTarefa, horario: e.target.value })}
+                                            className="w-full bg-black/40 border border-white/5 p-4 rounded-xl text-white text-[10px] font-black outline-none focus:border-indigo-500 [color-scheme:dark]"
+                                        />
                                     </div>
-                                ) : (
-                                    <div className="grid grid-cols-7 gap-1 pt-4 border-t border-white/5">
-                                        {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((dia, idx) => (
-                                            <button key={idx} type="button" onClick={() => { const novos = novaTarefa.diasSemana.includes(idx) ? novaTarefa.diasSemana.filter(d => d !== idx) : [...novaTarefa.diasSemana, idx]; setNovaTarefa({ ...novaTarefa, diasSemana: novos }); }} className={`h-10 rounded-lg text-[9px] font-black border transition-all ${novaTarefa.diasSemana.includes(idx) ? (editandoId ? 'bg-amber-600 border-amber-400 text-white' : 'bg-indigo-600 border-indigo-400 text-white') : 'bg-black/20 border-white/5 text-slate-600'}`}>{dia}</button>
-                                        ))}
+                                    <div className="space-y-2">
+                                        <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest px-1">Data Início / Única</label>
+                                        <input
+                                            type="date"
+                                            required
+                                            value={novaTarefa.dataInicio instanceof Date ? novaTarefa.dataInicio.toISOString().split('T')[0] : ''}
+                                            onChange={(e) => setNovaTarefa({ ...novaTarefa, dataInicio: new Date(e.target.value + 'T00:00:00') })}
+                                            className="w-full bg-black/40 border border-white/5 p-4 rounded-xl text-white text-[10px] font-black outline-none focus:border-indigo-500 [color-scheme:dark]"
+                                        />
+                                    </div>
+                                </div>
+
+                                {novaTarefa.fixa && (
+                                    <div className="space-y-3 pt-4 border-t border-white/5">
+                                        <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest px-1">Repetir nos dias:</label>
+                                        <div className="grid grid-cols-6 gap-1">
+                                            {['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'].map((dia, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const novos = novaTarefa.diasSemana.includes(idx)
+                                                            ? novaTarefa.diasSemana.filter(d => d !== idx)
+                                                            : [...novaTarefa.diasSemana, idx];
+                                                        setNovaTarefa({ ...novaTarefa, diasSemana: novos, intervaloDias: null });
+                                                    }}
+                                                    className={`h-10 rounded-lg text-[9px] font-black border transition-all ${novaTarefa.diasSemana.includes(idx)
+                                                        ? (editandoId ? 'bg-amber-600 border-amber-400 text-white' : 'bg-indigo-600 border-indigo-400 text-white shadow-[0_0_10px_rgba(79,70,229,0.3)]')
+                                                        : 'bg-black/20 border-white/5 text-slate-600 hover:border-white/20'
+                                                        }`}
+                                                >
+                                                    {dia}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                 )}
+
                             </div>
 
-                            <button type="submit" className={`w-full ${editandoId ? 'bg-amber-600 hover:bg-amber-500 shadow-amber-500/20' : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-500/20'} p-6 rounded-[2rem] text-white text-[11px] font-black uppercase tracking-[0.3em] transition-all active:scale-95 shadow-2xl`}>
-                                {editandoId ? 'Salvar Alterações' : 'Efetivar Lançamento'}
-                            </button>
+                            <ButtonLoading
+                                type="submit"
+                                isLoading={isPending}
+                                className="w-full"
+                            >
+                                Lançar Diretriz
+                            </ButtonLoading>
                         </motion.form>
                     </div>
                 )}

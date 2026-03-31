@@ -95,13 +95,18 @@ model arquivos_radar {
 }
 
 model reservas {
-  id      Int       @id @default(autoincrement())
+  id      Int      @id @default(autoincrement())
   sala    String
   usuario String
   data    DateTime
   inicio  DateTime
-  fim     DateTime?
-  status  String    @default("Agendado")
+
+  motivo      String?
+  tipo        String?
+  paoDeQueijo Boolean @default(true)
+
+  fim    DateTime?
+  status String    @default("Agendado")
 }
 
 model documentos {
@@ -399,25 +404,24 @@ model Transacao {
 }
 
 model Tarefa {
-  id        String  @id @default(cuid())
-  texto     String
-  descricao String?
-  fixa      Boolean @default(false)
-  feita     Boolean @default(false)
+  id         String  @id @default(cuid())
+  texto      String
+  descricao  String?
+  fixa       Boolean @default(false)
+  feita      Boolean @default(false)
   prioridade String
 
-  diaSemana Int?   
-  intervaloDias Int?      
+  diaSemana     Int?
+  intervaloDias Int?
   dataInicio    DateTime? @default(now())
   horario       String?
 
   userId   Int
   usuarios usuarios @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   concluidaEm DateTime?
-  
 
   @@index([userId])
 }
