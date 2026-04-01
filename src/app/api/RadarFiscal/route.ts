@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getReceitaData } from "../ReceitaFederal/route"; 
 import db from "@/lib/prisma";
 
 export const dynamic = 'force-dynamic';
@@ -7,16 +8,11 @@ export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
         const cnpj = (searchParams.get("cnpj") || "").replace(/\D/g, "");
-        const forcar = searchParams.get("forcar") === "true";
         const baseUrl = process.env.APP_URL || "http://localhost:3000";
 
         if (!cnpj || cnpj.length !== 14) return NextResponse.json({ error: "CNPJ obrigatório" }, { status: 400 });
 
-        const resApi = await fetch(`${baseUrl}/api/ReceitaFederal?cnpj=${cnpj}`, { cache: "no-store" });
-        const receita = await resApi.json();
-
-        const resBruto = await fetch(`https://www.receitaws.com.br/v1/CNPJ/${cnpj}`, { cache: "no-store" });
-        const bruto = await resBruto.json();
+        const receita: any = await getReceitaData(cnpj);
 
         let ea: any = {};
         try {
@@ -43,8 +39,8 @@ export async function GET(req: Request) {
         ];
 
         const todosCnaesBrutos = [
-            ...(bruto?.atividade_principal || []),
-            ...(bruto?.atividades_secundarias || [])
+            ...(receita?.atividade_principal || []),
+            ...(receita?.atividades_secundarias || [])
         ].map(item => item?.code || "").filter(Boolean);
 
         console.log("📊 [PERSE DEBUG] CNAEs ENCONTRADOS:", todosCnaesBrutos);
@@ -63,21 +59,20 @@ export async function GET(req: Request) {
             return new Date(year, month - 1, day);
         };
 
-        const dataAbertura = parseData(bruto.abertura);
-        const dataExclusao = parseData(bruto.simples?.data_exclusao);
+        const dataAbertura = parseData(receita.abertura_bruta || receita.dataConstituicao);
+        const dataExclusao = parseData(receita.simples?.data_exclusao);
         const limiteAbertura = new Date(2022, 2, 18);
         const limiteExclusao = new Date(2023, 0, 31);
         const hoje = new Date();
         const anosEmpresa = dataAbertura ? (hoje.getFullYear() - dataAbertura.getFullYear()) : 0;
 
-
         let isPerse = "NÃO";
         const aberturaOk = dataAbertura && dataAbertura <= limiteAbertura;
-        const isSimples = bruto.simples?.optante === true;
+        const isSimples = receita.optante_simples === true;
 
         let regimeOk = false;
         if (!isSimples) {
-            if (!bruto.simples?.data_opcao || bruto.simples?.data_opcao === "null") {
+            if (!receita.data_opcao || receita.data_opcao === "null") {
                 regimeOk = true;
             } else if (dataExclusao && dataExclusao <= limiteExclusao) {
                 regimeOk = true;
@@ -106,8 +101,6 @@ export async function GET(req: Request) {
         const isSimplesEA = String(ea?.opcao_simples).toUpperCase() === "S";
         const regimeEA = String(regimeLimpo).toUpperCase();
 
-
-
         let qualificacaoFinal = "DESQUALIFICADO";
 
         if (isSimplesEA || anosEmpresa < 3) {
@@ -118,38 +111,35 @@ export async function GET(req: Request) {
             qualificacaoFinal = "QUALIFICADO";
         }
 
-
         return NextResponse.json({
             cnpj,
             qualificacao: qualificacaoFinal,
-            razaoSocial: (receita.razaoSocial || bruto.nome || "").toUpperCase(),
-            nomeFantasia: (receita.nomeFantasia || bruto.fantasia || "SEM NOME FANTASIA").toUpperCase(),
+            razaoSocial: (receita.razaoSocial || "").toUpperCase(),
+            nomeFantasia: (receita.nomeFantasia || "SEM NOME FANTASIA").toUpperCase(),
             perse: isPerse,
             perse_anexo: anexoPertencente,
             todosCnaesBrutos: todosCnaesBrutos,
-            situacao: (bruto.situacao || "N/A").toUpperCase(),
-            municipio: (receita.municipio || bruto.municipio || "").toUpperCase(),
-            uf: (receita.uf || bruto.uf || "").toUpperCase(),
-            abertura: receita.dataConstituicao || bruto.abertura || "",
-            capitalSocial: bruto.capital_social,
-
+            situacao: (receita.situacao || "N/A").toUpperCase(),
+            municipio: (receita.municipio || "").toUpperCase(),
+            uf: (receita.uf || "").toUpperCase(),
+            abertura: receita.dataConstituicao || "",
+            capitalSocial: receita.capitalSocial,
             dataOpcao: receita.data_opcao,
-
             dataExclusao: ea?.data_exc_simples && ea.data_exc_simples.length === 8
                 ? `${ea.data_exc_simples.substring(6, 8)}/${ea.data_exc_simples.substring(4, 6)}/${ea.data_exc_simples.substring(0, 4)}`
                 : ea?.data_exc_simples || "---",
-
             regimeReceita: (receita.regimeTributario || "N/A").toUpperCase(),
             regimeEA: regimeLimpo.toUpperCase(),
             divida_tributaria: totalDivida,
             historicoRegime: ea?.historicoRegimePorAno || [],
-            cnaes: { principal: bruto.atividade_principal || [], secundarios: bruto.atividades_secundarias || [] }
+            cnaes: { 
+                principal: receita.atividade_principal || [], 
+                secundarios: receita.atividades_secundarias || [] 
+            }
         });
-
 
     } catch (err: any) {
         console.error("ERRO RADAR:", err.message);
-        console.error("DETALHE DO ERRO:", err.message, err.cause);
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
 }
