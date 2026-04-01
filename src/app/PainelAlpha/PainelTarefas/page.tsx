@@ -457,7 +457,7 @@ export default function PainelTarefas() {
                                         </span>
                                     )}
                                 </div>
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em]">
+                                <span className="cursor-pointer text-[14px] font-black uppercase tracking-[0.2em]">
                                     {abaAtual === "TAREFAS" ? "Lista de Compras" : "Voltar para Tarefas"}
                                 </span>
                             </button>

@@ -6,56 +6,56 @@ import { revalidatePath } from "next/cache";
 
 export async function SalvarProduto(dados: any) {
     try {
-        const qtd = Number(dados.quantidade) || 0;
-        const min = Number(dados.estoqueMinimo) || 0;
-
         const produto = await db.produtoEstoque.upsert({
-            where: { id: dados.id || 'novo-id' },
+            where: { id: dados.id || 'novo' },
             update: {
                 nome: dados.nome,
-                quantidade: qtd,
-                estoqueMinimo: min,
-                categoriaId: dados.categoriaId,
+                quantidade: dados.quantidade,
+                estoqueMinimo: dados.estoqueMinimo,
                 unidade: dados.unidade,
+                categoriaId: dados.categoriaId,
                 imagem: dados.imagem
             },
             create: {
                 nome: dados.nome,
-                quantidade: qtd,
-                estoqueMinimo: min,
-                categoriaId: dados.categoriaId,
+                quantidade: dados.quantidade,
+                estoqueMinimo: dados.estoqueMinimo,
                 unidade: dados.unidade,
+                categoriaId: dados.categoriaId,
                 imagem: dados.imagem
             }
         });
 
-        if (qtd <= (min + 1)) {
+        if (produto.quantidade <= produto.estoqueMinimo) {
             await db.listaCompra.upsert({
                 where: { produtoId: produto.id },
-                update: { 
+                update: {
+                    status: "PENDENTE",
+                    quantidadeAtual: produto.quantidade,
+                    minimoEsperado: produto.estoqueMinimo,
                     nome: produto.nome,
-                    quantidadeAtual: qtd,
-                    minimoEsperado: min
+                    categoriaId: produto.categoriaId
                 },
                 create: {
                     produtoId: produto.id,
                     nome: produto.nome,
-                    quantidadeAtual: qtd,
-                    minimoEsperado: min,
-                    unidade: produto.unidade || "un"
+                    quantidadeAtual: produto.quantidade,
+                    minimoEsperado: produto.estoqueMinimo,
+                    unidade: produto.unidade || "un",
+                    status: "PENDENTE", 
+                    categoriaId: produto.categoriaId
                 }
             });
         } else {
             await db.listaCompra.deleteMany({
-                where: { produtoId: produto.id }
+                where: { produtoId: produto.id, status: "PENDENTE" }
             });
         }
 
-        revalidatePath("/PainelAlpha/PainelTarefas");
         return { success: true };
-    } catch (error: any) {
+    } catch (error) {
         console.error(error);
-        return { success: false, error: error.message };
+        return { success: false };
     }
 }
 
@@ -218,5 +218,43 @@ export async function buscarListaCompra() {
         });
     } catch (error) {
         return [];
+    }
+}
+export async function VerificarAlertaEstoque(produtoId: string) {
+    try {
+        const produto = await db.produtoEstoque.findUnique({
+            where: { id: produtoId },
+            include: { categoria: true }
+        });
+
+        if (!produto) return;
+
+        const qtd = Number(produto.quantidade);
+        const min = Number(produto.estoqueMinimo);
+
+
+        if (qtd <= (min + 1)) {
+            await db.listaCompra.upsert({
+                where: { produtoId: produto.id },
+                update: {
+                    status: "PENDENTE", 
+                    quantidadeAtual: qtd,
+                    minimoEsperado: min,
+                    nome: produto.nome,
+                    categoriaId: produto.categoriaId
+                },
+                create: {
+                    produtoId: produto.id,
+                    nome: produto.nome,
+                    quantidadeAtual: qtd,
+                    minimoEsperado: min,
+                    unidade: produto.unidade || "un",
+                    status: "PENDENTE",
+                    categoriaId: produto.categoriaId
+                }
+            });
+        }
+    } catch (error) {
+        console.error("Erro na automação de estoque:", error);
     }
 }
