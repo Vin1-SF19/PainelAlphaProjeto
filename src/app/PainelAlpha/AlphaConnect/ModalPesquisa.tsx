@@ -51,21 +51,26 @@ export function ModalConsultarCNPJ({ isOpen, onClose, style }: any) {
     const handleConsultar = async () => {
         const cnpjLimpo = cnpj.replace(/\D/g, "");
         if (cnpjLimpo.length !== 14) return toast.error("CNPJ INVÁLIDO");
-
+    
         setLoading(true);
         try {
-            const resRec = await fetch(`/api/ReceitaFederal?cnpj=${cnpjLimpo}`);
+            const [resRec, resRadar] = await Promise.all([
+                fetch(`/api/ReceitaFederal?cnpj=${cnpjLimpo}`),
+                fetch(`/api/RadarFiscal?cnpj=${cnpjLimpo}&forcar=true`)
+            ]);
+    
             const dataRec = await resRec.json();
-
-            if (dataRec.error) throw new Error(dataRec.error);
-
-            const resRadar = await fetch(`/api/RadarFiscal?cnpj=${cnpjLimpo}&forcar=true`);
             const dataRadar = await resRadar.json();
-
+    
+            if (dataRec.error) throw new Error(dataRec.error);
+            
+            if (dataRadar.error) throw new Error(dataRadar.error);
+    
             setDados(dataRadar);
             toast.success("Análise Alpha Concluída!");
-
+    
         } catch (e: any) {
+            console.error("Erro na consulta:", e);
             toast.error(e.message || "FALHA NA CONEXÃO");
         } finally {
             setLoading(false);
@@ -122,7 +127,6 @@ export function ModalConsultarCNPJ({ isOpen, onClose, style }: any) {
                         </section>
 
                         <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            {/* COLUNA 1: RECEITA FEDERAL */}
                             <div className="bg-black/30 p-8 rounded-[2.5rem] border border-white/5 space-y-4 shadow-inner">
                                 <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4 border-b border-white/5 pb-2">Receita Federal</h3>
                                 <InfoRow label="Regime" value={dados?.regimeReceita || "---"} />
@@ -130,7 +134,6 @@ export function ModalConsultarCNPJ({ isOpen, onClose, style }: any) {
                                 <InfoRow label="Exclusão Simples" value={dados?.dataExclusao || "---"} />
                             </div>
 
-                            {/* COLUNA 2: EMPRESAQUI */}
                             <div className="bg-black/30 p-8 rounded-[2.5rem] border border-white/5 space-y-4 shadow-inner">
                                 <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4 border-b border-white/5 pb-2">EmpresAqui</h3>
                                 <InfoRow label="Regime" value={dados?.regimeEA || "---"} highlight style={style} />
