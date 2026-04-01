@@ -428,6 +428,8 @@ model Tarefa {
   updatedAt   DateTime  @updatedAt
   concluidaEm DateTime?
 
+  id_produto  String?  @unique
+
   @@index([userId])
 }
 
@@ -437,3 +439,46 @@ model DiretrizSala {
   descricao String   @default("")
   updatedAt DateTime @updatedAt
 }
+
+model Categoria {
+  id        String           @id @default(uuid())
+  nome      String           @unique
+  cor       String?          @default("#6366f1") 
+  icone     String?          @default("Package") 
+  produtos  ProdutoEstoque[]
+  listaCompras ListaCompra[]
+  createdAt DateTime         @default(now())
+}
+
+model ProdutoEstoque {
+  id             String   @id @default(uuid())
+  imagem         String?
+  nome           String  
+  quantidade     Int      @default(0)
+  estoqueMinimo  Int      @default(1)
+  unidade        String   
+  precoMedio     Float?   @default(0)
+  ultimaCompra   DateTime?
+  
+  categoriaId    String
+  categoria      Categoria @relation(fields: [categoriaId], references: [id])
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model ListaCompra {
+  id              String   @id @default(uuid())
+  produtoId       String   @unique
+  nome            String
+  quantidadeAtual Int
+  minimoEsperado  Int
+  unidade         String
+  status          String   @default("CARRINHO") 
+  createdAt       DateTime @default(now())
+
+  categoriaId     String?
+  categoria       Categoria? @relation(fields: [categoriaId], references: [id])
+}
+
+
