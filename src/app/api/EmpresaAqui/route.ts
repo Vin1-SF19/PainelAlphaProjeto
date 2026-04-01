@@ -14,7 +14,8 @@ async function consultarExterno(url: string): Promise<any> {
             res.on('data', (chunk) => data += chunk);
             res.on('end', () => {
                 try {
-                    resolve(JSON.parse(data));
+                    const json = JSON.parse(data);
+                    resolve(json);
                 } catch (e) {
                     reject(new Error("Resposta não é um JSON válido"));
                 }
@@ -25,27 +26,36 @@ async function consultarExterno(url: string): Promise<any> {
     });
 }
 
+export async function getEmpresaAquiData(cnpj: string) {
+    const token = process.env.EMPRESAQUI_TOKEN?.trim();
+    if (!token) throw new Error("Token EmpresaAqui não configurado");
+
+    const cleanCnpj = cnpj.replace(/\D/g, "");
+    const urlEA = `https://www.empresaqui.com.br/api/${token}/${cleanCnpj}`;
+
+    const dados = await consultarExterno(urlEA);
+
+    if (dados?.error || dados?.status === "error") {
+        throw new Error(dados.message || "Erro na API EmpresaAqui");
+    }
+
+    return dados;
+}
+
 export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
         const cnpj = (searchParams.get("cnpj") || "").replace(/\D/g, "");
-        
-        const token = process.env.EMPRESAQUI_TOKEN?.trim();
 
-        if (!cnpj || !token) {
-            return NextResponse.json({ error: "CNPJ ou Token ausentes" }, { status: 400 });
+        if (!cnpj || cnpj.length !== 14) {
+            return NextResponse.json({ error: "CNPJ inválido ou ausente" }, { status: 400 });
         }
 
-        const urlEA = `https://www.empresaqui.com.br/api/${token}/${cnpj}`;
-        
-        console.log("📡 [EA] Tentando conectar em:", urlEA);
-
-        const dados = await consultarExterno(urlEA);
-        
+        const dados = await getEmpresaAquiData(cnpj);
         return NextResponse.json(dados);
 
     } catch (err: any) {
-        console.error("🔥 [EA] ERRO FÍSICO:", err.message);
+        console.error("🔥 [EA] ERRO:", err.message);
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
 }

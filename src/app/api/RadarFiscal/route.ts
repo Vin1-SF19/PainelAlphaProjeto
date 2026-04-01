@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { getReceitaData } from "../ReceitaFederal/route"; 
+import { getEmpresaAquiData } from "../EmpresaAqui/route";
+
 import db from "@/lib/prisma";
 
 export const dynamic = 'force-dynamic';
@@ -8,7 +10,6 @@ export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
         const cnpj = (searchParams.get("cnpj") || "").replace(/\D/g, "");
-        const baseUrl = process.env.APP_URL || "http://localhost:3000";
 
         if (!cnpj || cnpj.length !== 14) return NextResponse.json({ error: "CNPJ obrigatório" }, { status: 400 });
 
@@ -16,9 +17,10 @@ export async function GET(req: Request) {
 
         let ea: any = {};
         try {
-            const resEA = await fetch(`${baseUrl}/api/EmpresaAqui?cnpj=${cnpj}`, { cache: "no-store" });
-            ea = await resEA.json();
-        } catch (e) { console.log("Falha EmpresaAqui"); }
+            ea = await getEmpresaAquiData(cnpj);
+        } catch (e) { 
+            console.log("Falha ao obter dados do EmpresaAqui via função interna"); 
+        }
 
         const anexo1 = [
             "18.13-0-01", "43.30-4-02", "46.89-3-99", "52.11-7-99", "55.10-8-01", "55.10-8-02", "55.90-6-01", "55.90-6-02",
@@ -43,8 +45,6 @@ export async function GET(req: Request) {
             ...(receita?.atividades_secundarias || [])
         ].map(item => item?.code || "").filter(Boolean);
 
-        console.log("📊 [PERSE DEBUG] CNAEs ENCONTRADOS:", todosCnaesBrutos);
-
         const temAnexo1 = todosCnaesBrutos.some(cnae => anexo1.includes(cnae));
         const temAnexo2 = todosCnaesBrutos.some(cnae => anexo2.includes(cnae));
 
@@ -60,7 +60,11 @@ export async function GET(req: Request) {
         };
 
         const dataAbertura = parseData(receita.abertura_bruta || receita.dataConstituicao);
-        const dataExclusao = parseData(receita.simples?.data_exclusao);
+        
+        // Prioriza a data de exclusão que vem da receita (ReceitaWS)
+        const dataExclusaoSimples = receita.simples?.data_exclusao || ea?.data_exc_simples || null;
+        const dataExclusao = parseData(dataExclusaoSimples);
+
         const limiteAbertura = new Date(2022, 2, 18);
         const limiteExclusao = new Date(2023, 0, 31);
         const hoje = new Date();
@@ -84,12 +88,14 @@ export async function GET(req: Request) {
         }
 
         let totalDivida = 0;
-        Object.keys(ea).forEach(key => {
-            if (!isNaN(Number(key)) && ea[key]?.dividas_valor) {
-                const v = parseFloat(String(ea[key].dividas_valor).replace(",", "."));
-                if (!isNaN(v)) totalDivida += v;
-            }
-        });
+        if (ea) {
+            Object.keys(ea).forEach(key => {
+                if (!isNaN(Number(key)) && ea[key]?.dividas_valor) {
+                    const v = parseFloat(String(ea[key].dividas_valor).replace(",", "."));
+                    if (!isNaN(v)) totalDivida += v;
+                }
+            });
+        }
 
         let regimeEAraw = ea?.regime_tributario || "NÃO INFORMADO";
         let regimeLimpo = regimeEAraw;
@@ -98,11 +104,10 @@ export async function GET(req: Request) {
             regimeLimpo = partes[partes.length - 1].replace(/ANO \d{4} /i, "").trim();
         }
 
-        const isSimplesEA = String(ea?.opcao_simples).toUpperCase() === "S";
+        const isSimplesEA = String(ea?.opcao_simples || "").toUpperCase() === "S";
         const regimeEA = String(regimeLimpo).toUpperCase();
 
         let qualificacaoFinal = "DESQUALIFICADO";
-
         if (isSimplesEA || anosEmpresa < 3) {
             qualificacaoFinal = "DESQUALIFICADO";
         } else if (anosEmpresa >= 5 && regimeEA.includes("REAL")) {
@@ -125,9 +130,12 @@ export async function GET(req: Request) {
             abertura: receita.dataConstituicao || "",
             capitalSocial: receita.capitalSocial,
             dataOpcao: receita.data_opcao,
-            dataExclusao: ea?.data_exc_simples && ea.data_exc_simples.length === 8
-                ? `${ea.data_exc_simples.substring(6, 8)}/${ea.data_exc_simples.substring(4, 6)}/${ea.data_exc_simples.substring(0, 4)}`
-                : ea?.data_exc_simples || "---",
+            
+            // Retorna a data de exclusão formatada
+            dataExclusao: dataExclusaoSimples && dataExclusaoSimples.length === 8 && !dataExclusaoSimples.includes("/")
+                ? `${dataExclusaoSimples.substring(6, 8)}/${dataExclusaoSimples.substring(4, 6)}/${dataExclusaoSimples.substring(0, 4)}`
+                : dataExclusaoSimples || "---",
+
             regimeReceita: (receita.regimeTributario || "N/A").toUpperCase(),
             regimeEA: regimeLimpo.toUpperCase(),
             divida_tributaria: totalDivida,
