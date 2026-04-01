@@ -149,6 +149,7 @@ export async function GET(req: Request) {
 
     } catch (err: any) {
         console.error("ERRO RADAR:", err.message);
+        console.error("DETALHE DO ERRO:", err.message, err.cause);
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
 }
