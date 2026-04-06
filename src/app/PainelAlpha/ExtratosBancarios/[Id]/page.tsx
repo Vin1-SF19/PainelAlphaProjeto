@@ -357,6 +357,7 @@ export default function DetalhesEmpresa({ params }: PageProps) {
                                 >
                                     <div className="absolute inset-0 w-full h-full rounded-xl bg-gradient-to-r from-blue-400/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
+
                                     <Eye size={20} className="mr-2 text-blue-400 group-hover:scale-110 transition-transform" />
                                     <span className="tracking-wide">Visualizar e Exportar Relatório</span>
                                 </button>
@@ -558,6 +559,7 @@ export default function DetalhesEmpresa({ params }: PageProps) {
                     </div>
                 )}
             </AnimatePresence>
+
             <AnimatePresence>
                 {modalVisualizarSalvos && bancoSelecionadoId && (
                     <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/90 backdrop-blur-sm p-6">
@@ -583,11 +585,27 @@ export default function DetalhesEmpresa({ params }: PageProps) {
                                 </button>
                             </div>
 
-                            {/* Conteúdo: O Painel que criamos anteriormente */}
                             <div className="flex-1 overflow-y-auto p-6">
                                 <PainelTransacoes bancoId={bancoSelecionadoId} />
                             </div>
                         </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {showPreview && empresa && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/90 backdrop-blur-md p-4">
+                        <PainelConferencia
+                            empresa={empresa}
+                            linhas={linhasExtraidas}
+                            setLinhasExtraidas={setLinhasExtraidas}
+                            onClose={() => setShowPreview(false)}
+                            onExport={(dadosFiltrados) => {
+                                exportarRelatorioExcel(dadosFiltrados, empresa.razaoSocial, empresa.cnpj);
+                                setShowPreview(false);
+                            }}
+                        />
                     </div>
                 )}
             </AnimatePresence>

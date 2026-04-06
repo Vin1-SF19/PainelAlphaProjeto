@@ -24,7 +24,6 @@ export default function PainelTransacoes({ bancoId }: { bancoId: number }) {
 
     useEffect(() => { carregarDados(); }, [bancoId]);
 
-    // Filtro Inteligente (Descrição + Valor)
     const transacoesFiltradas = useMemo(() => {
         return transacoes.filter(t => {
             const termo = filtro.toLowerCase();
@@ -35,7 +34,6 @@ export default function PainelTransacoes({ bancoId }: { bancoId: number }) {
         });
     }, [transacoes, filtro]);
 
-    // Lógica de Seleção
     const toggleSelecionar = (id: string) => {
         const novos = new Set(selecionados);
         if (novos.has(id)) novos.delete(id);

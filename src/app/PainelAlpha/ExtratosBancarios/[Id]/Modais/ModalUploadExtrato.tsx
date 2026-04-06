@@ -75,7 +75,7 @@ export default function ModalUploadExtrato({ isOpen, onClose, dadosContexto, onS
                         id: `new-${i}-${idx}-${Date.now()}-${Math.random()}`,
                         data: item.data ? String(item.data).trim() : "",
                         descricao: item.descricao?.trim() || "LANÇAMENTO",
-                        valor: typeof item.valor === 'number' ? item.valor : 0,
+                        valor: parseMoeda(item.valor), 
                         selecionado: true,
                         origem: arquivos[i].name
                     }));

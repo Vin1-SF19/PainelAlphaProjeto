@@ -42,10 +42,26 @@ export async function ProcessarExtratoIA(formData: FormData) {
         const tables = blocks.filter(b => b.BlockType === "TABLE");
         const extratoFinal: any[] = [];
 
+        //----BANCOS ATUAIS----
         const eItau = layoutAlvo.includes("itau");
         const eBB = layoutAlvo.includes("brasil") || layoutAlvo.includes("bb");
         const eBradesco = layoutAlvo.includes("bradesco");
         const eSantander = layoutAlvo.includes("santander");
+        const credCrea = layoutAlvo.includes("credcrea");
+        const eCaixa = layoutAlvo.includes("caixa");
+        const eSicoob = layoutAlvo.includes("sicoob");
+        const eInter = layoutAlvo.includes("inter");
+        const eNubank = layoutAlvo.includes("nubank");
+
+
+        // A FAZER ----
+        const ePagBank = layoutAlvo.includes("pagbank");
+        const eC6 = layoutAlvo.includes("c6");
+        const eSicredi = layoutAlvo.includes("sicredi");
+        const eMP = layoutAlvo.includes("mercadoPago");
+        const eBancoPan = layoutAlvo.includes("bancoPan");
+
+        // --- FIM BANCOS ATUAIS ----
 
 
         tables.forEach((table, tIdx) => {
@@ -68,9 +84,7 @@ export async function ProcessarExtratoIA(formData: FormData) {
 
                 if (r[1] && r[1].includes("/")) {
                     const match = r[1].match(/(\d{2}\/\d{2}(\/\d{4})?)/);
-                    if (match) {
-                        dataCorrente = match[0];
-                    }
+                    if (match) dataCorrente = match[0];
                 }
 
                 if (eItau) {
@@ -80,46 +94,194 @@ export async function ProcessarExtratoIA(formData: FormData) {
                         extratoFinal.push({
                             id: `it-${tIdx}-${idx}-${Math.random()}`,
                             data: dataCorrente,
-                            descricao: r[2] || "LANÇAMENTO",
+                            descricao: r[2] || "LANÇAMENTO ITAU",
                             valor: vS !== 0 ? -Math.abs(vS) : vE
                         });
                     }
                 }
+
                 else if (eBB) {
-                    const vBB = converterValor(r[5]);
-                    if (vBB !== 0 && !(r[4] || "").toLowerCase().includes("saldo")) {
-                        extratoFinal.push({
-                            id: `bb-${tIdx}-${idx}-${Math.random()}`,
-                            data: dataCorrente,
-                            descricao: r[4] || "LANÇAMENTO BB",
-                            valor: vBB
-                        });
+                    const valorBruto = r[5] || "";
+                    const descricao = r[4] || "";
+
+                    const ehSaldo = descricao.toLowerCase().includes("saldo");
+
+                    if (valorBruto && !ehSaldo) {
+                        let valorNumerico = converterValor(valorBruto.replace(/[()+]/g, '').replace('-', '').trim());
+
+                        if (valorBruto.includes("-")) {
+                            valorNumerico = -Math.abs(valorNumerico);
+                        }
+
+                        if (valorNumerico !== 0) {
+                            extratoFinal.push({
+                                id: `bb-${tIdx}-${idx}-${Math.random()}`,
+                                data: dataCorrente,
+                                descricao: descricao.toUpperCase().trim(),
+                                valor: valorNumerico
+                            });
+                        }
                     }
                 }
-                else if (eBradesco) {
+                else if (eBradesco || eSantander || credCrea) {
                     const vE = converterValor(r[4]);
                     const vS = converterValor(r[5]);
+
                     if (vE !== 0 || vS !== 0) {
+                        const nomeBanco = eBradesco ? "BRADESCO" : eSantander ? "SANTANDER" : "CREDCREA";
+
                         extratoFinal.push({
-                            id: `it-${tIdx}-${idx}-${Math.random()}`,
+                            id: `gen-${tIdx}-${idx}-${Math.random()}`,
                             data: dataCorrente,
-                            descricao: r[2] || "LANÇAMENTO Bradesco",
+                            descricao: r[2] || `LANÇAMENTO ${nomeBanco}`,
                             valor: vS !== 0 ? -Math.abs(vS) : vE
                         });
                     }
                 }
-                else if (eSantander) {
-                    const vE = converterValor(r[4]);
-                    const vS = converterValor(r[5]);
-                    if (vE !== 0 || vS !== 0) {
-                        extratoFinal.push({
-                            id: `it-${tIdx}-${idx}-${Math.random()}`,
-                            data: dataCorrente,
-                            descricao: r[2] || "LANÇAMENTO Bradesco",
-                            valor: vS !== 0 ? -Math.abs(vS) : vE
-                        });
+                else if (eCaixa) {
+
+                    const valorBruto = r[6] || "";
+                    const descricao = r[3] || "";
+
+
+                    const descReal = descricao || r[3] || "LANÇAMENTO CAIXA";
+
+                    if (valorBruto && !descReal.includes("SALDO")) {
+                        let valorNumerico = converterValor(valorBruto.replace(/[CD]/g, '').trim());
+                        if (valorBruto.toUpperCase().includes("D")) valorNumerico = -Math.abs(valorNumerico);
+
+                        if (valorNumerico !== 0) {
+                            extratoFinal.push({
+                                id: `cx-${tIdx}-${idx}-${Math.random()}`,
+                                data: dataCorrente,
+                                descricao: descReal.toUpperCase(),
+                                valor: valorNumerico
+                            });
+                        }
                     }
                 }
+                // A TRABALHAR PUXANDO SO VALORES NEGATIVOS
+                else if (eSicoob) {
+                    const valorBruto = r[5] || "";
+                    const descricao = r[3] || "";
+
+                    if (valorBruto && !descricao.toUpperCase().includes("SALDO")) {
+
+                        const ehDebito = valorBruto.toUpperCase().includes("D");
+
+                        const valorLimpo = valorBruto
+                            .replace(/R\$/g, '')
+                            .replace(/[a-zA-Z]/g, '')
+                            .trim();
+
+                        let valorNumerico = converterValor(valorLimpo);
+
+                        if (ehDebito) {
+                            valorNumerico = -Math.abs(valorNumerico);
+                        } else {
+                            valorNumerico = Math.abs(valorNumerico);
+                        }
+
+                        if (valorNumerico !== 0) {
+                            extratoFinal.push({
+                                id: `SB-${tIdx}-${idx}-${Math.random()}`,
+                                data: dataCorrente,
+                                descricao: descricao.toUpperCase().trim() || "LANÇAMENTO SICOOB",
+                                valor: valorNumerico
+                            });
+                        }
+                    }
+                }
+                else if (eInter) {
+
+                    const linhaCompleta = Object.values(r).join(" ").trim();
+
+                    if (linhaCompleta.includes(" de ") && linhaCompleta.match(/\d{4}/)) {
+                        dataCorrente = linhaCompleta;
+                        return;
+                    }
+
+                    let descricaoReal = "LANÇAMENTO INTER";
+
+                    let textoBruto = "";
+                    if (r[0] && !r[0].includes("R$") && !r[0].includes(" de ")) {
+                        textoBruto = r[0];
+                    } else if (r[1] && !r[1].includes("R$")) {
+                        textoBruto = r[1];
+                    }
+
+                    descricaoReal = descricaoReal.split(":")[0].trim().toUpperCase();
+
+                    let valorBruto = r[2] || r[1] || "";
+
+                    if (valorBruto.includes("R$") && !descricaoReal.toUpperCase().includes("SALDO")) {
+
+                        descricaoReal = textoBruto.trim().toUpperCase();
+
+                        const ehSaida = valorBruto.includes("-");
+
+                        const match = valorBruto.match(/([\d.]+,\d{2})/);
+
+                        if (match) {
+                            const apenasNumeros = match[0];
+                            let v = converterValor(apenasNumeros);
+
+                            if (ehSaida) v = -Math.abs(v);
+
+                            if (v !== 0) {
+                                extratoFinal.push({
+                                    id: `inter-${tIdx}-${idx}-${Math.random()}`,
+                                    data: dataCorrente,
+                                    descricao: descricaoReal.toUpperCase().trim(),
+                                    valor: v
+                                });
+                            }
+                        }
+                    }
+                }
+
+                else if (eNubank) {
+                    const linhaCompleta = Object.values(r).join(" ").trim();
+                    const matchData = linhaCompleta.match(/(\d{2}\s+[A-Z]{3}\s+\d{4})/i);
+                    
+                    if (matchData) {
+                        dataCorrente = matchData[0];
+                        if (linhaCompleta.length < 15) return;
+                    }
+                
+                    const textoValor = r[5] || r[4] || r[3] || "";
+                    
+                    const titulo = (r[2] || "").trim();
+                    const detalhe = (r[3] || "").trim();
+                    let textoDesc = titulo;
+                    if (detalhe && detalhe !== titulo && !detalhe.includes("/") && !detalhe.includes("R$")) {
+                        textoDesc += " - " + detalhe;
+                    }
+                    
+                    const descricaoFinal = textoDesc.toUpperCase();
+                    const ehResumo = descricaoFinal.includes("SALDO") || descricaoFinal.includes("TOTAL DE");
+                
+                    if (textoValor && !ehResumo) {
+                        const palavrasEntrada = ["RECEBIDO", "RECEBIDA", "REEMBOLSO", "ESTORNO", "DEPÓSITO", "RENDIMENTO", "TRANSFERÊNCIA RECEBIDA"];
+                        const ehEntrada = palavrasEntrada.some(p => descricaoFinal.includes(p));
+                
+                        const apenasNumeros = textoValor.replace(/[^\d.,]/g, '');
+                        let v = converterValor(apenasNumeros);
+                
+                        if (v !== 0) {
+                            v = ehEntrada ? Math.abs(v) : -Math.abs(v);
+                
+                            extratoFinal.push({
+                                id: `nu-${tIdx}-${idx}-${Math.random()}`,
+                                data: dataCorrente,
+                                descricao: descricaoFinal.trim(),
+                                valor: v
+                            });
+                        }
+                    }
+                }
+
+
             });
         });
 

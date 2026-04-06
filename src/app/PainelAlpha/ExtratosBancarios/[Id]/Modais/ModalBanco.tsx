@@ -17,6 +17,8 @@ const BANCOS_ATUAIS = [
     { id: 'pagBank', nome: 'Pag Bank', logo: 'https://play-lh.googleusercontent.com/O9GpqGB-9aE8Qt79JM1VXoVA5rRQjLb4LVk7yVwd2cuWeAi0ML6uVbc7aXZEOeyYwg=s256-rw' },
     { id: 'c6', nome: 'C6 Bank', logo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRP1k3xiZGECxPYfI1HB9NAwNIOFcrJ7Y9K5w&s' },
     { id: 'inter', nome: 'Inter', logo: 'https://media.licdn.com/dms/image/v2/D4D05AQFD2dx4DqQ-0w/videocover-high/videocover-high/0/1691499408584?e=2147483647&v=beta&t=rrL0MG7xNh8CQHxE28-z039goMj2ljvXyd1dYnXkFyI' },
+    { id: "credcrea", nome: "CredCrea", logo:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRLnKtHqFm_6MU1xUj-d4w_ArqWxdn7Wlw-Gw&s" },
+    { id: "caixa", nome: "Caixa", logo: "https://pbs.twimg.com/profile_images/1760094261775572992/_U76QhK9.jpg" }
 ];
 
 export default function ModalAdicionarBanco({ isOpen, onClose, onSave }: any) {

@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     X, Plus, Minus, Layers, Search, Download,
-    Calendar, Database, AlertCircle, CheckCircle2
+    Trash2, AlertCircle, Info
 } from 'lucide-react';
 import { Transacao } from '@prisma/client';
-import { toast } from 'sonner';
 
 interface PainelProps {
     empresa: { razaoSocial: string; cnpj: string };
@@ -15,21 +14,21 @@ interface PainelProps {
     setLinhasExtraidas: React.Dispatch<React.SetStateAction<any[]>>;
     onClose: () => void;
     onExport: (dados: any[]) => void;
-    bancoId: number;
-    isOpen: boolean;     
-    dadosContexto: any;
-    onAtualizar: () => Promise<void>;
+    bancoId?: number;
+    isOpen?: boolean;
+    dadosContexto?: any;
+    onAtualizar?: () => Promise<void>;
 }
 
-export default function PainelConferencia({ empresa, linhas, onClose, onExport, isOpen }: PainelProps) {
+export default function PainelConferencia({ empresa, linhas, setLinhasExtraidas, onClose, onExport, isOpen }: PainelProps) {
     const [filtroExportacao, setFiltroExportacao] = useState<'todos' | 'entradas' | 'saidas'>('todos');
     const [valorMinimo, setValorMinimo] = useState("");
     const [valorMaximo, setValorMaximo] = useState("");
+    const [showModalSelecionar, SetshowModalSelecionar] = useState(false);
+    const [selecionados, setSelecionados] = useState<number[]>([]);
 
-    const [linhasExtraidas, setLinhasExtraidas] = useState<Transacao[]>([]);
-
-    const [negativosEncontrados, setNegativosEncontrados] = useState<any[]>([]);
-    const [showModalNegativos, setShowModalNegativos] = useState(false);
+    const [pesquisa, setPesquisa] = useState('');
+    const [excluidosTemporarios, setExcluidosTemporarios] = useState<number[]>([]);
 
     const formatarMoedaInput = (valor: string) => {
         const apenasNumeros = valor.replace(/\D/g, "");
@@ -39,54 +38,55 @@ export default function PainelConferencia({ empresa, linhas, onClose, onExport, 
         );
     };
 
+    const executarExportacao = () => {
+        const baseDados = showModalSelecionar
+            ? linhas.filter((_, idx) => !excluidosTemporarios.includes(idx))
+            : linhas;
 
+        const filtrados = baseDados.filter((t) => {
+            const v = Number(t.valor);
+            const termo = pesquisa.toLowerCase();
 
-    const processarExportacao = () => {
-        const parse = (v: string) => v ? parseFloat(v.replace(/\./g, '').replace(',', '.')) : null;
-        const min = parse(valorMinimo) ?? -Infinity;
-        const max = parse(valorMaximo) ?? Infinity;
+            const bateBusca = !showModalSelecionar || !pesquisa || (
+                String(t.descricao).toLowerCase().includes(termo) ||
+                String(t.nomeBanco).toLowerCase().includes(termo) ||
+                String(t.data).toLowerCase().includes(termo)
+            );
 
-        const filtrados = linhas.filter((t) => {
-            const v = typeof t.valor === 'string' ? parseFloat(t.valor.replace(/\./g, '').replace(',', '.')) : Number(t.valor);
             let passaTipo = true;
             if (filtroExportacao === 'entradas') passaTipo = v > 0;
             if (filtroExportacao === 'saidas') passaTipo = v < 0;
-            return passaTipo && Math.abs(v) >= min && Math.abs(v) <= max;
+
+            return bateBusca && passaTipo;
         });
 
         if (filtrados.length === 0) return alert("Nenhum dado encontrado.");
-        onExport(filtrados);
-    };
 
-
-
-    const abrirConferenciaNegativos = () => {
-        const encontrados = linhas.filter((t: any) => {
-            const v = typeof t.valor === 'string'
-                ? parseFloat(t.valor.replace(/\./g, '').replace(',', '.'))
-                : Number(t.valor);
-            return v < 0;
+        // A SOLUÇÃO DEFINITIVA:
+        // Criamos um novo objeto onde a DATA é tratada como uma string crua.
+        // Se o seu onExport ainda assim der erro, o problema é na biblioteca que gera o Excel.
+        const dadosParaExportar = filtrados.map(item => {
+            return {
+                ...item,
+                data: String(item.data).toUpperCase().trim() // Força ser texto puro
+            };
         });
 
-        if (encontrados.length === 0) {
-            alert("Nenhum valor negativo encontrado.");
-            return;
-        }
-
-        setNegativosEncontrados(encontrados);
-        setShowModalNegativos(true);
+        onExport(dadosParaExportar);
     };
 
-    const confirmarRemocaoNegativos = () => {
-        const apenasPositivos = linhas.filter((t: any) => {
-            const v = typeof t.valor === 'string'
-                ? parseFloat(t.valor.replace(/\./g, '').replace(',', '.'))
-                : Number(t.valor);
-            return v >= 0;
+    const linhasNegativas = useMemo(() => {
+        return linhas.filter((t, index) => {
+            const v = typeof t.valor === 'string' ? parseFloat(t.valor.replace(/\./g, '').replace(',', '.')) : Number(t.valor);
+            const jaExcluido = excluidosTemporarios.includes(index);
+            const termo = pesquisa.toLowerCase();
+            const bateComBusca = t.descricao.toLowerCase().includes(termo) || t.nomeBanco.toLowerCase().includes(termo) || t.data.includes(termo);
+            return v < 0 && !jaExcluido && bateComBusca;
         });
+    }, [linhas, pesquisa, excluidosTemporarios]);
 
-        setLinhasExtraidas(apenasPositivos);
-        setShowModalNegativos(false);
+    const excluirVisual = (indexOriginal: number) => {
+        setExcluidosTemporarios([...excluidosTemporarios, indexOriginal]);
     };
 
     return (
@@ -96,7 +96,6 @@ export default function PainelConferencia({ empresa, linhas, onClose, onExport, 
             exit={{ opacity: 0, scale: 0.95 }}
             className="bg-white w-full max-w-7xl max-h-[92vh] rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden border border-slate-200"
         >
-            {/* HEADER ESTILIZADO */}
             <div className="p-8 border-b bg-white flex justify-between items-center">
                 <div className="space-y-1">
                     <h2 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter">
@@ -117,14 +116,13 @@ export default function PainelConferencia({ empresa, linhas, onClose, onExport, 
                 </button>
             </div>
 
-            {/* TABELA COM ESTILO DARK/WHITE MIX */}
             <div className="flex-1 overflow-auto p-8 bg-slate-50/50">
                 <table className="w-full border-separate border-spacing-y-2">
                     <thead className="sticky top-0 z-20">
                         <tr className="bg-slate-900 text-white">
                             <th className="p-5 text-left text-[10px] font-black uppercase tracking-[0.2em] first:rounded-l-2xl">Mês Ref.</th>
                             <th className="p-5 text-left text-[10px] font-black uppercase tracking-[0.2em]">Instituição</th>
-                            <th className="p-5 text-left text-[10px] font-black uppercase tracking-[0.2em]">Data</th> 
+                            <th className="p-5 text-left text-[10px] font-black uppercase tracking-[0.2em]">Data</th>
                             <th className="p-5 text-left text-[10px] font-black uppercase tracking-[0.2em]">Descrição Detalhada</th>
                             <th className="p-5 text-right text-[10px] font-black uppercase tracking-[0.2em] last:rounded-r-2xl">Valor</th>
                         </tr>
@@ -139,7 +137,7 @@ export default function PainelConferencia({ empresa, linhas, onClose, onExport, 
                                     {t.nomeBanco}
                                 </td>
                                 <td className="p-5 border-y border-slate-100 text-slate-600 font-bold text-[11px] whitespace-nowrap">
-                                    {t.data ? new Date(t.data).toLocaleDateString('pt-BR') : '-'}
+                                    {t.data}
                                 </td>
                                 <td className="p-5 border-y border-slate-100 text-slate-800 font-medium text-[11px] uppercase leading-tight max-w-md">
                                     {t.descricao}
@@ -153,11 +151,8 @@ export default function PainelConferencia({ empresa, linhas, onClose, onExport, 
                 </table>
             </div>
 
-            {/* FOOTER PREMIUM COM FILTROS */}
             <div className="p-8 border-t bg-slate-50 flex flex-col gap-8">
                 <div className="flex flex-wrap items-end justify-between gap-8">
-
-                    {/* Filtro Tipo */}
                     <div className="space-y-3">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">1. Filtrar Movimentação</p>
                         <div className="flex bg-slate-200 p-1.5 rounded-[1.2rem] border border-slate-300 shadow-inner">
@@ -173,7 +168,6 @@ export default function PainelConferencia({ empresa, linhas, onClose, onExport, 
                         </div>
                     </div>
 
-                    {/* Filtro Valores */}
                     <div className="space-y-3">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">2. Faixa de Valor (R$)</p>
                         <div className="flex items-center gap-3">
@@ -188,19 +182,14 @@ export default function PainelConferencia({ empresa, linhas, onClose, onExport, 
                             Cancelar
                         </button>
                         <button
-                            onClick={abrirConferenciaNegativos}
+                            onClick={() => SetshowModalSelecionar(true)}
                             className="group cursor-pointer flex items-center gap-3 bg-amber-50 hover:bg-amber-100 text-amber-700 px-6 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest border border-amber-200 transition-all active:scale-95 shadow-sm"
                         >
-                            <div className="relative">
-                                <Search size={18} className="group-hover:scale-110 transition-transform" />
-                                {linhasExtraidas.filter(t => t.valor < 0).length > 0 && (
-                                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full animate-pulse" />
-                                )}
-                            </div>
-                            Conferir {linhasExtraidas.filter(t => t.valor < 0).length} Negativos
+                            <Search size={18} className="group-hover:scale-110 transition-transform" />
+                            Conferir Lançamentos
                         </button>
                         <button
-                            onClick={processarExportacao}
+                            onClick={executarExportacao}
                             className={`cursor-pointer flex items-center gap-3 px-10 py-5 rounded-[1.5rem] font-black text-xs shadow-2xl transition-all hover:scale-105 text-white active:scale-95 ${filtroExportacao === 'entradas' ? 'bg-emerald-600 shadow-emerald-200' :
                                 filtroExportacao === 'saidas' ? 'bg-rose-600 shadow-rose-200' :
                                     'bg-slate-900 shadow-slate-200'
@@ -212,38 +201,192 @@ export default function PainelConferencia({ empresa, linhas, onClose, onExport, 
                     </div>
                 </div>
             </div>
-            {showModalNegativos && (
-                <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-                    <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
-                        <div className="p-6 border-b bg-amber-50 flex justify-between items-center">
-                            <div>
-                                <h3 className="text-xl font-black text-amber-900 uppercase tracking-tighter">
-                                    Transações Negativas Detectadas
-                                </h3>
-                                <p className="text-sm text-amber-700 font-medium">Confira os valores antes de remover do relatório.</p>
-                            </div>
-                            <button onClick={() => setShowModalNegativos(false)} className="cursor-pointer text-amber-900/50 hover:text-amber-900">
-                                <X size={24} />
-                            </button>
-                        </div>
 
-                        <div className="max-h-[60vh] overflow-auto p-4 space-y-2">
-                            {negativosEncontrados.map((n, i) => (
-                                <div key={i} className="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100 group hover:border-amber-200 transition-all">
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase">{n.data ? new Date(n.data).toLocaleDateString('pt-BR') : '-'}</span>
-                                        <span className="text-sm font-bold text-slate-700 uppercase leading-tight">{n.descricao}</span>
+            <AnimatePresence>
+                {showModalSelecionar && (
+                    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4">
+                        <motion.div
+                            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                            className="bg-white w-full max-w-6xl h-[88vh] rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-200 flex flex-col"
+                        >
+                            <div className="px-8 py-6 bg-white border-b border-slate-100 flex justify-between items-start">
+                                <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <div className="bg-indigo-100 p-1.5 rounded-lg">
+                                            <Layers size={20} className="text-indigo-600" />
+                                        </div>
+                                        <h3 className="text-xl font-black text-slate-800 tracking-tight uppercase italic">
+                                            Conferência Geral de Lançamentos
+                                        </h3>
                                     </div>
-                                    <span className="text-base font-black text-rose-600">
-                                        {Number(n.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                                    </span>
+                                    <p className="text-slate-500 text-xs font-bold uppercase tracking-wider opacity-60">
+                                        Revise entradas e saídas. Pesquise por valor, data ou descrição.
+                                    </p>
                                 </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
-        </motion.div>
+                                <button onClick={() => SetshowModalSelecionar(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400">
+                                    <X size={24} />
+                                </button>
+                            </div>
 
+                            <div className="px-8 py-4 bg-slate-50/50 border-b border-slate-100 flex gap-4 items-center">
+                                <div className="relative flex-1">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                    <input
+                                        type="text"
+                                        placeholder="Pesquisar valor (ex: 150,00), data ou descrição..."
+                                        className="w-full pl-10 pr-4 py-3 bg-white text-gray-500 border border-slate-200 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all shadow-sm"
+                                        value={pesquisa}
+                                        onChange={(e) => setPesquisa(e.target.value)}
+                                    />
+                                </div>
+
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => {
+                                            const filtradas = linhas.filter((t, idx) => {
+                                                const termo = pesquisa.toLowerCase();
+                                                const vStr = Number(t.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }).toLowerCase();
+                                                return !excluidosTemporarios.includes(idx) && (
+                                                    t.descricao.toLowerCase().includes(termo) ||
+                                                    t.nomeBanco.toLowerCase().includes(termo) ||
+                                                    t.data.includes(termo) ||
+                                                    vStr.includes(termo)
+                                                );
+                                            });
+                                            const idsParaSelecionar = filtradas.map(f => linhas.indexOf(f));
+                                            setSelecionados(selecionados.length === filtradas.length ? [] : idsParaSelecionar);
+                                        }}
+                                        className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-indigo-600 transition-colors"
+                                    >
+                                        {selecionados.length > 0 ? 'Inverter Seleção' : 'Selecionar Filtrados'}
+                                    </button>
+
+                                    {selecionados.length > 0 && (
+                                        <button
+                                            onClick={() => {
+                                                setExcluidosTemporarios([...excluidosTemporarios, ...selecionados]);
+                                                setSelecionados([]);
+                                            }}
+                                            className="flex items-center gap-2 px-5 py-2.5 bg-rose-50 text-rose-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-rose-100 hover:bg-rose-100 transition-all"
+                                        >
+                                            <Trash2 size={14} /> Apagar Selecionados
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="flex-1 overflow-auto px-8 py-2">
+                                <table className="w-full text-left border-separate border-spacing-y-2">
+                                    <thead className="sticky top-0 bg-white z-10">
+                                        <tr className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">
+                                            <th className="pl-4 w-12">Sel.</th>
+                                            <th>Instituição</th>
+                                            <th>Data</th>
+                                            <th>Descrição Detalhada</th>
+                                            <th className="text-right pr-6">Valor</th>
+                                            <th className="text-center w-20">Ação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {linhas.filter((t, idx) => {
+                                            const termo = pesquisa.toLowerCase();
+                                            const vStr = Number(t.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }).toLowerCase();
+                                            const bate = t.descricao.toLowerCase().includes(termo) ||
+                                                t.nomeBanco.toLowerCase().includes(termo) ||
+                                                t.data.includes(termo) ||
+                                                vStr.includes(termo);
+                                            return !excluidosTemporarios.includes(idx) && bate;
+                                        }).map((t) => {
+                                            const idxOriginal = linhas.indexOf(t);
+                                            const isSelected = selecionados.includes(idxOriginal);
+                                            return (
+                                                <tr key={idxOriginal} className={`group transition-all ${isSelected ? 'bg-indigo-50 ring-1 ring-indigo-200' : 'bg-white'} border border-slate-100 shadow-sm rounded-xl`}>
+                                                    <td className="p-4 rounded-l-2xl">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isSelected}
+                                                            onChange={() => {
+                                                                setSelecionados(prev =>
+                                                                    prev.includes(idxOriginal) ? prev.filter(id => id !== idxOriginal) : [...prev, idxOriginal]
+                                                                );
+                                                            }}
+                                                            className="w-5 h-5 rounded-lg border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer transition-all"
+                                                        />
+                                                    </td>
+                                                    <td className="p-4 text-[10px] font-black text-slate-500 uppercase italic">
+                                                        {t.nomeBanco}
+                                                    </td>
+                                                    <td className="p-4 text-slate-600 text-xs font-bold">
+                                                        {t.data}
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <div className="text-slate-900 text-[11px] font-bold uppercase leading-tight max-w-md group-hover:text-indigo-600 transition-colors">
+                                                            {t.descricao}
+                                                        </div>
+                                                    </td>
+                                                    <td className={`p-4 text-right font-black text-sm pr-6 ${t.valor < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                                        {Number(t.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                                    </td>
+                                                    <td className="p-4 text-center rounded-r-2xl">
+                                                        <button
+                                                            onClick={() => excluirVisual(idxOriginal)}
+                                                            className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+                                <div className="flex gap-8">
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Selecionados</span>
+                                        <span className="text-xl font-black text-indigo-600 tracking-tighter">{selecionados.length}</span>
+                                    </div>
+                                    <div className="w-px h-8 bg-slate-200 self-center" />
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Saldo Visível</span>
+                                        <span className={`text-xl font-black tracking-tighter ${linhas.reduce((acc, t, idx) => !excluidosTemporarios.includes(idx) ? acc + Number(t.valor) : acc, 0) < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                            {linhas.reduce((acc, t, idx) => !excluidosTemporarios.includes(idx) ? acc + Number(t.valor) : acc, 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => {
+                                            setSelecionados([]);
+                                            setExcluidosTemporarios([]);
+                                            SetshowModalSelecionar(false);
+                                        }}
+                                        className="cursor-pointer px-8 py-4 bg-white border border-slate-200 text-slate-500 text-[11px] font-black uppercase tracking-widest rounded-2xl hover:bg-slate-50 transition-all shadow-sm"
+                                    >
+                                        Resetar e Sair
+                                    </button>
+
+                                    <button
+                                        onClick={executarExportacao}
+                                        className={`cursor-pointer flex items-center gap-3 px-10 py-5 rounded-[1.5rem] font-black text-xs shadow-2xl transition-all hover:scale-105 text-white active:scale-95 ${filtroExportacao === 'entradas' ? 'bg-emerald-600 shadow-emerald-200' :
+                                            filtroExportacao === 'saidas' ? 'bg-rose-600 shadow-rose-200' :
+                                                'bg-slate-900 shadow-slate-200'
+                                            }`}
+                                    >
+                                        <Download size={20} strokeWidth={2.5} />
+                                        EXPORTAR
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+        </motion.div>
     );
 }
