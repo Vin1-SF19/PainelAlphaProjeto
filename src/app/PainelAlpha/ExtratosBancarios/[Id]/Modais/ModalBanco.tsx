@@ -32,8 +32,7 @@ export default function ModalAdicionarBanco({ isOpen, onClose, onSave }: any) {
             <motion.div
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                className="bg-[#0f172a] border border-white/10 w-full max-w-2xl rounded-[2.5rem] overflow-hidden shadow-2xl"
-            >
+                className="bg-[#0f172a] border border-white/10 w-full max-w-2xl max-h-[90vh] flex flex-col rounded-[2.5rem] overflow-hidden shadow-2xl">
                 {/* Header */}
                 <div className="p-8 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
                     <div>
@@ -45,8 +44,8 @@ export default function ModalAdicionarBanco({ isOpen, onClose, onSave }: any) {
                     </button>
                 </div>
 
-                <div className="p-8 space-y-8">
-                    <div className="grid grid-cols-3 gap-4">
+                <div className="p-4 sm:p-8 space-y-8 overflow-y-auto flex-1 custom-scrollbar">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                         {BANCOS_ATUAIS.map((banco) => (
                             <button
                                 key={banco.id}

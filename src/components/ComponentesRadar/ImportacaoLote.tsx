@@ -5,6 +5,9 @@ type Props = {
     onImportar: (dados: any[]) => void;
     processando: boolean;
     onCancelar: () => void;
+    statusLote?: string;      
+    processadas?: number;
+    totalLote?: number;
 };
 
 export default function ImportarPlanilha({ onImportar, processando, onCancelar }: Props) {

@@ -80,7 +80,6 @@ export async function GET(req: Request) {
                 if (dadosRadar && !dadosRadar.error) radar = dadosRadar;
             }
         } catch (e) {
-            // Falha silenciosa no radar para não impedir o salvamento dos dados da receita
         }
 
         const payload = {

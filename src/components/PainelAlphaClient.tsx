@@ -100,8 +100,9 @@ export default function PainelAlphaClient({ session, chamadosIniciais, configBan
         { id: "Senhas", title: "Gerenciamento de Acessos", desc: "Sistema de gerenciamento de senhas e acessos.", img: "../senha.png", link: "/PainelAlpha/AlphaVault", color: "from-red-600/20", tag: "Administração" },
         { id: "Perse", title: "Analise Fiscal", desc: "Sistema de analise previa para Oportunidades tributarias", img: "../planejamento-tributario.png", link: "/PainelAlpha/AlphaConnect", color: "from-green-600/20", tag: "tributario" },
         { id: "Extratos", title: "ANÁLISE DE EXTRATOS BANCÁRIOS", desc: "ANÁLISE DE EXTRATOS BANCÁRIOS", img: "../taxa.png", link: "/PainelAlpha/ExtratosBancarios", color: "from-black-600/20", tag: "Financeiro" },
-        { id: "ServiçosGerais", title: "Serviços Gerais", desc: "Bancada de Tarefas Diarias", img: "../cleaning.png", link: "/PainelAlpha/PainelTarefas", color: "from-pink-600/20", tag: "Serviços Gerais" }
-
+        { id: "ServiçosGerais", title: "Serviços Gerais", desc: "Bancada de Tarefas Diarias", img: "../cleaning.png", link: "/PainelAlpha/PainelTarefas", color: "from-pink-600/20", tag: "Serviços Gerais" },
+        { id: "NovoRadar", title: "Consulta RADAR", desc: "Novo painel de consulta RADAR", img: "../cargueiro.png", link: "/PainelAlpha/NovoPainelHabilitacao", color:"from-yellow-600/20", tag: "RADAR" },
+        { id: "analise", title: "Sistema de pré análise", desc: "Sistema de pré análise e gerador de ficha de reunião", img: "../document.png", link: "/PainelAlpha/SistemaPreAnalise", color: "from-purple-600/20", tag: "Gerador de ficha de reuniao"}
     ];
 
     const { favoritos, restante } = useMemo(() => {

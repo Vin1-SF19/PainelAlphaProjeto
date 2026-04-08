@@ -36,7 +36,10 @@ const MODULOS_BASE = [
   { id: "Senhas", title: "Gerenciamento de Acessos", img: "/senha.png", tag: "Administração" },
   { id: "Perse", title: "Alpha Connect", img: "/planejamento-tributario.png", tag: "Connect"},
   { id: "Extratos", title: "Sistema de Extratos Bancarios", img: "/taxa.png", tag: "Financeiro"},
-  { id: "ServiçosGerais", title: "Serviços Gerais", img: "/cleaning.png", tag: "Serviços Gerais"}
+  { id: "ServiçosGerais", title: "Serviços Gerais", img: "/cleaning.png", tag: "Serviços Gerais"},
+  { id: "NovoRadar", title: "Consulta RADAR", img: "/cargueiro.png", tag: "RADAR" },
+  { id: "analise", title: "Sistema Pre Analise", img: "/document.png", tag: "Gerador de ficha de reunião"}
+    
 ];
 
 export default function AtalhosPage() {

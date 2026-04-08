@@ -15,18 +15,24 @@ export async function GET() {
   try {
     const ultimaMensagem = await db.mensagensChamado.findFirst({
       where: {
+        
         autorId: { not: userId },
+        
+        
+        chamado: {
+            status: { in: ["Aberto", "Em_Andamento"] },
+            
+            ...(!isAdmin && { usuarioId: userId })
+        },
+
         ...(isAdmin 
           ? { lida_admin: false } 
-          : { 
-              lida_usuario: false, 
-              chamado: { usuarioId: userId } 
-            }
+          : { lida_usuario: false }
         ),
       },
       include: {
         autor: { select: { nome: true } },
-        chamado: { select: { titulo: true, id: true } }
+        chamado: { select: { titulo: true, id: true, status: true } }
       },
       orderBy: { createdAt: 'desc' } 
     });

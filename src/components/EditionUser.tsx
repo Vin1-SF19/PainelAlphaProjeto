@@ -48,7 +48,9 @@ const MODULOS_SISTEMA = [
   { id: "Senhas", label: "Gerenciamento de Senhas", desc: "Gerencie Cadastros e Senhas de sistemas" },
   { id: "Perse", label: "Analise Fiscal", desc: "Sistema de pesquisa cnpj" },
   { id: "Extratos", label: "Extratos Bancarios", desc: "Sistema de Extratos Bancarios" },
-  { id: "ServiçosGerais", label:"Serviços Gerais", desc: "Painel de conferencia de tarefas" }
+  { id: "ServiçosGerais", label:"Serviços Gerais", desc: "Painel de conferencia de tarefas" },
+  { id: "NovoRadar", label: "Consulta RADAR", desc: "Novo painel de consulta RADAR"},
+  { id: "analise", label: "Sistema de pré análise", desc: "Sistema de pré análise e gerador ficha"}
 ];
 
 const SETORES_LISTA = [
