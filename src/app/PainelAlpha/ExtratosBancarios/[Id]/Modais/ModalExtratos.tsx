@@ -39,38 +39,52 @@ export default function PainelConferencia({ empresa, linhas, setLinhasExtraidas,
     };
 
     const executarExportacao = () => {
+        const parseValorInput = (val: string) => {
+            if (!val) return null;
+            const num = Number(val.replace(/\D/g, '')) / 100;
+            return isNaN(num) ? null : num;
+        };
+
+        const min = parseValorInput(valorMinimo);
+        const max = parseValorInput(valorMaximo);
+
         const baseDados = showModalSelecionar
             ? linhas.filter((_, idx) => !excluidosTemporarios.includes(idx))
             : linhas;
-    
+
         const filtrados = baseDados.filter((t) => {
             const v = Number(t.valor);
             const termo = pesquisa.toLowerCase();
-    
+
             const bateBusca = !showModalSelecionar || !pesquisa || (
                 String(t.descricao).toLowerCase().includes(termo) ||
                 String(t.nomeBanco).toLowerCase().includes(termo) ||
                 String(t.data).toLowerCase().includes(termo)
             );
-    
+
             let passaTipo = true;
             if (filtroExportacao === 'entradas') passaTipo = v > 0;
             if (filtroExportacao === 'saidas') passaTipo = v < 0;
-    
-            return bateBusca && passaTipo;
+
+            const valorParaFiltro = Math.abs(v);
+
+            let passaFaixa = true;
+            if (min !== null && valorParaFiltro < min) passaFaixa = false;
+            if (max !== null && valorParaFiltro > max) passaFaixa = false;
+
+            return bateBusca && passaTipo && passaFaixa;
         });
-    
-        if (filtrados.length === 0) return alert("Nenhum dado encontrado.");
-    
+
+        if (filtrados.length === 0) return alert("Nenhum dado encontrado com esses filtros.");
+
         const dadosParaExportar = filtrados.map(item => {
             let dataVisual = String(item.data).trim();
-    
             return {
                 ...item,
-                data: dataVisual.toUpperCase() 
+                data: dataVisual.toUpperCase()
             };
         });
-    
+
         onExport(dadosParaExportar);
     };
 
