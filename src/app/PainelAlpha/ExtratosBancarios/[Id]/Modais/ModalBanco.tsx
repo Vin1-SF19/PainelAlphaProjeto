@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Landmark, Info, Search, CheckCircle2 } from 'lucide-react';
 
 const BANCOS_ATUAIS = [
+    { id: 'itauC', nome: 'Itaú - Consolidado', logo: 'https://assets.hgbrasil.com/finance/companies/big/itauunibanco.png' },
     { id: 'itau', nome: 'Itaú', logo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQGsT3SsiVHEr22i0zROsQdDulrZn44Fg3FTA&s' },
     { id: 'bradesco', nome: 'Bradesco', logo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT76Y8Kg3vkr8pHetdO3ELHzbU9OcaN-YtxQw&s' },
     { id: 'nubank', nome: 'Nubank', logo: 'https://s3.amazonaws.com//beta-img.b2bstack.net/uploads/production/provider/image/36/o2hFZ2Wc.png' },

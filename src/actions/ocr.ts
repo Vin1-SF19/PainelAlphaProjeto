@@ -43,6 +43,7 @@ export async function ProcessarExtratoIA(formData: FormData) {
         const extratoFinal: any[] = [];
 
         //----BANCOS ATUAIS----
+        const eItauC = layoutAlvo.includes("itauC");
         const eItau = layoutAlvo.includes("itau");
         const eBB = layoutAlvo.includes("brasil") || layoutAlvo.includes("bb");
         const eBradesco = layoutAlvo.includes("bradesco");
@@ -87,7 +88,7 @@ export async function ProcessarExtratoIA(formData: FormData) {
                     if (match) dataCorrente = match[0];
                 }
 
-                if (eItau) {
+                if (eItauC) {
                     const vE = converterValor(r[3]);
                     const vS = converterValor(r[4]);
                     if (vE !== 0 || vS !== 0) {
@@ -96,6 +97,37 @@ export async function ProcessarExtratoIA(formData: FormData) {
                             data: dataCorrente,
                             descricao: r[2] || "LANÇAMENTO ITAU",
                             valor: vS !== 0 ? -Math.abs(vS) : vE
+                        });
+                    }
+                }
+
+                else if (eItau) {
+                    const valorRaw = r[5];
+                    const valorNumerico = converterValor(valorRaw);
+                
+                    const descOriginal = r[1] || "";
+                    const detalheOriginal = r[2] || "";
+                    
+                    const regexData = /\d{2}\/\d{2}(\/\d{2,4})?/g;
+                    
+                    const descLimpa = descOriginal.replace(regexData, "").trim();
+                    const detalheLimpo = detalheOriginal.replace(regexData, "").trim();
+                
+                    const descFinal = `${descLimpa} ${detalheLimpo ? `- ${detalheLimpo}` : ""}`
+                        .toUpperCase()
+                        .replace(/\s+/g, ' ') 
+                        .trim();
+                
+                    const isSaldo = descFinal.includes("SALDO") || descFinal.includes("S D O");
+                
+                    if (valorNumerico !== 0 && !isSaldo) {
+                        extratoFinal.push({
+                            id: `it-ex-${tIdx}-${idx}-${Math.random()}`,
+                            data: r[0] || dataCorrente, 
+                            descricao: descFinal, 
+                            documento: r[3] || "", 
+                            valor: valorNumerico,
+                            nomeBanco: "ITAÚ"
                         });
                     }
                 }
@@ -160,6 +192,7 @@ export async function ProcessarExtratoIA(formData: FormData) {
                         }
                     }
                 }
+
                 // A TRABALHAR PUXANDO SO VALORES NEGATIVOS
                 else if (eSicoob) {
                     const valorBruto = r[5] || "";
@@ -243,34 +276,34 @@ export async function ProcessarExtratoIA(formData: FormData) {
                 else if (eNubank) {
                     const linhaCompleta = Object.values(r).join(" ").trim();
                     const matchData = linhaCompleta.match(/(\d{2}\s+[A-Z]{3}\s+\d{4})/i);
-                    
+
                     if (matchData) {
                         dataCorrente = matchData[0];
                         if (linhaCompleta.length < 15) return;
                     }
-                
+
                     const textoValor = r[5] || r[4] || r[3] || "";
-                    
+
                     const titulo = (r[2] || "").trim();
                     const detalhe = (r[3] || "").trim();
                     let textoDesc = titulo;
                     if (detalhe && detalhe !== titulo && !detalhe.includes("/") && !detalhe.includes("R$")) {
                         textoDesc += " - " + detalhe;
                     }
-                    
+
                     const descricaoFinal = textoDesc.toUpperCase();
                     const ehResumo = descricaoFinal.includes("SALDO") || descricaoFinal.includes("TOTAL DE");
-                
+
                     if (textoValor && !ehResumo) {
                         const palavrasEntrada = ["RECEBIDO", "RECEBIDA", "REEMBOLSO", "ESTORNO", "DEPÓSITO", "RENDIMENTO", "TRANSFERÊNCIA RECEBIDA"];
                         const ehEntrada = palavrasEntrada.some(p => descricaoFinal.includes(p));
-                
+
                         const apenasNumeros = textoValor.replace(/[^\d.,]/g, '');
                         let v = converterValor(apenasNumeros);
-                
+
                         if (v !== 0) {
                             v = ehEntrada ? Math.abs(v) : -Math.abs(v);
-                
+
                             extratoFinal.push({
                                 id: `nu-${tIdx}-${idx}-${Math.random()}`,
                                 data: dataCorrente,
