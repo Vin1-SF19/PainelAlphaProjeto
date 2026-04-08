@@ -42,36 +42,35 @@ export default function PainelConferencia({ empresa, linhas, setLinhasExtraidas,
         const baseDados = showModalSelecionar
             ? linhas.filter((_, idx) => !excluidosTemporarios.includes(idx))
             : linhas;
-
+    
         const filtrados = baseDados.filter((t) => {
             const v = Number(t.valor);
             const termo = pesquisa.toLowerCase();
-
+    
             const bateBusca = !showModalSelecionar || !pesquisa || (
                 String(t.descricao).toLowerCase().includes(termo) ||
                 String(t.nomeBanco).toLowerCase().includes(termo) ||
                 String(t.data).toLowerCase().includes(termo)
             );
-
+    
             let passaTipo = true;
             if (filtroExportacao === 'entradas') passaTipo = v > 0;
             if (filtroExportacao === 'saidas') passaTipo = v < 0;
-
+    
             return bateBusca && passaTipo;
         });
-
+    
         if (filtrados.length === 0) return alert("Nenhum dado encontrado.");
-
-        // A SOLUÇÃO DEFINITIVA:
-        // Criamos um novo objeto onde a DATA é tratada como uma string crua.
-        // Se o seu onExport ainda assim der erro, o problema é na biblioteca que gera o Excel.
+    
         const dadosParaExportar = filtrados.map(item => {
+            let dataVisual = String(item.data).trim();
+    
             return {
                 ...item,
-                data: String(item.data).toUpperCase().trim() // Força ser texto puro
+                data: dataVisual.toUpperCase() 
             };
         });
-
+    
         onExport(dadosParaExportar);
     };
 

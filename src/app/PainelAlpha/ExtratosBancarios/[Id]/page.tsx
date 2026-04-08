@@ -129,7 +129,7 @@ const exportarRelatorioExcel = async (transacoes: any[], razaoSocial: string, cn
         const row = worksheet.addRow({
             mes: t.mesReferencia.toUpperCase(),
             banco: nomeBanco,
-            data: t.data ? new Date(t.data).toLocaleDateString('pt-BR') : "",
+            data: t.data ? String(t.data).toUpperCase() : "",
             descricao: (t.descricao || "").toUpperCase(),
             valor: Number(t.valor || 0),
             justificativa: ""
