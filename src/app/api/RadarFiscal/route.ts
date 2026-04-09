@@ -61,7 +61,6 @@ export async function GET(req: Request) {
 
         const dataAbertura = parseData(receita.abertura_bruta || receita.dataConstituicao);
         
-        // Prioriza a data de exclusão que vem da receita (ReceitaWS)
         const dataExclusaoSimples = receita.simples?.data_exclusao || ea?.data_exc_simples || null;
         const dataExclusao = parseData(dataExclusaoSimples);
 
