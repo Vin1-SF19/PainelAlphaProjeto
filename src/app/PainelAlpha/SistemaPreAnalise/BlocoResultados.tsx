@@ -1,15 +1,26 @@
 "use client";
 
+import { consultarRadar } from "@/actions/PreAnalise";
 import {
     ShieldCheck, BarChart3, MapPin,
     Users, Phone, Mail, DollarSign, Briefcase,
     Activity, Landmark, User, Globe, History, Receipt
 } from "lucide-react";
+import { useState } from "react";
+
+
+type StatusConsulta = "idle" | "loading" | "success" | "error";
 
 export default function BlocoResultados({ dados, visual, item }: { dados: any, visual: any, item: any }) {
     const rfb = dados.rfb?.dados || {};
-    const radar = dados.radar?.dados || {};
     const empresaqui = dados.empresaqui?.dados || {};
+    const [loadingRadar, setLoadingRadar] = useState(false);
+
+
+    const [etapas, setEtapas] = useState({
+        radar: { status: "idle", dados: null as any }
+    });
+    const dadosExibicaoRadar = etapas.radar.dados || dados.radar?.dados || {};
 
 
 
@@ -31,6 +42,46 @@ export default function BlocoResultados({ dados, visual, item }: { dados: any, v
         SC: "Santa Catarina", SP: "São Paulo", SE: "Sergipe", TO: "Tocantins"
     };
 
+
+    const consultaUnitaria = async (e?: React.MouseEvent) => {
+        e?.preventDefault();
+
+        const cnpjParaConsultar = rfb.cnpj?.replace(/\D/g, "");
+
+        if (!cnpjParaConsultar) {
+            console.error("CNPJ não encontrado nos dados da RFB!");
+            return;
+        }
+
+        if (loadingRadar) return;
+        setLoadingRadar(true);
+
+        setEtapas((prev: any) => ({
+            ...prev,
+            radar: { ...prev.radar, status: "loading" }
+        }));
+
+        try {
+            const response = await fetch(`/api/ConsultaRadar?cnpj=${cnpjParaConsultar}`);
+            const resRadar = await response.json();
+
+            setEtapas((prev: any) => ({
+                ...prev,
+                radar: {
+                    status: resRadar.error ? "error" : "success",
+                    dados: resRadar
+                }
+            }));
+        } catch (error) {
+            console.error("Erro na API:", error);
+            setEtapas((prev: any) => ({
+                ...prev,
+                radar: { status: "error", dados: null }
+            }));
+        } finally {
+            setLoadingRadar(false);
+        }
+    };
 
     return (
         <div className="space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-6 duration-1000">
@@ -94,7 +145,19 @@ export default function BlocoResultados({ dados, visual, item }: { dados: any, v
                     <div className="p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] bg-slate-900/40 border border-white/5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 md:gap-10">
                         <DataField label="Data de Abertura" value={rfb.dataConstituicao} />
                         <DataField label="Porte da Empresa" value={rfb.porte} />
+                        <DataField
+                            label="Capital Social"
+                            value={
+                                rfb.capitalSocial
+                                    ? Number(rfb.capitalSocial).toLocaleString('pt-BR', {
+                                        style: 'currency',
+                                        currency: 'BRL'
+                                    })
+                                    : "R$ 0,00"
+                            }
+                        />
                         <DataField label="Natureza Jurídica" value={rfb.natureza_juridica} fullWidth />
+
                         <div className="flex flex-col gap-4 pt-4 border-t border-white/5">
                             <div className="flex items-center justify-between">
                                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
@@ -171,7 +234,7 @@ export default function BlocoResultados({ dados, visual, item }: { dados: any, v
                     <div className="p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] bg-slate-900/40 border border-white/5">
                         <div className="flex items-center gap-4 mb-8 border-b border-white/5 pb-6">
                             <Users size={24} className={visual.text} />
-                            <h3 className="text-sm md:text-base font-black uppercase tracking-[0.2em] text-white">QSA</h3>
+                            <h3 className="text-sm md:text-base font-black uppercase tracking-[0.2em] text-white">Quadro de Sócios e Administradores (QSA)</h3>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {rfb.qsa?.length > 0 ? rfb.qsa.map((socio: any, i: number) => (
@@ -202,6 +265,7 @@ export default function BlocoResultados({ dados, visual, item }: { dados: any, v
                             />
                             <DataField label="CEP" value={rfb.cep} />
                             <DataField label="País" value="BRASIL" />
+
                         </div>
                     </div>
                 </div>
@@ -209,34 +273,82 @@ export default function BlocoResultados({ dados, visual, item }: { dados: any, v
                 {/* COLUNA DIREITA: TRIBUTÁRIO & RADAR */}
                 <div className="lg:col-span-4 space-y-6 md:space-y-10">
 
+
+                    <div className={`p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] border transition-all duration-700 ${etapas.radar.status === "idle" ? 'bg-white/[0.02] border-white/5' : 'bg-blue-500/5 border-blue-500/20 shadow-xl'}`}>
+                        {etapas.radar.status === "idle" ? (
+                            <div className="py-12 flex flex-col items-center justify-center space-y-6 animate-in fade-in duration-500">
+                                <div className="p-4 rounded-full bg-blue-500/10 mb-2">
+                                    <ShieldCheck size={40} className="text-blue-500/50" />
+                                </div>
+                                <div className="text-center">
+                                    <h4 className="text-white font-black uppercase tracking-widest text-sm">Habilitação Radar</h4>
+                                    <p className="text-slate-500 text-[10px] uppercase mt-2">Consulta opcional sob demanda</p>
+                                </div>
+                                <button
+                                    onClick={consultaUnitaria}
+                                    className="px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest bg-blue-600 hover:bg-blue-500 text-white shadow-lg w-full max-w-[250px] transition-all active:scale-95 cursor-pointer"
+                                >
+                                    Iniciar Consulta
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="animate-in fade-in slide-in-from-top-4 duration-700 space-y-6">
+                                <div className="flex items-center justify-between mb-8">
+                                    <div className="flex items-center gap-4">
+                                        <ShieldCheck size={24} className={etapas.radar.status === "error" ? "text-red-400" : "text-blue-400"} />
+                                        <h3 className="text-sm font-black uppercase tracking-widest text-white">Radar Siscomex</h3>
+                                    </div>
+
+                                    <button
+                                        onClick={consultaUnitaria}
+                                        disabled={loadingRadar}
+                                        className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10 transition-all cursor-pointer disabled:opacity-50"
+                                    >
+                                        {loadingRadar ? 'Consultando...' : 'Reconsultar'}
+                                    </button>
+                                </div>
+
+                                <div className="space-y-6">
+                                    {etapas.radar.status === "error" ? (
+                                        <div className="py-6 px-4 rounded-2xl bg-red-500/5 border border-red-500/20 text-center">
+                                            <p className="text-red-400 text-[10px] font-black uppercase tracking-widest">Falha na consulta. Tente novamente.</p>
+                                        </div>
+                                    ) : (
+                                        <div className={loadingRadar ? "opacity-40 animate-pulse pointer-events-none" : ""}>
+                                            <DataField label="Submodalidade de Atuação" value={dadosExibicaoRadar?.submodalidade || "---"} />
+                                            <DataField label="Status de Habilitação" value={dadosExibicaoRadar?.situacao || "---"} />
+                                            <DataField label="Última Atualização" value={dadosExibicaoRadar?.dataSituacao || "---"} />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                     {/* REGIME FISCAL */}
                     <div className={`p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] border ${visual.border} bg-white/5 shadow-2xl backdrop-blur-sm`}>
                         <div className="flex items-center gap-4 mb-10">
                             <Landmark size={24} className={visual.text} />
-                            <h3 className="text-sm md:text-base font-black uppercase tracking-[0.2em] text-white">Regime Fiscal</h3>
+                            <h3 className="text-sm md:text-base font-black uppercase tracking-[0.2em] text-white">Regime TRIBUTÁRIO</h3>
                         </div>
+
                         <div className="space-y-6">
+                            {/* BLOCO SIMPLES NACIONAL */}
                             <StatusRow label="Simples Nacional" active={rfb.optante_simples} />
-                            <DataField label="Data de Opção (Simples)" value={rfb.data_opcao || "N/A"} />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <DataField label="Data de Opção (Simples)" value={rfb.data_opcao || "N/A"} />
+                                <DataField label="Data de Exclusão (Simples)" value={rfb.data_exclusaoSimples || "N/A"} />
+                            </div>
+
                             <div className="h-[1px] bg-white/5 my-6" />
+
+                            {/* BLOCO MEI */}
                             <StatusRow label="MEI (Microempreendedor)" active={rfb.optante_simei} />
-                            <DataField label="Capital Social Declarado" value={rfb.capitalSocial} />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <DataField label="Data de Opção (MEI)" value={rfb.data_opcaoSimei || "N/A"} />
+                                <DataField label="Data de Exclusão (MEI)" value={rfb.data_exclusaoSimei || "N/A"} />
+                            </div>
                         </div>
                     </div>
-
-                    {/* RADAR SISCOMEX */}
-                    <div className="p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] bg-blue-500/5 border border-blue-500/20 shadow-xl">
-                        <div className="flex items-center gap-4 mb-8">
-                            <ShieldCheck size={24} className="text-blue-400" />
-                            <h3 className="text-sm md:text-base font-black uppercase tracking-[0.2em] text-white">Radar Siscomex</h3>
-                        </div>
-                        <div className="space-y-6">
-                            <DataField label="Submodalidade de Atuação" value={radar.submodalidade} />
-                            <DataField label="Status de Habilitação" value={radar.situacao} />
-                            <DataField label="Última Atualização" value={radar.dataSituacao} />
-                        </div>
-                    </div>
-
                     {/* EMPRESAQUI */}
                     <div className="p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] bg-purple-500/5 border border-purple-500/20 shadow-xl">
                         <div className="flex items-center gap-4 mb-8">

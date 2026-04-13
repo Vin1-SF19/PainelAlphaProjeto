@@ -26,6 +26,7 @@ export async function getReceitaData(cnpj: string) {
         capitalSocial: d.capital_social || 0,
         data_opcao: d.simples?.data_opcao || d.opcao_pelo_simples_data || null,
         optante_simples: !!d.simples?.optante,
+        data_exclusaoSimples: d.simples?.data_exclusao,
         optante_simei: !!d.simei?.optante,
         data_opcaoSimei: d.simei?.data_opcao,
         data_exclusaoSimei: d.simei?.data_exclusao,

@@ -26,6 +26,8 @@ export default function SistemaPreAnalise() {
     const [modalHistorico, setModalHistorico] = useState(false);
     const [historicoPesquisas, setHistoricoPesquisas] = useState([]);
 
+    const isAdmin = session?.user.role === "Admin";
+
     const [etapas, setEtapas] = useState({
         rfb: { status: "idle" as StatusConsulta, dados: null as any },
         radar: { status: "idle" as StatusConsulta, dados: null as any },
@@ -65,19 +67,13 @@ export default function SistemaPreAnalise() {
         const resRfb = await consultarReceita(cleanCnpj);
         setEtapas(prev => ({ ...prev, rfb: { status: resRfb.error ? "error" : "success", dados: resRfb } }));
 
-        // Passo 2: Radar
-        setEtapas(prev => ({ ...prev, radar: { status: "loading", dados: null } }));
-        const resRadar = await consultarRadar(cleanCnpj);
-        setEtapas(prev => ({ ...prev, radar: { status: resRadar.error ? "error" : "success", dados: resRadar } }));
-
-        // Passo 3: EmpresaAqui
+        //EmpresaAqui
         setEtapas(prev => ({ ...prev, empresaqui: { status: "loading", dados: null } }));
         const resEq = await consultarEmpresaAqui(cleanCnpj);
         setEtapas(prev => ({ ...prev, empresaqui: { status: resEq.error ? "error" : "success", dados: resEq } }));
     };
 
     const reconsultarIndividual = async (chave: 'rfb' | 'radar' | 'empresaqui') => {
-        // 1. Reseta o status da etapa específica para 'loading'
         setEtapas(prev => ({
             ...prev,
             [chave]: { ...prev[chave], status: 'loading', erro: null }
@@ -89,9 +85,6 @@ export default function SistemaPreAnalise() {
 
             if (chave === 'rfb') {
                 res = await fetch(`/api/ReceitaFederal?cnpj=${cnpjLimpo}`);
-            } else if (chave === 'radar') {
-
-                res = await fetch(`/api/ConsultaRadar?cnpj=${cnpjLimpo}`);
             } else {
                 res = await fetch(`/api/EmpresaAqui?cnpj=${cnpjLimpo}`);
             }
@@ -170,13 +163,28 @@ export default function SistemaPreAnalise() {
         <div className="min-h-screen bg-[#020617] text-white selection:bg-white/10">
             <header className="fixed top-0 left-0 w-full h-20 border-b border-white/5 bg-slate-950/50 backdrop-blur-2xl z-50 flex items-center px-8">
                 <div className="container mx-auto flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className={`p-2.5 rounded-xl ${visual.bg} ${visual.shadow}`}>
-                            <Fingerprint size={22} />
+                    <div className="flex items-center gap-6">
+
+                        <div className="flex items-center gap-3">
+                            <div className={`p-2.5 rounded-xl ${visual.bg} ${visual.shadow} animate-pulse-slow`}>
+                                <Fingerprint size={22} className="text-white" />
+                            </div>
+                            <h1 className="text-xl font-black italic tracking-tighter text-white">
+                                Sistema de pré <span className={visual.text}>Analise</span>
+                            </h1>
                         </div>
-                        <h1 className="text-xl font-black italic tracking-tighter text-white">
-                            Sistema de pré <span className={visual.text}>Analise</span>
-                        </h1>
+
+                        <div className="h-8 w-[1px] bg-white/10 hidden md:block" />
+
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 backdrop-blur-sm">
+                            <div className={`w-2 h-2 rounded-full ${visual.bg} animate-pulse`} />
+                            <span className="text-[10px] uppercase font-bold tracking-widest text-zinc-500">
+                                USUARIO:
+                            </span>
+                            <span className="text-sm font-medium text-zinc-200 tracking-tight">
+                                {session?.user?.nome || "SEM LOGIN!!"}
+                            </span>
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-3">
@@ -233,13 +241,6 @@ export default function SistemaPreAnalise() {
                                     icon={<Database size={24} />}
                                     visual={visual}
                                     onRetry={() => reconsultarIndividual('rfb')}
-                                />
-                                <ProgressCard
-                                    label="Radar SISCOMEX"
-                                    status={etapas.radar.status}
-                                    icon={<ShieldCheck size={24} />}
-                                    visual={visual}
-                                    onRetry={() => reconsultarIndividual('radar')}
                                 />
                                 <ProgressCard
                                     label="Regime Tributário"
@@ -374,6 +375,8 @@ export default function SistemaPreAnalise() {
                 </div>
             )}
 
+            
+
         </div>
 
     );
@@ -423,6 +426,8 @@ const ProgressCard = ({ label, status, icon, visual, onRetry }: any) => {
                         isLoading ? 'bg-indigo-500 animate-pulse w-1/2' : 'w-0'
                     }`} />
             </div>
+
+
 
         </div>
     );

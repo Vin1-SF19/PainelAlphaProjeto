@@ -32,6 +32,29 @@ export async function updateChamadosStatus(id: number, novoStatus: any, solucao?
   }
 }
 
+
+async function avisarNoZap(titulo: string, quem: string, urgencia: string, data: string) {
+  const numeroDono = "554731702279"; 
+  const apiKey = "7810831"; 
+  
+  const textoFormatado = 
+    `*🚨 NOVO CHAMADO NO PAINEL*\n\n` +
+    `*👤 Autor:* ${quem}\n` +
+    `*📅 Data:* ${data}\n` +
+    `*🔥 Urgência:* ${urgencia}\n` +
+    `*📝 Assunto:* ${titulo}\n\n` +
+    `_Enviado por Bibble AI_`;
+
+  const url = `https://api.callmebot.com/whatsapp.php?phone=${numeroDono}&text=${encodeURIComponent(textoFormatado)}&apikey=${apiKey}`;
+
+  try {
+    await fetch(url, { method: 'GET', mode: 'no-cors' });
+  } catch (e) {
+    console.error("Erro ao enviar notificação para o WhatsApp");
+  }
+}
+
+
 export async function createChamadoAction(formData: FormData) {
   const session = await auth();
   if (!session) return { error: "Sessão expirada. Refaça o login." };
@@ -65,6 +88,23 @@ export async function createChamadoAction(formData: FormData) {
         status: "ABERTO",
       },
     });
+
+    
+    const dataFormatada = new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date());
+
+    await avisarNoZap(
+      titulo, 
+      session.user.nome || "Usuário Desconhecido", 
+      prioridade.toUpperCase(),                  
+      dataFormatada                               
+    );
+
   } catch (error) {
     console.error("Erro ao criar chamado:", error);
     return { error: "Falha ao registrar chamado no banco de dados." };
@@ -75,9 +115,9 @@ export async function createChamadoAction(formData: FormData) {
 }
 
 export async function enviarMensagemAction(
-  chamadoId: number, 
+  chamadoId: number,
   texto?: string,
-  arquivoUrl?: string, 
+  arquivoUrl?: string,
   arquivoTipo?: string
 ) {
   const session = await auth();
@@ -109,13 +149,13 @@ export async function marcarComoLidaAction(chamadoId: number, isAdmin: boolean) 
   try {
     await db.mensagensChamado.updateMany({
       where: {
-        chamadoId: Number(chamadoId), 
+        chamadoId: Number(chamadoId),
       },
       data: isAdmin ? { lida_admin: true } : { lida_usuario: true }
     });
 
-    revalidatePath("/PainelAlpha/Chamados"); 
-    
+    revalidatePath("/PainelAlpha/Chamados");
+
     return { success: true };
   } catch (error) {
     return { error: "Erro ao atualizar" };
