@@ -12,7 +12,6 @@ import { getTema } from "@/lib/temas";
 import { toast } from "sonner";
 import { consultarReceita, consultarRadar, consultarEmpresaAqui } from "@/actions/PreAnalise";
 import BlocoResultados from "./BlocoResultados";
-import { BotaoVoltar } from "@/components/BotaoVoltar";
 import BotaoVoltarMinimalista from "@/components/BotaoVoltarMinimalista";
 
 type StatusConsulta = "idle" | "loading" | "success" | "error";
@@ -57,21 +56,51 @@ export default function SistemaPreAnalise() {
         });
     }, []);
 
-    const handleConsultar = async (e?: React.FormEvent) => {
-        e?.preventDefault();
-        const cleanCnpj = cnpj.replace(/\D/g, "");
+    const handleConsultar = async (e: React.FormEvent, cnpjDigitado: string) => {
+        e.preventDefault();
+
+        const cleanCnpj = cnpjDigitado.replace(/\D/g, "");
+        if (cleanCnpj.length < 14) return;
+
+        setMostrarResultados(false);
         setIsConsultando(true);
 
-        // Passo 1: Receita
-        setEtapas(prev => ({ ...prev, rfb: { status: "loading", dados: null } }));
-        const resRfb = await consultarReceita(cleanCnpj);
-        setEtapas(prev => ({ ...prev, rfb: { status: resRfb.error ? "error" : "success", dados: resRfb } }));
+        setEtapas({
+            rfb: { status: "loading", dados: null },
+            empresaqui: { status: "loading", dados: null },
+            radar: { status: "idle", dados: null }
+        });
 
-        //EmpresaAqui
-        setEtapas(prev => ({ ...prev, empresaqui: { status: "loading", dados: null } }));
-        const resEq = await consultarEmpresaAqui(cleanCnpj);
-        setEtapas(prev => ({ ...prev, empresaqui: { status: resEq.error ? "error" : "success", dados: resEq } }));
+        const promessaReceita = (async () => {
+            try {
+                const response = await fetch(`/api/ReceitaFederal?cnpj=${cleanCnpj}`);
+                const res = await response.json();
+                setEtapas(prev => ({
+                    ...prev,
+                    rfb: { status: res.error ? "error" : "success", dados: res }
+                }));
+            } catch (err) {
+                setEtapas(prev => ({ ...prev, rfb: { status: "error", dados: null } }));
+            }
+        })();
+
+        const promessaEmpresaAqui = (async () => {
+            try {
+                const response = await fetch(`/api/RadarFiscal?cnpj=${cleanCnpj}`);
+                const res = await response.json();
+                setEtapas(prev => ({
+                    ...prev,
+                    empresaqui: { status: res.error ? "error" : "success", dados: res }
+                }));
+            } catch (err) {
+                setEtapas(prev => ({ ...prev, empresaqui: { status: "error", dados: null } }));
+            }
+        })();
+
+        await Promise.allSettled([promessaReceita, promessaEmpresaAqui]);
+
     };
+
 
     const reconsultarIndividual = async (chave: 'rfb' | 'radar' | 'empresaqui') => {
         setEtapas(prev => ({
@@ -86,7 +115,7 @@ export default function SistemaPreAnalise() {
             if (chave === 'rfb') {
                 res = await fetch(`/api/ReceitaFederal?cnpj=${cnpjLimpo}`);
             } else {
-                res = await fetch(`/api/EmpresaAqui?cnpj=${cnpjLimpo}`);
+                res = await fetch(`/api/RadarFiscal?cnpj=${cnpjLimpo}`);
             }
 
             if (!res.ok) throw new Error("Falha na resposta");
@@ -214,9 +243,20 @@ export default function SistemaPreAnalise() {
 
                     {/* TELA 1: INPUT */}
                     {!isConsultando && !mostrarResultados && (
-                        <motion.div key="input" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} className="max-w-3xl mx-auto text-center mt-20">
-                            <h2 className="text-5xl md:text-6xl font-black italic uppercase tracking-tighter mb-12">Realizar <span className={visual.text}>Analise</span></h2>
-                            <form onSubmit={handleConsultar} className="w-full max-w-2xl mx-auto">
+                        <motion.div
+                            key="input"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="max-w-3xl mx-auto text-center mt-20"
+                        >
+                            <h2 className="text-5xl md:text-6xl font-black italic uppercase tracking-tighter mb-12">
+                                Realizar <span className={visual.text}>Analise</span>
+                            </h2>
+                            <form
+                                onSubmit={(e) => handleConsultar(e, cnpj)}
+                                className="w-full max-w-2xl mx-auto"
+                            >
                                 <input
                                     type="text"
                                     value={cnpj}
@@ -224,16 +264,27 @@ export default function SistemaPreAnalise() {
                                     placeholder="00.000.000/0000-00"
                                     className="w-full bg-white/5 border border-white/10 rounded-[2.5rem] px-10 py-8 text-2xl font-mono text-center focus:border-white/20 transition-all placeholder:text-slate-800 uppercase tracking-[0.2em]"
                                 />
-                                <button disabled={cnpj.replace(/\D/g, "").length < 14} type="submit" className={`cursor-pointer mt-10 px-16 py-5 rounded-[1.5rem] ${visual.bg} ${visual.shadow} text-white font-black uppercase tracking-[0.3em] text-[12px] flex items-center gap-4 mx-auto hover:scale-105 active:scale-95 transition-all disabled:opacity-30`}>
-                                    <Search size={18} /> Pesquisar
+                                <button
+                                    disabled={isConsultando || cnpj.replace(/\D/g, "").length < 14}
+                                    type="submit"
+                                    className={`cursor-pointer mt-10 px-16 py-5 rounded-[1.5rem] ${visual.bg} ${visual.shadow} text-white font-black uppercase tracking-[0.3em] text-[12px] flex items-center gap-4 mx-auto hover:scale-105 active:scale-95 transition-all disabled:opacity-30`}
+                                >
+                                    <Search size={18} />
+                                    PESQUISAR
                                 </button>
                             </form>
                         </motion.div>
                     )}
 
-                    {/* TELA 2: PROGRESSO DOS CARDS */}
+                    {/* TELA 2: LOADING E PROGRESSO */}
                     {isConsultando && !mostrarResultados && (
-                        <motion.div key="progress" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="max-w-5xl mx-auto">
+                        <motion.div
+                            key="progress"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="max-w-5xl mx-auto"
+                        >
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
                                 <ProgressCard
                                     label="Cartão CNPJ RFB"
@@ -252,10 +303,17 @@ export default function SistemaPreAnalise() {
                             </div>
 
                             <AnimatePresence>
-                                {concluido && (
-                                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex justify-center">
+                                {etapas.rfb.status !== "loading" && etapas.empresaqui.status !== "loading" && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="flex justify-center"
+                                    >
                                         <button
-                                            onClick={() => setMostrarResultados(true)}
+                                            onClick={() => {
+                                                setIsConsultando(false);
+                                                setMostrarResultados(true);
+                                            }}
                                             className="cursor-pointer group relative flex items-center gap-4 px-12 py-6 rounded-[2rem] bg-white text-black font-black uppercase tracking-[0.3em] text-sm hover:scale-105 transition-all shadow-[0_0_40px_rgba(255,255,255,0.2)]"
                                         >
                                             Ver Resultados da Análise
@@ -269,7 +327,13 @@ export default function SistemaPreAnalise() {
 
                     {/* TELA 3: RESULTADOS FINAIS */}
                     {mostrarResultados && (
-                        <BlocoResultados dados={etapas} visual={visual} item />
+                        <motion.div
+                            key="results"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                        >
+                            <BlocoResultados dados={etapas} visual={visual} item={null} />
+                        </motion.div>
                     )}
 
                 </AnimatePresence>
@@ -375,7 +439,7 @@ export default function SistemaPreAnalise() {
                 </div>
             )}
 
-            
+
 
         </div>
 

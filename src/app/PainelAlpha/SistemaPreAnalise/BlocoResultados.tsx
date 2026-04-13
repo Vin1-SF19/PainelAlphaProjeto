@@ -273,7 +273,7 @@ export default function BlocoResultados({ dados, visual, item }: { dados: any, v
                 {/* COLUNA DIREITA: TRIBUTÁRIO & RADAR */}
                 <div className="lg:col-span-4 space-y-6 md:space-y-10">
 
-
+                            {/*SISCOMEX*/}
                     <div className={`p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] border transition-all duration-700 ${etapas.radar.status === "idle" ? 'bg-white/[0.02] border-white/5' : 'bg-blue-500/5 border-blue-500/20 shadow-xl'}`}>
                         {etapas.radar.status === "idle" ? (
                             <div className="py-12 flex flex-col items-center justify-center space-y-6 animate-in fade-in duration-500">
