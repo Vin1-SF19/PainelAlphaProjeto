@@ -102,7 +102,8 @@ export default function PainelAlphaClient({ session, chamadosIniciais, configBan
         { id: "Extratos", title: "ANÁLISE DE EXTRATOS BANCÁRIOS", desc: "ANÁLISE DE EXTRATOS BANCÁRIOS", img: "../taxa.png", link: "/PainelAlpha/ExtratosBancarios", color: "from-black-600/20", tag: "Financeiro" },
         { id: "ServiçosGerais", title: "Serviços Gerais", desc: "Bancada de Tarefas Diarias", img: "../cleaning.png", link: "/PainelAlpha/PainelTarefas", color: "from-pink-600/20", tag: "Serviços Gerais" },
         { id: "NovoRadar", title: "Consulta RADAR", desc: "Novo painel de consulta RADAR", img: "../cargueiro.png", link: "/PainelAlpha/NovoPainelHabilitacao", color:"from-yellow-600/20", tag: "RADAR" },
-        { id: "analise", title: "Sistema de pré análise", desc: "Sistema de pré análise e gerador de ficha de reunião", img: "../document.png", link: "/PainelAlpha/SistemaPreAnalise", color: "from-purple-600/20", tag: "Gerador de ficha de reuniao"}
+        { id: "analise", title: "Sistema de pré análise", desc: "Sistema de pré análise e gerador de ficha de reunião", img: "../document.png", link: "/PainelAlpha/SistemaPreAnalise", color: "from-purple-600/20", tag: "Gerador de ficha de reuniao"},
+        { id: "skills", title: "Alpha Skills", desc: "Alpha Skills", img: "../elearning.png", link:"/PainelAlpha/AlphaSkills", color: "from-green-600/20", tag: "Alpha Skills" }
     ];
 
     const { favoritos, restante } = useMemo(() => {

@@ -13,6 +13,8 @@ export const ModalPDF = ({ dados, radarDados, user, isOpen, onClose }: any) => {
         observacoes: ""
     });
 
+    const prontoParaPDF = dados.rfb.status === "success" && dados.radar.status !== "loading";
+
 
 
 
@@ -29,18 +31,21 @@ export const ModalPDF = ({ dados, radarDados, user, isOpen, onClose }: any) => {
     if (!isOpen) return null;
 
     const gerarEVisualizar = async () => {
+        const radarReal = radarDados?.dados || radarDados;
+    
         const payload = {
-            ...dados,
-            radar: radarDados,
+            ...dados, 
+            radar: radarReal, 
             extra: dadosManuais,
             telefone: dadosManuais.telefone,
             nomeResponsavel: dadosManuais.nomeResponsavel,
             observacoes: dadosManuais.observacoes,
         };
+    
+        console.log("PAYLOAD FINAL PARA O PDF:", payload);
+    
         await upsertConsulta(payload);
         
-        console.log("DADOS: ", dados)
-
         const doc = <FichaAlphaPDF dados={payload} userLogado={user} />;
         const blob = await pdf(doc).toBlob();
         window.open(URL.createObjectURL(blob), '_blank');

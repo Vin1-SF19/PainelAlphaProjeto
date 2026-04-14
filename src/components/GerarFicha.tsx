@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
   optionRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
   circle: { width: 7, height: 7, borderRadius: 3.5, borderWidth: 1, borderColor: '#000' },
   circleFilled: { width: 10, height: 10, borderRadius: 3.5, backgroundColor: '#000' },
-  optionText: { fontSize: 10, fontWeight: 'bold' },
+  optionText: { fontSize: 8, fontWeight: 'bold' },
   finGrid: { flexDirection: 'row', gap: 10, marginBottom: 5 },
   finBox: { flex: 1, borderTopWidth: 1, borderLeftWidth: 1, borderColor: '#000' },
   finHeader: {
@@ -89,9 +89,10 @@ export const FichaAlphaPDF = ({ dados, userLogado }: { dados: any, userLogado: s
   const radar = dados?.radar || {};
   const eq = dados?.empresaqui?.dados || dados?.empresaqui || {};
 
-  const radarExibicao = String(radar?.submodalidade || "NÃO IDENTIFICADO").toUpperCase();
-  const regime = String(eq?.regimeEA || "").toUpperCase();
-  const uf = String(rfb?.uf || "__").toUpperCase();
+  const radarExibicao = String(radar?.submodalidade || " ").toUpperCase();
+  const situacaoRadar = String(radar?.situacao || " ").toUpperCase();
+  const regime = String(eq?.regimeEA || " ").toUpperCase();
+  const uf = String(rfb?.uf || " ").toUpperCase();
 
 
   const dataAbertura = rfb?.dataConstituicao || "";
@@ -120,7 +121,7 @@ export const FichaAlphaPDF = ({ dados, userLogado }: { dados: any, userLogado: s
 
 
   return (
-    <Document title={`Ficha Alpha - ${dados.rfb?.razaoSocial || 'Empresa'}`}>
+    <Document title={`Ficha Alpha - ${rfb?.razaoSocial || 'Reunião'}`}>
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
           <Image src="/LogoTipo02.png" style={styles.logo} />
@@ -152,8 +153,11 @@ export const FichaAlphaPDF = ({ dados, userLogado }: { dados: any, userLogado: s
               <View style={styles.optionRow}>
                 <View style={styles.optionRow}><View style={styles.circle} /><Text style={styles.optionText}>INSTAGRAM</Text></View>
                 <View style={styles.optionRow}><View style={styles.circle} /><Text style={styles.optionText}>GOOGLE</Text></View>
-                <View style={styles.optionRow}><View style={styles.circle} /><Text style={styles.optionText}>INDICAÇÃO</Text></View>
-                <Text style={styles.optionText}>OUTRO: _________________</Text>
+                <View style={styles.optionRow}><View style={styles.circle} /><Text style={styles.optionText}>CALLIX</Text></View>
+                
+                <View style={styles.optionRow}><View style={styles.circle}/><Text style={styles.optionText}>PARCEIRO:_______________</Text></View>
+                <View style={styles.optionRow}><View style={styles.circle}/><Text style={styles.optionText}>INDICAÇÃO:_______________</Text></View>
+                <View style={styles.optionRow}><View style={styles.circle}/><Text style={styles.optionText}>OUTROS:_______________</Text></View>
               </View>
             </View>
           </View>
@@ -184,13 +188,21 @@ export const FichaAlphaPDF = ({ dados, userLogado }: { dados: any, userLogado: s
 
           <View style={styles.row}>
             <View style={[styles.cell, { flex: 1 }]}>
-              <Text style={styles.label}>ATUAL</Text>
+              <Text style={styles.label}>RADAR ATUAL</Text>
               <View style={styles.optionRow}>
                 <Text style={styles.value}>{radarExibicao || "__"}</Text>
               </View>
             </View>
+
+            <View style={[styles.cell, { flex: 0.5 }]}>
+              <Text style={styles.label}>SITUAÇÃO</Text>
+              <View style={styles.optionRow}>
+                <Text style={styles.value}>{situacaoRadar}</Text>
+              </View>
+            </View>
+
             <View style={[styles.cell, { flex: 1 }]}>
-              <Text style={styles.label}>PRETENDIDO</Text>
+              <Text style={styles.label}>RADAR PRETENDIDO</Text>
               <View style={styles.optionRow}>
                 <View style={styles.optionRow}><View style={styles.circle} /><Text style={styles.optionText}>Habilitação (50K)</Text></View>
                 <View style={styles.optionRow}><View style={styles.circle} /><Text style={styles.optionText}>150K</Text></View>
@@ -213,9 +225,24 @@ export const FichaAlphaPDF = ({ dados, userLogado }: { dados: any, userLogado: s
           <View style={[styles.table, { flex: 1 }]}>
             <Text style={[styles.cell, styles.titleCell, styles.label]}>REGIME TRIBUTÁRIO</Text>
             <View style={styles.cell}>
-              <View style={styles.optionRow}><View style={regime.includes("SIMPLES") ? styles.circleFilled : styles.circle} /><Text style={styles.optionText}>SIMPLES NACIONAL</Text></View>
-              <View style={styles.optionRow}><View style={regime.includes("REAL") ? styles.circleFilled : styles.circle} /><Text style={styles.optionText}>LUCRO REAL</Text></View>
-              <View style={styles.optionRow}><View style={regime.includes("PRESUMIDO") ? styles.circleFilled : styles.circle} /><Text style={styles.optionText}>LUCRO PRESUMIDO</Text></View>
+
+              <View style={styles.optionRow}>
+                <View style={regime.includes("SIMPLES") ? styles.circleFilled : styles.circle} />
+                <Text style={styles.optionText}>SIMPLES NACIONAL</Text>
+              </View>
+
+              <View style={styles.optionRow}>
+                <View style={(regime.includes("REAL") || regime.includes("PRESUMIDO")) ? styles.circleFilled : styles.circle} />
+                <Text style={styles.optionText}>REGIME NORMAL</Text>
+              </View>
+
+                <View style={[styles.optionRow, { marginTop: 4 }]}>
+                  <Text style={[styles.optionText, { color: '#666' }]}>Obs: </Text>
+              {!regime.includes("SIMPLES") && eq.regimeEA && (
+                  <Text style={styles.optionText}>{eq.regimeEA}</Text>
+                )}
+                </View>
+
             </View>
           </View>
           <View style={[styles.table, { flex: 1 }]}>

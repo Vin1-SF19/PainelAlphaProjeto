@@ -27,7 +27,7 @@ export default function PdfPreviewPage() {
     },
     empresaqui: {
       dados: {
-        regimeEA: 'SIMPLES NACIONAL'
+        regimeEA: 'LUCRO REAL'
       }
     }
   };

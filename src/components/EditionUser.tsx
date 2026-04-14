@@ -50,7 +50,8 @@ const MODULOS_SISTEMA = [
   { id: "Extratos", label: "Extratos Bancarios", desc: "Sistema de Extratos Bancarios" },
   { id: "ServiçosGerais", label:"Serviços Gerais", desc: "Painel de conferencia de tarefas" },
   { id: "NovoRadar", label: "Consulta RADAR", desc: "Novo painel de consulta RADAR"},
-  { id: "analise", label: "Sistema de pré análise", desc: "Sistema de pré análise e gerador ficha"}
+  { id: "analise", label: "Sistema de pré análise", desc: "Sistema de pré análise e gerador ficha"},
+  { id: "skills", label: "Alpha Skills", desc: "Alpha Skills"}
 ];
 
 const SETORES_LISTA = [
