@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useSession } from "next-auth/react";
 import { getTema } from "@/lib/temas";
 import { toast } from "sonner";
-import { consultarReceita, consultarRadar, consultarEmpresaAqui } from "@/actions/PreAnalise";
+import { consultarReceita, consultarRadar, consultarEmpresaAqui, upsertConsulta, buscarHistorico } from "@/actions/PreAnalise";
 import BlocoResultados from "./BlocoResultados";
 import BotaoVoltarMinimalista from "@/components/BotaoVoltarMinimalista";
 
@@ -23,7 +23,16 @@ export default function SistemaPreAnalise() {
     const [concluido, setConcluido] = useState(false);
     const [mostrarResultados, setMostrarResultados] = useState(false);
     const [modalHistorico, setModalHistorico] = useState(false);
-    const [historicoPesquisas, setHistoricoPesquisas] = useState([]);
+    const [historico, setHistorico] = useState<any[]>([]);
+
+    const [dadosManuais, setDadosManuais] = useState({
+        nomeResponsavel: "",
+        telefone: "",
+        dataSituacao: "",
+        horaSituacao: "",
+        mesProtocolo: "",
+        observacoes: ""
+    });
 
     const isAdmin = session?.user.role === "Admin";
 
@@ -134,6 +143,43 @@ export default function SistemaPreAnalise() {
         }
     };
 
+    useEffect(() => {
+        const statusEA = etapas.empresaqui.status;
+        const statusRFB = etapas.rfb.status;
+
+        const finalizado = (statusEA === "success" || statusEA === "error") &&
+            (statusRFB === "success" || statusRFB === "error");
+
+        if (finalizado && !concluido) {
+            const dispararSalvamento = async () => {
+                try {
+                    setConcluido(true);
+
+                    const payload = {
+                        rfb: { dados: etapas.rfb.dados },
+                        empresaqui: { dados: etapas.empresaqui.dados },
+                        radar: { dados: etapas.radar.dados },
+                        extra: {}
+                    };
+
+                    await upsertConsulta(payload);
+                    console.log("Consulta salva automaticamente.");
+                } catch (err) {
+                    console.error("Erro no salvamento automático:", err);
+                }
+            };
+
+            dispararSalvamento();
+        }
+    }, [etapas, concluido]);
+
+    useEffect(() => {
+        if (modalHistorico) {
+            buscarHistorico().then(res => {
+                if (res.data) setHistorico(res.data);
+            });
+        }
+    }, [modalHistorico]);
 
     const ProgressCard = ({ label, status, icon, visual, onRetry }: any) => {
         const isError = status === 'error';
@@ -183,10 +229,46 @@ export default function SistemaPreAnalise() {
     };
 
     useEffect(() => {
-        if (etapas.empresaqui.status === "success" || etapas.empresaqui.status === "error") {
+        const status = etapas.empresaqui.status;
+        if ((status === "success" || status === "error") && !concluido) {
             setConcluido(true);
         }
-    }, [etapas.empresaqui.status]);
+    }, [etapas.empresaqui.status, concluido]);
+
+    const reabrirConsulta = (dadosSalvos: any) => {
+        const cnpjLimpo = (dadosSalvos.cnpj || "").replace(/\D/g, "");
+        try {
+            const payload = typeof dadosSalvos.dadosBrutos === 'string'
+                ? JSON.parse(dadosSalvos.dadosBrutos)
+                : dadosSalvos.dadosBrutos;
+
+            console.log("Payload recuperado:", payload);
+
+            const dadosRFB = payload.rfb?.dados || payload.rfb;
+            const dadosEA = payload.empresaqui?.dados || payload.empresaqui;
+            const dadosRadar = payload.radar?.dados || payload.radar;
+
+            setEtapas({
+                rfb: { status: "success", dados: dadosRFB },
+                empresaqui: { status: "success", dados: dadosEA },
+                radar: { status: "success", dados: dadosRadar }
+            });
+
+            if (payload.extra) {
+                setDadosManuais(payload.extra);
+            }
+
+            setConcluido(true);
+            setIsConsultando(false); 
+            setMostrarResultados(true); 
+
+            setModalHistorico(false);
+
+        } catch (err) {
+            console.error("Erro ao processar dados do banco:", err);
+            toast.error("Erro ao reabrir: dados corrompidos.");
+        }
+    };
 
     return (
         <div className="min-h-screen bg-[#020617] text-white selection:bg-white/10">
@@ -226,12 +308,14 @@ export default function SistemaPreAnalise() {
 
 
                         {mostrarResultados && (
-                            <button
-                                onClick={() => setConfirmarNovaConsulta(true)}
-                                className="cursor-pointer flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all text-white"
-                            >
-                                <RefreshCw size={14} className={visual.text} /> Nova Consulta
-                            </button>
+                            <>
+                                <button
+                                    onClick={() => setConfirmarNovaConsulta(true)}
+                                    className="cursor-pointer flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all text-white"
+                                >
+                                    <RefreshCw size={14} className={visual.text} /> Nova Consulta
+                                </button>
+                            </>
                         )}
                         <BotaoVoltarMinimalista />
                     </div>
@@ -326,13 +410,17 @@ export default function SistemaPreAnalise() {
                     )}
 
                     {/* TELA 3: RESULTADOS FINAIS */}
-                    {mostrarResultados && (
+                    {mostrarResultados && etapas && (
                         <motion.div
                             key="results"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                         >
-                            <BlocoResultados dados={etapas} visual={visual} item={null} />
+                            <BlocoResultados
+                                dados={etapas}
+                                visual={visual}
+                                item={null}
+                            />
                         </motion.div>
                     )}
 
@@ -343,58 +431,61 @@ export default function SistemaPreAnalise() {
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-10 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
                     <div className="bg-[#0A0A0A] border border-white/10 w-full max-w-4xl max-h-[80vh] overflow-hidden rounded-[2.5rem] shadow-2xl flex flex-col relative">
 
-                        {/* HEADER DO MODAL */}
                         <div className="p-8 border-b border-white/5 flex justify-between items-center">
                             <div>
                                 <h2 className="text-2xl font-black italic uppercase tracking-tighter text-white">
-                                    Histórico de <span className={visual.text}>Consultas</span>
+                                    Histórico de <span className="text-orange-500">Consultas</span>
                                 </h2>
                                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">
                                     Últimas 20 empresas analisadas
                                 </p>
                             </div>
-                            <button
-                                onClick={() => setModalHistorico(false)}
-                                className="cursor-pointer p-3 hover:bg-white/5 rounded-full transition-colors text-slate-500 hover:text-white"
-                            >
+                            <button onClick={() => setModalHistorico(false)} className="cursor-pointer p-3 hover:bg-white/5 rounded-full text-slate-500 hover:text-white">
                                 <X size={24} />
                             </button>
                         </div>
 
-                        {/* LISTA DE CARDS */}
                         <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
                             <div className="grid grid-cols-1 gap-4">
-                                {/* MAPEAR SEU HISTÓRICO AQUI */}
-                                {[1, 2, 3].map((item, i) => (
-                                    <div key={i} className="group relative bg-white/5 border border-white/5 hover:border-white/10 p-6 rounded-[1.5rem] transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                        <div className="flex items-center gap-5">
-                                            <div className="p-4 rounded-2xl bg-slate-900 border border-white/5 text-slate-400 group-hover:text-white group-hover:border-indigo-500/30 transition-all">
-                                                <Building2 size={20} />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-sm font-black text-white uppercase italic tracking-tight">RAZÃO SOCIAL DA EMPRESA LTDA</h3>
-                                                <div className="flex items-center gap-3 mt-1 text-[10px] font-mono text-slate-500">
-                                                    <span>00.000.000/0001-00</span>
-                                                    <span className="w-1 h-1 rounded-full bg-slate-700" />
-                                                    <span>12/10/2023 - 14:30</span>
+                                {historico.length === 0 ? (
+                                    <p className="text-center text-slate-600 font-bold uppercase text-xs">Nenhuma consulta encontrada</p>
+                                ) : (
+                                    historico.map((item: any) => (
+                                        <div key={item.id} className="group relative bg-white/5 border border-white/5 hover:border-white/10 p-6 rounded-[1.5rem] transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                            <div className="flex items-center gap-5">
+                                                <div className="p-4 rounded-2xl bg-slate-900 border border-white/5 text-slate-400 group-hover:text-white group-hover:border-orange-500/30 transition-all">
+                                                    <Building2 size={20} />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-sm font-black text-white uppercase italic tracking-tight">{item.razaoSocial}</h3>
+                                                    <div className="flex items-center gap-3 mt-1 text-[10px] font-mono text-slate-500">
+                                                        <span>{item.cnpj}</span>
+                                                        <span className="w-1 h-1 rounded-full bg-slate-700" />
+                                                        <span>{new Date(item.updatedAt).toLocaleString('pt-BR')}</span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        <div className="flex items-center gap-4 w-full md:w-auto">
-                                            <div className="px-4 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase">
-                                                QUALIFICADO
+                                            <div className="flex items-center gap-4 w-full md:w-auto">
+                                                <div className={`px-4 py-2 rounded-lg border text-[10px] font-black uppercase ${item.situacao === 'ATIVA'
+                                                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                                                    : 'bg-red-500/10 border-red-500/20 text-red-400'
+                                                    }`}>
+                                                    {item.situacao || "N/A"}
+                                                </div>
+                                                <button
+                                                    onClick={() => reabrirConsulta(item)}
+                                                    className="cursor-pointer flex-1 md:flex-none px-6 py-2.5 rounded-xl bg-white text-black text-[10px] font-black uppercase hover:bg-slate-200 transition-all"
+                                                >
+                                                    Reabrir
+                                                </button>
                                             </div>
-                                            <button className="cursor-pointer flex-1 md:flex-none px-6 py-2.5 rounded-xl bg-white text-black text-[10px] font-black uppercase hover:bg-slate-200 transition-all">
-                                                Reabrir
-                                            </button>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))
+                                )}
                             </div>
                         </div>
 
-                        {/* FOOTER DO MODAL */}
                         <div className="p-6 border-t border-white/5 bg-white/[0.02] flex justify-center">
                             <button className="cursor-pointer text-[10px] font-black text-slate-600 uppercase tracking-widest hover:text-rose-500 transition-all">
                                 Limpar todo o histórico
@@ -497,6 +588,3 @@ const ProgressCard = ({ label, status, icon, visual, onRetry }: any) => {
     );
 };
 
-function parseData(arg0: any) {
-    throw new Error("Function not implemented.");
-}

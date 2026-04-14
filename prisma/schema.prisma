@@ -482,3 +482,31 @@ model ListaCompra {
 }
 
 
+model ConsultaPreAnalise {
+  id                String   @id @default(cuid())
+  cnpj              String   @unique
+  razaoSocial       String
+  nomeFantasia      String?
+  situacao          String?
+  uf                String?
+  municipio         String?
+  
+  regimeEA          String?
+  qualificacao      String?
+  submodalidade     String?  
+  capitalSocial     Float?
+  
+  dadosBrutos       Json
+  
+  nomeResponsavel   String?
+  telefoneContato   String?
+  observacoes       String?  
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([cnpj])
+  @@index([razaoSocial])
+}
+
+
