@@ -96,13 +96,13 @@ export default function LoginForm() {
             type="submit"
             disabled={isPending}
             className={`
-                      group relative w-full h-16 rounded-[1.8rem] flex items-center justify-center gap-3 
-                      text-[11px] font-black uppercase tracking-[0.4em] transition-all duration-500 overflow-hidden
-                      ${isPending
-                ? "bg-slate-800 text-slate-500 cursor-wait shadow-none"
-                : "bg-indigo-600 hover:bg-indigo-500 text-white cursor-pointer shadow-xl shadow-indigo-950/40 hover:-translate-y-1 active:scale-95"
+                group relative w-full h-14 md:h-16 rounded-[1.5rem] md:rounded-[1.8rem] flex items-center justify-center gap-3 
+                text-[10px] md:text-[11px] font-black uppercase tracking-[0.3em] md:tracking-[0.4em] transition-all duration-500 overflow-hidden
+                ${isPending
+                ? "bg-slate-800 text-slate-500 cursor-wait"
+                : "bg-indigo-600 hover:bg-indigo-500 text-white cursor-pointer shadow-xl shadow-indigo-950/40"
               }
-                    `}
+            `}
           >
             {isPending ? (
               <>
