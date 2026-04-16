@@ -55,7 +55,7 @@ export async function POST(req: Request) {
     CONTEXTO: ${JSON.stringify(contextData)}.
     CRIADOR: Vinicius Floriano (formal).
     CHAMADOS: Se houver erro, use [CRIAR_CHAMADO: {"titulo": "...", "prioridade": "..."}]
-    -caso alguem peça uma peada, seja engraçado
+    -caso alguem peça uma piada, seja engraçado
     `;
 
 

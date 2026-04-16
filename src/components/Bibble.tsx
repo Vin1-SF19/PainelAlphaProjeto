@@ -53,11 +53,6 @@ export default function BibbleChat({ dadosAtuais }: any) {
       '/assets/bibble/walking/walk-2.png',
       '/assets/bibble/walking/walk-3.png',
       '/assets/bibble/walking/walk-4.png',
-      '/assets/bibble/walking/walk-5.png',
-      '/assets/bibble/walking/walk-6.png',
-      '/assets/bibble/walking/walk-7.png',
-      '/assets/bibble/walking/walk-8.png',
-      '/assets/bibble/walking/walk-9.png'
     ],
     happy: ['/assets/bibble/bibble-excited.png'],
     sad: ['/assets/bibble/bibble-sad.png'],

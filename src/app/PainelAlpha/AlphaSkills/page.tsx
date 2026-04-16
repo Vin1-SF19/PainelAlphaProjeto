@@ -1,132 +1,121 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Play, Book, Clock, ChevronRight, Layout, Monitor, Shield, Users } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Play, Plus, Trash2, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { motion } from 'framer-motion';
+import Link from 'next/link';
 
-// Mock de dados organizados por setores
-const ACADEMY_DATA = [
+// Estrutura de dados inicial
+const INITIAL_DATA = [
   {
     setor: "Comercial",
-    icon: <Users size={20} />,
-    cursos: [
-      {
-        id: "vendas-1",
-        titulo: "Prospecção Alpha",
-        duracao: "4h 20min",
-        modulosCount: 5,
-        progresso: 100,
-        modulos: [
-          { titulo: "Introdução ao B2B", aulas: ["O que é Radar?", "Perfil de Cliente"] },
-          { titulo: "Abordagem Inicial", aulas: ["Script de Ligação", "Quebra de Objeções"] }
-        ]
-      }
+    videos: [
+      { id: 1, title: "Prospecção Ativa", url: "youtube.com/...", thumb: "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=400" },
+      { id: 2, title: "Fechamento de Contrato", url: "youtube.com/...", thumb: "https://images.unsplash.com/photo-1556761175-b413da4baf72?w=400" },
     ]
   },
   {
     setor: "Operacional",
-    icon: <Shield size={20} />,
-    cursos: [
-      {
-        id: "radar-1",
-        titulo: "Habilitação de Radar Siscomex",
-        duracao: "6h 15min",
-        modulosCount: 8,
-        progresso: 45,
-        modulos: [
-          { titulo: "Fundamentos Aduaneiros", aulas: ["Tipos de Radar", "Documentação"] }
-        ]
-      }
+    videos: [
+      { id: 3, title: "Habilitação Radar", url: "youtube.com/...", thumb: "https://images.unsplash.com/photo-1586864387917-f5383526ba1d?w=400" },
     ]
   }
 ];
 
-export default function AlphaSkills() {
-  const [setorAtivo, setSetorAtivo] = useState("Comercial");
+export default function AlphaSkills({ isAdmin = true }) {
+  const [data, setData] = useState(INITIAL_DATA);
+  const [playingVideo, setPlayingVideo] = useState<any>(null);
+
+  const deleteVideo = (setorIdx: number, videoId: number) => {
+    const newData = [...data];
+    newData[setorIdx].videos = newData[setorIdx].videos.filter(v => v.id !== videoId);
+    setData(newData);
+  };
 
   return (
-    <div className="flex min-h-screen bg-[#050505] text-white">
+    <div className="min-h-screen bg-[#050505] text-white p-8">
       
-      {/* SIDEBAR DE SETORES */}
-      <aside className="w-64 border-r border-white/5 p-6 space-y-8">
-        <div className="mb-10">
-           <h2 className="text-xl font-black italic text-orange-500 uppercase">Alpha Skills</h2>
-           <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Plataforma de Treinamento</p>
+      {/* HEADER */}
+      <header className="flex justify-between items-center mb-12">
+        <div>
+          <h1 className="text-4xl font-black italic uppercase text-orange-500 italic">Alpha Skills</h1>
+          <p className="text-xs text-slate-500 font-bold uppercase tracking-[0.3em]">------------------------------------</p>
         </div>
+        {isAdmin && (
 
-        <nav className="space-y-2">
-          {ACADEMY_DATA.map((item) => (
-            <button
-              key={item.setor}
-              onClick={() => setSetorAtivo(item.setor)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                setorAtivo === item.setor 
-                ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' 
-                : 'text-slate-500 hover:bg-white/5 hover:text-slate-300'
-              }`}
+          <Link href="/PainelAlpha/AlphaSkills/Gerenciamento">
+          <button
+           className="flex items-center gap-2 bg-white text-black px-6 py-2 rounded-full font-black text-[10px] uppercase hover:bg-orange-500 hover:text-white transition-all">
+            <Plus size={16} /> Adicionar Vídeo
+          </button>
+             </Link>
+        )}
+      </header>
+
+      {/* RENDERIZAÇÃO DOS SETORES (CARROSSEL) */}
+      <div className="space-y-16">
+        {data.map((setorObj, sIdx) => (
+          <div key={setorObj.setor} className="relative">
+            <h2 className="text-xl font-bold uppercase tracking-tighter mb-6 flex items-center gap-3">
+              <span className="w-8 h-[1px] bg-orange-500"></span>
+              {setorObj.setor}
+            </h2>
+
+            <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide no-scrollbar snap-x">
+              {setorObj.videos.map((video) => (
+                <div 
+                  key={video.id} 
+                  className="min-w-[300px] group relative snap-start"
+                >
+                  {/* THUMBNAIL */}
+                  <div 
+                    onClick={() => setPlayingVideo(video)}
+                    className="relative aspect-video rounded-2xl overflow-hidden cursor-pointer border border-white/5 group-hover:border-orange-500/50 transition-all"
+                  >
+                    <img src={video.thumb} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                      <div className="bg-orange-500 p-4 rounded-full shadow-xl shadow-orange-500/20">
+                        <Play fill="white" size={20} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* INFO */}
+                  <div className="mt-4 flex justify-between items-start">
+                    <h3 className="text-sm font-bold uppercase tracking-tight text-slate-300">{video.title}</h3>
+                    {isAdmin && (
+                      <button 
+                        onClick={() => deleteVideo(sIdx, video.id)}
+                        className="p-2 text-slate-600 hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+
+      {playingVideo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 animate-in fade-in duration-300">
+          <div className="w-full max-w-5xl aspect-video bg-black relative rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
+            <button 
+              onClick={() => setPlayingVideo(null)}
+              className="absolute top-6 right-6 z-10 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all"
             >
-              {item.icon}
-              <span className="text-xs font-black uppercase tracking-tighter">{item.setor}</span>
+              <X size={24} />
             </button>
-          ))}
-        </nav>
-      </aside>
-
-      {/* CONTEÚDO PRINCIPAL */}
-      <main className="flex-1 p-10 overflow-y-auto">
-        <header className="mb-12">
-          <h1 className="text-4xl font-black italic uppercase tracking-tighter">
-            Cursos de <span className="text-orange-500">{setorAtivo}</span>
-          </h1>
-        </header>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <AnimatePresence mode="wait">
-            {ACADEMY_DATA.find(s => s.setor === setorAtivo)?.cursos.map((curso) => (
-              <CourseCard key={curso.id} curso={curso} />
-            ))}
-          </AnimatePresence>
+            <div className="w-full h-full flex items-center justify-center">
+              
+              <p className="text-orange-500 font-black italic">VIDEO PLAYER: {playingVideo.title}</p>
+            </div>
+          </div>
         </div>
-      </main>
+      )}
     </div>
-  );
-}
-
-function CourseCard({ curso }: any) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="bg-[#0A0A0A] border border-white/5 rounded-3xl p-6 group hover:border-orange-500/50 transition-all"
-    >
-      <div className="flex justify-between items-start mb-6">
-        <div className="p-3 bg-white/5 rounded-2xl text-orange-500 group-hover:scale-110 transition-transform">
-          <Monitor size={24} />
-        </div>
-        <span className="text-[10px] font-bold text-slate-600 uppercase bg-white/5 px-3 py-1 rounded-full">
-           {curso.duracao}
-        </span>
-      </div>
-
-      <h3 className="text-xl font-black italic uppercase tracking-tighter mb-4 leading-tight">
-        {curso.titulo}
-      </h3>
-
-      <div className="flex items-center gap-4 mb-8">
-        <div className="flex items-center gap-1 text-slate-500">
-          <Book size={12} />
-          <span className="text-[10px] font-bold">{curso.modulosCount} Módulos</span>
-        </div>
-        <div className="h-1 flex-1 bg-white/5 rounded-full overflow-hidden">
-           <div className="h-full bg-orange-500" style={{ width: `${curso.progresso}%` }} />
-        </div>
-        <span className="text-[10px] font-black italic">{curso.progresso}%</span>
-      </div>
-
-      <button className="w-full py-4 rounded-2xl bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-orange-500 hover:text-white transition-all flex items-center justify-center gap-2">
-        Acessar Curso <ChevronRight size={14} />
-      </button>
-    </motion.div>
   );
 }

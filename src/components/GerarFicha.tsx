@@ -157,7 +157,7 @@ export const FichaAlphaPDF = ({ dados, userLogado }: { dados: any, userLogado: s
                 
                 <View style={styles.optionRow}><View style={styles.circle}/><Text style={styles.optionText}>PARCEIRO:_______________</Text></View>
                 <View style={styles.optionRow}><View style={styles.circle}/><Text style={styles.optionText}>INDICAÇÃO:_______________</Text></View>
-                <View style={styles.optionRow}><View style={styles.circle}/><Text style={styles.optionText}>OUTROS:_______________</Text></View>
+                <View style={styles.optionRow}><View style={styles.circle} /><Text style={styles.optionText}>OUTROS:_______________</Text></View>
               </View>
             </View>
           </View>

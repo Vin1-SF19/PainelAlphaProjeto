@@ -147,14 +147,12 @@ model clientes {
 }
 
 model socios {
-  id        Int      @id @default(autoincrement())
-  nome      String
-  telefone  String?
-  obs       String?
+  id             Int     @id @default(autoincrement())
+  nome           String
+  telefone       String?
+  obs            String?
   dataNascimento String?
-  vinculo String?
-
-
+  vinculo        String?
 
   clienteId Int
   cliente   clientes @relation(fields: [clienteId], references: [id], onDelete: Cascade)
@@ -428,7 +426,7 @@ model Tarefa {
   updatedAt   DateTime  @updatedAt
   concluidaEm DateTime?
 
-  id_produto  String?  @unique
+  id_produto String? @unique
 
   @@index([userId])
 }
@@ -441,30 +439,30 @@ model DiretrizSala {
 }
 
 model Categoria {
-  id        String           @id @default(uuid())
-  nome      String           @unique
-  cor       String?          @default("#6366f1") 
-  icone     String?          @default("Package") 
-  produtos  ProdutoEstoque[]
+  id           String           @id @default(uuid())
+  nome         String           @unique
+  cor          String?          @default("#6366f1")
+  icone        String?          @default("Package")
+  produtos     ProdutoEstoque[]
   listaCompras ListaCompra[]
-  createdAt DateTime         @default(now())
+  createdAt    DateTime         @default(now())
 }
 
 model ProdutoEstoque {
-  id             String   @id @default(uuid())
-  imagem         String?
-  nome           String  
-  quantidade     Int      @default(0)
-  estoqueMinimo  Int      @default(1)
-  unidade        String   
-  precoMedio     Float?   @default(0)
-  ultimaCompra   DateTime?
-  
-  categoriaId    String
-  categoria      Categoria @relation(fields: [categoriaId], references: [id])
+  id            String    @id @default(uuid())
+  imagem        String?
+  nome          String
+  quantidade    Int       @default(0)
+  estoqueMinimo Int       @default(1)
+  unidade       String
+  precoMedio    Float?    @default(0)
+  ultimaCompra  DateTime?
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  categoriaId String
+  categoria   Categoria @relation(fields: [categoriaId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model ListaCompra {
@@ -474,39 +472,82 @@ model ListaCompra {
   quantidadeAtual Int
   minimoEsperado  Int
   unidade         String
-  status          String   @default("CARRINHO") 
+  status          String   @default("CARRINHO")
   createdAt       DateTime @default(now())
 
-  categoriaId     String?
-  categoria       Categoria? @relation(fields: [categoriaId], references: [id])
+  categoriaId String?
+  categoria   Categoria? @relation(fields: [categoriaId], references: [id])
 }
 
-
 model ConsultaPreAnalise {
-  id                String   @id @default(cuid())
-  cnpj              String   @unique
-  razaoSocial       String
-  nomeFantasia      String?
-  situacao          String?
-  uf                String?
-  municipio         String?
-  
-  regimeEA          String?
-  qualificacao      String?
-  submodalidade     String?  
-  capitalSocial     Float?
-  
-  dadosBrutos       Json
-  
-  nomeResponsavel   String?
-  telefoneContato   String?
-  observacoes       String?  
-  
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id           String  @id @default(cuid())
+  cnpj         String  @unique
+  razaoSocial  String
+  nomeFantasia String?
+  situacao     String?
+  uf           String?
+  municipio    String?
+
+  regimeEA      String?
+  qualificacao  String?
+  submodalidade String?
+  capitalSocial Float?
+
+  dadosBrutos Json
+
+  nomeResponsavel String?
+  telefoneContato String?
+  observacoes     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([cnpj])
   @@index([razaoSocial])
 }
 
+model videos {
+  id        String  @id @default(cuid())
+  titulo    String  @unique
+  descricao String?
+  url       String
+  thumbUrl  String?
+  tamanho   String?
+  duracao   Float?
+  setor     String
 
+  modulo ModuloVideo[]
+
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("videos")
+}
+
+model modulos {
+  id        String  @id @default(cuid())
+  nome      String  @unique
+  descricao String?
+  imagemUrl String?
+  setor     String
+
+  videos ModuloVideo[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("modulos")
+}
+
+model ModuloVideo {
+  moduloId String
+  videoId  String
+  ordem    Int      @default(0)
+
+  modulo   modulos   @relation(fields: [moduloId], references: [id], onDelete: Cascade)
+  video    videos    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@id([moduloId, videoId])
+  @@map("_ModuloVideos") 
+}
