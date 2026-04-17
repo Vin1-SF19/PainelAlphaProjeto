@@ -48,6 +48,7 @@ export default async function PainelAlpha() {
   });
 
   return (
+    
     <PainelAlphaClient 
       session={session} 
       chamadosIniciais={chamados}

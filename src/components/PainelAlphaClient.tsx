@@ -101,9 +101,9 @@ export default function PainelAlphaClient({ session, chamadosIniciais, configBan
         { id: "Perse", title: "Analise Fiscal", desc: "Sistema de analise previa para Oportunidades tributarias", img: "../planejamento-tributario.png", link: "/PainelAlpha/AlphaConnect", color: "from-green-600/20", tag: "tributario" },
         { id: "Extratos", title: "ANÁLISE DE EXTRATOS BANCÁRIOS", desc: "ANÁLISE DE EXTRATOS BANCÁRIOS", img: "../taxa.png", link: "/PainelAlpha/ExtratosBancarios", color: "from-black-600/20", tag: "Financeiro" },
         { id: "ServiçosGerais", title: "Serviços Gerais", desc: "Bancada de Tarefas Diarias", img: "../cleaning.png", link: "/PainelAlpha/PainelTarefas", color: "from-pink-600/20", tag: "Serviços Gerais" },
-        { id: "NovoRadar", title: "Consulta RADAR", desc: "Novo painel de consulta RADAR", img: "../cargueiro.png", link: "/PainelAlpha/NovoPainelHabilitacao", color:"from-yellow-600/20", tag: "RADAR" },
-        { id: "analise", title: "Sistema de pré análise", desc: "Sistema de pré análise e gerador de ficha de reunião", img: "../document.png", link: "/PainelAlpha/SistemaPreAnalise", color: "from-purple-600/20", tag: "Gerador de ficha de reuniao"},
-        { id: "skills", title: "Alpha Skills", desc: "Alpha Skills", img: "../elearning.png", link:"/PainelAlpha/AlphaSkills", color: "from-green-600/20", tag: "Alpha Skills" }
+        { id: "NovoRadar", title: "Consulta RADAR", desc: "Novo painel de consulta RADAR", img: "../cargueiro.png", link: "/PainelAlpha/NovoPainelHabilitacao", color: "from-yellow-600/20", tag: "RADAR" },
+        { id: "analise", title: "Sistema de pré análise", desc: "Sistema de pré análise e gerador de ficha de reunião", img: "../document.png", link: "/PainelAlpha/SistemaPreAnalise", color: "from-purple-600/20", tag: "Gerador de ficha de reuniao" },
+        { id: "skills", title: "Alpha Skills", desc: "Alpha Skills", img: "../elearning.png", link: "/PainelAlpha/AlphaSkills", color: "from-green-600/20", tag: "Alpha Skills" }
     ];
 
     const { favoritos, restante } = useMemo(() => {
@@ -138,10 +138,16 @@ export default function PainelAlphaClient({ session, chamadosIniciais, configBan
 
     return (
         <main className={`min-h-screen bg-[#020617] text-slate-200 overflow-x-hidden relative font-sans selection:${style.glow.replace('10', '30')}`}>
+
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className={`absolute top-[-10%] left-[-10%] w-[50%] h-[50%] ${style.glow} blur-[150px] rounded-full`} />
                 <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/10 blur-[120px] rounded-full" />
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com')] opacity-[0.03]" />
+                <img
+                    src="/FundoLogin.png"
+                    alt="Background"
+                    className="w-full h-full object-cover opacity-50"
+                />
             </div>
 
             <div className={`relative z-10 mx-auto p-4 lg:p-10 flex flex-col gap-8 ${densidade_painel === 'compact' ? 'max-w-[1920px]' : 'max-w-[1800px]'}`}>

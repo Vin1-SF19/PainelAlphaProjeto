@@ -133,7 +133,7 @@ export default function GerenciadorAlphaSkills() {
                         {/* Navegação de Setores */}
                         <div className="w-full lg:w-auto">
                             <div className="flex bg-[#1C1C1C] p-1.5 rounded-[1.5rem] border border-white/5 overflow-x-auto no-scrollbar gap-1.5 shadow-inner">
-                                {["Todos", "T.I", "Comercial", "Operacional", "Financeiro", "RH", "Serviços Gerais"].map((setor) => (
+                                {["Todos", "T.I", "Comercial", "Operacional", "Financeiro", "Recursos-Humanos", "Serviços Gerais"].map((setor) => (
                                     <button
                                         key={setor}
                                         onClick={() => setFiltroSetor(setor)}
@@ -205,7 +205,7 @@ export default function GerenciadorAlphaSkills() {
                                                                 {mod.nome}
                                                             </h3>
                                                             <p className="text-[10px] text-slate-500 font-medium mt-1 line-clamp-1 uppercase tracking-wider">
-                                                                {mod.descricao || "Módulo de capacitação Alpha"}
+                                                                {mod.aprendizado || "Módulo de capacitação Alpha"}
                                                             </p>
                                                         </div>
 

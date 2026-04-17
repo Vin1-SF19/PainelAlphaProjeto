@@ -518,7 +518,6 @@ model videos {
 
   modulo ModuloVideo[]
 
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -526,11 +525,16 @@ model videos {
 }
 
 model modulos {
-  id        String  @id @default(cuid())
-  nome      String  @unique
-  descricao String?
-  imagemUrl String?
-  setor     String
+  id          String  @id @default(cuid())
+  nome        String  @unique
+  descricao   String?
+  aprendizado String?
+  imagemUrl   String?
+  setor       String
+
+  bloqueado        Boolean  @default(false)
+  requerModuloId   String?  
+  percentualMinimo Int 
 
   videos ModuloVideo[]
 
@@ -543,11 +547,21 @@ model modulos {
 model ModuloVideo {
   moduloId String
   videoId  String
-  ordem    Int      @default(0)
+  ordem    Int    @default(0)
 
-  modulo   modulos   @relation(fields: [moduloId], references: [id], onDelete: Cascade)
-  video    videos    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  modulo modulos @relation(fields: [moduloId], references: [id], onDelete: Cascade)
+  video  videos  @relation(fields: [videoId], references: [id], onDelete: Cascade)
 
   @@id([moduloId, videoId])
-  @@map("_ModuloVideos") 
+  @@map("_ModuloVideos")
+}
+
+model ProgressoAula {
+  id        String   @id @default(cuid())
+  userId    String
+  aulaId    String
+  concluido Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, aulaId])
 }

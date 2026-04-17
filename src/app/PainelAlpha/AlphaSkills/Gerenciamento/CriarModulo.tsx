@@ -8,16 +8,19 @@ import { toast } from 'sonner';
 
 import { useRouter } from 'next/navigation';
 
-const SETORES = ["T.I", "Comercial", "Operacional", "Financeiro", "RH", "Serviços Gerais"];
+const SETORES = ["T.I", "Comercial", "Operacional", "Financeiro", "Recursos-Humanos", "Serviços Gerais"];
 
 export default function ModalModulos({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
     const router = useRouter();
     const [nome, setNome] = useState("");
     const [descricao, setDescricao] = useState("");
+    const [aprendizado, setAprendizado] = useState("");
+    const [bloqueado, setBloqueado] = useState(false);
+    const [percentualMinimo, setPercentualMinimo] = useState(0);
     const [setoresSelected, setSetoresSelected] = useState<string[]>([]);
     const [modulos, setModulos] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
-    
+
     const [modoUpload, setModoUpload] = useState(true);
     const [logoLink, setLogoLink] = useState("");
     const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -39,6 +42,7 @@ export default function ModalModulos({ isOpen, onClose }: { isOpen: boolean, onC
         setEditandoId(null);
         setNome("");
         setDescricao("");
+        setAprendizado("");
         setSetoresSelected([]);
         setLogoFile(null);
         setLogoLink("");
@@ -48,15 +52,16 @@ export default function ModalModulos({ isOpen, onClose }: { isOpen: boolean, onC
     const carregarParaEdicao = (m: any) => {
         setEditandoId(m.id);
         setNome(m.nome);
+        setAprendizado(m.aprendizado || "");
         setDescricao(m.descricao || "");
         setSetoresSelected(m.setor ? m.setor.split(", ") : []);
         setLogoLink(m.imagemUrl || "");
-        setModoUpload(false); 
+        setModoUpload(false);
     };
 
     const handleAction = async () => {
         if (!nome || setoresSelected.length === 0) return toast.error("Preencha os campos obrigatórios!");
-        
+
         setLoading(true);
         try {
             let finalImageUrl = logoLink;
@@ -73,9 +78,9 @@ export default function ModalModulos({ isOpen, onClose }: { isOpen: boolean, onC
             let res;
 
             if (editandoId) {
-                res = await updateModulo(editandoId, nome, setorString, finalImageUrl, descricao);
+                res = await updateModulo(editandoId, nome, setorString, finalImageUrl, descricao, aprendizado);
             } else {
-                res = await createModulo(nome, setorString, finalImageUrl, descricao);
+                res = await createModulo(nome, setorString, finalImageUrl, descricao, aprendizado, bloqueado, percentualMinimo);
             }
 
             if (res.success) {
@@ -102,7 +107,7 @@ export default function ModalModulos({ isOpen, onClose }: { isOpen: boolean, onC
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={onClose} />
             <div className="relative bg-[#111] border border-white/10 rounded-[3rem] max-w-2xl w-full flex flex-col max-h-[90vh] overflow-hidden shadow-2xl">
-                
+
                 <div className="p-8 border-b border-white/5 bg-[#161616] flex justify-between items-center">
                     <div className="flex items-center gap-3">
                         <FolderPlus className={editandoId ? "text-blue-500" : "text-orange-500"} size={24} />
@@ -114,25 +119,32 @@ export default function ModalModulos({ isOpen, onClose }: { isOpen: boolean, onC
                 </div>
 
                 <div className="p-8 overflow-y-auto space-y-6 custom-scrollbar">
-                    
+
                     {/* FORMULÁRIO HÍBRIDO (AZUL SE EDITANDO) */}
                     <div className={`p-6 rounded-[2.5rem] border transition-all duration-500 ${editandoId ? 'bg-blue-500/5 border-blue-500/20' : 'bg-[#161616] border-white/5'}`}>
                         <div className="space-y-5">
                             {/* Nome */}
-                            <input 
+                            <input
                                 value={nome}
                                 onChange={(e) => setNome(e.target.value)}
-                                placeholder="Nome do Módulo"
+                                placeholder="TItulo do Módulo"
+                                className="w-full bg-[#1C1C1C] border border-white/5 p-4 rounded-xl text-xs text-white outline-none focus:border-orange-500 transition-all"
+                            />
+
+                            <input
+                                value={aprendizado}
+                                onChange={(e) => setAprendizado(e.target.value)}
+                                placeholder="Breve descrição do Módulo"
                                 className="w-full bg-[#1C1C1C] border border-white/5 p-4 rounded-xl text-xs text-white outline-none focus:border-orange-500 transition-all"
                             />
 
                             {/* Descrição */}
                             <div className="relative">
                                 <AlignLeft size={14} className="absolute left-4 top-4 text-slate-600" />
-                                <textarea 
+                                <textarea
                                     value={descricao}
                                     onChange={(e) => setDescricao(e.target.value)}
-                                    placeholder="Descrição opcional..."
+                                    placeholder="Descrição do conteudo/aprendizado do modulo..."
                                     className="w-full bg-[#1C1C1C] border border-white/5 pl-10 pr-4 py-4 rounded-xl text-xs text-white outline-none focus:border-orange-500 min-h-[80px] resize-none"
                                 />
                             </div>
@@ -166,7 +178,7 @@ export default function ModalModulos({ isOpen, onClose }: { isOpen: boolean, onC
                             {/* Setores */}
                             <div className="grid grid-cols-3 gap-2">
                                 {SETORES.map(s => (
-                                    <button 
+                                    <button
                                         key={s}
                                         onClick={() => setSetoresSelected(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])}
                                         className={`py-2 rounded-lg text-[8px] font-black uppercase border cursor-pointer transition-all ${setoresSelected.includes(s) ? 'bg-orange-500/10 border-orange-500 text-orange-500' : 'bg-[#1C1C1C] border-white/5 text-slate-600 hover:border-white/20'}`}
@@ -176,6 +188,39 @@ export default function ModalModulos({ isOpen, onClose }: { isOpen: boolean, onC
                                 ))}
                             </div>
 
+                            <div className="bg-white/5 p-6 rounded-3xl border border-white/10 space-y-4">
+                                <h3 className="text-orange-500 font-black uppercase text-xs tracking-widest">Regras de Acesso</h3>
+
+                                <div className="flex items-center gap-4">
+                                    <label className="text-sm">Bloquear este módulo?</label>
+                                    <input
+                                        type="checkbox"
+                                        name="bloqueado"
+                                        className="w-5 h-5 accent-orange-500"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-xs text-slate-500 uppercase font-black">Desbloquear após concluir o módulo:</label>
+                                    <select name="requerModuloId" className="w-full bg-[#0A0A0A] border border-white/10 p-3 rounded-xl">
+                                        <option value="">Nenhum (Sempre Aberto)</option>
+                                        {modulos.map(m => (
+                                            <option key={m.id} value={m.id}>{m.nome}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-xs text-slate-500 uppercase font-black">% Necessária do anterior:</label>
+                                    <input
+                                        type="number"
+                                        name="percentualMinimo"
+                                        placeholder="Ex: 100"
+                                        className="w-full bg-[#0A0A0A] border border-white/10 p-3 rounded-xl"
+                                    />
+                                </div>
+                            </div>
+
                             {/* Botões de Ação */}
                             <div className="flex gap-2">
                                 {editandoId && (
@@ -183,8 +228,8 @@ export default function ModalModulos({ isOpen, onClose }: { isOpen: boolean, onC
                                         <RotateCcw size={14} /> Cancelar
                                     </button>
                                 )}
-                                <button 
-                                    onClick={handleAction} 
+                                <button
+                                    onClick={handleAction}
                                     disabled={loading}
                                     className={`flex-[2] py-4 rounded-xl font-black text-[10px] uppercase flex items-center justify-center gap-2 transition-all text-white shadow-xl cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${editandoId ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-900/20' : 'bg-orange-600 hover:bg-orange-500 shadow-orange-950/20'}`}
                                 >

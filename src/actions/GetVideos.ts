@@ -12,9 +12,6 @@ export async function getVideos() {
                         modulo: true
                     }
                 }
-            },
-            orderBy: {
-                createdAt: 'desc'
             }
         });
 
@@ -152,10 +149,10 @@ export async function updateVideoData(id: string, data: any) {
     }
 }
 
-export async function createModulo(nome: string, setor: string, imagemUrl: string, descricao: string) {
+export async function createModulo(nome: string, setor: string, imagemUrl: string, descricao: string, aprendizado: string, bloqueado: boolean, percentualMinimo: number) {
     try {
         await db.modulos.create({
-            data: { nome, setor, imagemUrl, descricao }
+            data: { nome, setor, imagemUrl, descricao, aprendizado, bloqueado, percentualMinimo }
         });
         revalidatePath("/PainelAlpha/AlphaSkills/Gerenciamento");
         return { success: true };
@@ -175,15 +172,47 @@ export async function getModulos() {
     }
 }
 
-export async function updateModulo(id: string, nome: string, setor: string, imagemUrl: string, descricao?: string) {
+export async function updateModulo(id: string, nome: string, setor: string, imagemUrl: string, descricao?: string, aprendizado?: string) {
     try {
         await db.modulos.update({
             where: { id },
-            data: { nome, setor, imagemUrl, descricao }
+            data: { nome, setor, imagemUrl, descricao, aprendizado }
         });
         revalidatePath("/PainelAlpha/AlphaSkills/Gerenciamento");
         return { success: true };
     } catch (error) {
         return { success: false };
     }
+}
+
+export async function marcarAulaComoConcluida(userId: string, aulaId: string) {
+    try {
+        await db.progressoAula.upsert({
+            where: {
+                userId_aulaId: { userId, aulaId }
+            },
+            update: { concluido: true },
+            create: { userId, aulaId, concluido: true }
+        });
+
+        revalidatePath("/PainelAlpha/AlphaSkills");
+        return { success: true };
+    } catch (error) {
+        console.error("Erro no Banco:", error);
+        return { success: false };
+    }
+}
+
+export async function getUserProgresso(userId: string) {
+    return await db.progressoAula.findMany({
+        where: { userId }
+    });
+}
+
+export async function salvarProgresso(userId: string, aulaId: string) {
+    await db.progressoAula.upsert({
+        where: { userId_aulaId: { userId, aulaId } },
+        update: { concluido: true },
+        create: { userId, aulaId, concluido: true }
+    });
 }

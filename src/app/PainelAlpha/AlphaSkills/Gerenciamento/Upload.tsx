@@ -119,7 +119,7 @@ export default function SecaoUpload({ onSuccess }: { onSuccess: () => void }) {
                                 title="Criar Novo Módulo"
                             >
                                 <FolderPlus size={18} />
-                                <span className="text-[8px] font-black uppercase pr-1 hidden sm:block">Novo Módulo</span>
+                                <span className="text-[8px] font-black uppercase pr-1 hidden sm:block">Módulos</span>
                             </button>
                             <div className="p-2.5 bg-orange-500/10 rounded-xl text-orange-500 border border-orange-500/10">
                                 <Film size={18} />
