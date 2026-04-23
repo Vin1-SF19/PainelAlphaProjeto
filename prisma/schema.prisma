@@ -41,6 +41,10 @@ model usuarios {
 
   conversasP1 conversas[] @relation("ConversaP1")
   conversasP2 conversas[] @relation("ConversaP2")
+
+  presets Preset[] @relation("PresetTousuarios")
+  progressosVideos ProgressoVideo[] 
+  resultadosProvas ResultadoProva[]
 }
 
 model chamados {
@@ -515,11 +519,15 @@ model videos {
   tamanho   String?
   duracao   Float?
   setor     String
+  ordem     Int?     @default(0)
 
   modulo ModuloVideo[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  presets Preset[] @relation("PresetVideos")
+  progressos       ProgressoVideo[]
 
   @@map("videos")
 }
@@ -532,9 +540,9 @@ model modulos {
   imagemUrl   String?
   setor       String
 
-  bloqueado        Boolean  @default(false)
-  requerModuloId   String?  
-  percentualMinimo Int 
+  bloqueado        Boolean @default(false)
+  requerModuloId   String?
+  percentualMinimo Int
 
   videos ModuloVideo[]
 
@@ -564,4 +572,75 @@ model ProgressoAula {
   createdAt DateTime @default(now())
 
   @@unique([userId, aulaId])
+}
+
+model Preset {
+  id        String   @id @default(uuid())
+  nome      String
+  createdAt DateTime @default(now())
+
+  videos    videos[]     @relation("PresetVideos")
+  usuarios  usuarios[]   @relation("PresetTousuarios")
+  perguntas Pergunta[]
+  tags      TagQuestao[] @relation("PresetTags")
+  resultadosProva       ResultadoProva[]
+
+  @@map("presets")
+}
+
+model TagQuestao {
+  id        String     @id @default(uuid())
+  nome      String     @unique
+  perguntas Pergunta[]
+  presets   Preset[]   @relation("PresetTags")
+
+  @@map("tags_questoes")
+}
+
+model Pergunta {
+  id              String     @id @default(uuid())
+  enunciado       String
+  tipo            String     @default("OBJETIVA")
+  opcoes          String
+  respostaCorreta String
+  tagId           String
+  tag             TagQuestao @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  presetId String?
+  preset   Preset? @relation(fields: [presetId], references: [id])
+
+  @@map("perguntas")
+}
+
+enum TipoPergunta {
+  OBJETIVA
+  DESCRITIVA
+}
+
+model ProgressoVideo {
+  id        String   @id @default(cuid())
+  userId    Int      
+  videoId   String
+  concluido Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+
+  user      usuarios @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video     videos   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, videoId]) 
+}
+
+model ResultadoProva {
+  id         String   @id @default(cuid())
+  userId     Int     
+  presetId   String
+  nota       Float
+  tentativas Int      @default(1)
+  aprovado   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  user       usuarios @relation(fields: [userId], references: [id], onDelete: Cascade)
+  preset     Preset   @relation(fields: [presetId], references: [id], onDelete: Cascade)
+
+  @@map("resultadosProva")
 }

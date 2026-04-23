@@ -33,6 +33,7 @@ export default function PainelAlphaClient({ session, chamadosIniciais, configBan
     const userName = session?.user?.nome || session?.user?.name || "Operador";
     const userRole = session?.user?.role || "USER";
     const isRh = session.user.role === "RECURSOS HUMANOS";
+    const isFinc = session.user.role === "FINANCEIRO";
     const isAdmin = session.user.role === "Admin";
     const isCeo = session.user.role === "CEO";
 
@@ -103,7 +104,8 @@ export default function PainelAlphaClient({ session, chamadosIniciais, configBan
         { id: "ServiçosGerais", title: "Serviços Gerais", desc: "Bancada de Tarefas Diarias", img: "../cleaning.png", link: "/PainelAlpha/PainelTarefas", color: "from-pink-600/20", tag: "Serviços Gerais" },
         { id: "NovoRadar", title: "Consulta RADAR", desc: "Novo painel de consulta RADAR", img: "../cargueiro.png", link: "/PainelAlpha/NovoPainelHabilitacao", color: "from-yellow-600/20", tag: "RADAR" },
         { id: "analise", title: "Sistema de pré análise", desc: "Sistema de pré análise e gerador de ficha de reunião", img: "../document.png", link: "/PainelAlpha/SistemaPreAnalise", color: "from-purple-600/20", tag: "Gerador de ficha de reuniao" },
-        { id: "skills", title: "Alpha Skills", desc: "Alpha Skills", img: "../elearning.png", link: "/PainelAlpha/AlphaSkills", color: "from-green-600/20", tag: "Alpha Skills" }
+        { id: "skills", title: "Alpha Skills", desc: "Alpha Skills", img: "../elearning.png", link: "/PainelAlpha/AlphaSkills", color: "from-green-600/20", tag: "Alpha Skills" },
+        { id: "schools", title: "Alpha Schools", desc: "Alpha Schools", img: "../textbook.png", link: "/PainelAlpha/AlphaSchools", color: "from-orange-600/20", tag: "Alpha Schools" }
     ];
 
     const { favoritos, restante } = useMemo(() => {
@@ -195,7 +197,7 @@ export default function PainelAlphaClient({ session, chamadosIniciais, configBan
                             icon: ShieldCheck,
                             color: `${style.text} ${style.glow}`,
                             active: false,
-                            href: isRh || isAdmin || isCeo ? "/PainelAlpha/PainelTarefas/GerenciarTarefas/GerenciamentoTarefa" : undefined
+                            href: isRh || isAdmin || isCeo || isFinc ? "/PainelAlpha/PainelTarefas/GerenciarTarefas/GerenciamentoTarefa" : undefined
                         },
                         {
                             label: "Alpha Comm",

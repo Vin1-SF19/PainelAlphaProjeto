@@ -20,12 +20,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!user) return null;
 
+
         return {
           id: String(user.id),
           email: user.email,
           nome: user.nome,
           usuario: user.usuario,
           role: user.role,
+          presetId: user.presetId,
           permissoes: (user as any).permissoes,
           imagemUrl: (user as any).imagemUrl,
           atalhos: (user as any).atalhos,
@@ -68,6 +70,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.esconderBloqueados = (user as any).esconderBloqueados;
         token.tema_interface = (user as any).tema_interface;
         token.densidade_painel = (user as any).densidade_painel;
+        token.presetId = (user as any).presetId;
+        token.usuario = (user as any).usuario;
+
       }
 
       if (trigger === "update" && session?.user) {
@@ -94,7 +99,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.atalhos = token.atalhos as string;
         session.user.esconderBloqueados = !!token.esconderBloqueados;
         (session.user as any).tema_interface = token.tema_interface;
-        (session.user as any).densidade_painel = token.densidade_painel; 
+        (session.user as any).densidade_painel = token.densidade_painel;
+        (session.user as any).presetId = token.presetId;
+        (session.user as any).usuario = token.usuario;
 
       }
 

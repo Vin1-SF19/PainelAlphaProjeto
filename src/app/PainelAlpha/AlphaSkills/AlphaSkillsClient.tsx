@@ -8,26 +8,71 @@ import BotaoVoltar from '@/components/BotaoVoltarMinimalista';
 import TrilhaCarrossel from './TrilhaCarrossel';
 import ModuloModal from './ModuloModal';
 
-export default function AlphaSkillsClient({ session, initialModulos, initialVideos }: any) {
+export default function AlphaSkillsClient({ session, initialModulos, initialVideos, initialProgresso }: any) {
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedModulo, setSelectedModulo] = useState<any>(null);
 
     const isAdmin = session?.user?.role === "Admin";
 
     const setores = useMemo(() => {
-        const listaSetoresUnicos = Array.from(new Set(
-            initialModulos.flatMap((m: any) => m.setor.split(", "))
-        )).sort();
+        const grupos = initialModulos.reduce((acc: any, m: any) => {
+            const s = m.setor || "Geral";
+            if (!acc[s]) acc[s] = [];
+            acc[s].push(m);
+            return acc;
+        }, {});
 
-        return listaSetoresUnicos.map(nomeSetor => ({
-            nome: nomeSetor as string,
-            items: initialModulos.filter((m: any) => {
-                const pertenceAoSetor = m.setor.split(", ").includes(nomeSetor);
-                const matchesBusca = m.nome.toLowerCase().includes(searchTerm.toLowerCase());
-                return pertenceAoSetor && matchesBusca;
-            })
-        })).filter(s => s.items.length > 0);
-    }, [initialModulos, searchTerm]);
+        return Object.keys(grupos).sort().map(nomeSetor => {
+            const itemsOrdenados = grupos[nomeSetor].sort((a: any, b: any) => {
+                return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+            });
+
+            const itemsProcessados = itemsOrdenados.map((mod: any, index: number) => {
+                const tituloFormatado = `Módulo ${index + 1}: `;
+
+                if (isAdmin) {
+                    return { ...mod, nomeExibicao: tituloFormatado, isLiberado: true };
+                }
+
+                if (!mod.bloqueado || index === 0) {
+                    return { ...mod, nomeExibicao: tituloFormatado, isLiberado: true };
+                }
+
+                const moduloAnterior = itemsOrdenados[index - 1];
+                const idRequisito = mod.requerModuloId || moduloAnterior.id;
+
+                const aulasDoRequisito = (initialVideos || []).filter((v: any) =>
+                    v.modulo?.some((m: any) => String(m.id) === String(idRequisito))
+                );
+
+                if (aulasDoRequisito.length === 0) {
+                    return { ...mod, nomeExibicao: tituloFormatado, isLiberado: true };
+                }
+
+                const concluidas = (initialProgresso || []).filter((p: any) =>
+                    aulasDoRequisito.some((a: any) => String(a.id) === String(p.aulaId)) && p.concluido
+                );
+
+                const pct = (concluidas.length / aulasDoRequisito.length) * 100;
+                const isLiberado = pct >= (mod.percentualMinimo || 100);
+
+                return {
+                    ...mod,
+                    nomeExibicao: tituloFormatado, 
+                    isLiberado,
+                    nomeAnterior: moduloAnterior.nome
+                };
+            });
+
+            return { nome: nomeSetor, items: itemsProcessados };
+        }).filter(s => s.items.length > 0);
+
+    }, [initialModulos, initialVideos, initialProgresso, searchTerm]);
+
+    // Se o módulo anterior não tem aulas, libera para não travar o fluxo
+    //if (aulasDoRequisito.length === 0) {
+    //     return { ...mod, isLiberado: true };
+    // }
 
     return (
         <div className="min-h-screen bg-[#050505] text-white selection:bg-orange-500/30 overflow-x-hidden">
@@ -90,7 +135,7 @@ export default function AlphaSkillsClient({ session, initialModulos, initialVide
                             </div>
                             {isAdmin && (
                                 <Link href="/PainelAlpha/AlphaSkills/Gerenciamento">
-                                    <button className="bg-white text-black px-6 py-4 rounded-2xl hover:bg-orange-500 hover:text-white transition-all flex items-center gap-2 font-bold uppercase text-xs">
+                                    <button className="cursor-pointer bg-white text-black px-6 py-4 rounded-2xl hover:bg-orange-500 hover:text-white transition-all flex items-center gap-2 font-bold uppercase text-xs">
                                         <Settings size={18} /> Gerenciar
                                     </button>
                                 </Link>

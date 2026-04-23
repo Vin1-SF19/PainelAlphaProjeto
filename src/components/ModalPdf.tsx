@@ -32,27 +32,27 @@ export const ModalPDF = ({ dados, radarDados, user, isOpen, onClose }: any) => {
 
     const gerarEVisualizar = async () => {
         const radarReal = radarDados?.dados || radarDados;
-    
+
         const payload = {
-            ...dados, 
-            radar: radarReal, 
+            ...dados,
+            radar: radarReal,
             extra: dadosManuais,
             telefone: dadosManuais.telefone,
             nomeResponsavel: dadosManuais.nomeResponsavel,
             observacoes: dadosManuais.observacoes,
         };
-    
+
         console.log("PAYLOAD FINAL PARA O PDF:", payload);
-    
+
         await upsertConsulta(payload);
-        
+
         const doc = <FichaAlphaPDF dados={payload} userLogado={user} />;
         const blob = await pdf(doc).toBlob();
         window.open(URL.createObjectURL(blob), '_blank');
     };
 
 
-    const dataAbertura = dados.rfb?.dataConstituicao || "";
+    const dataAbertura = dados?.rfb?.dados?.dataConstituicao || "";
     const agora = new Date();
 
     let maisDe5Anos = false;
@@ -139,21 +139,21 @@ export const ModalPDF = ({ dados, radarDados, user, isOpen, onClose }: any) => {
                         </div>
 
                     </div>
-                        <div className="mt-6">
-                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
-                                Observações
-                            </label>
-                            <textarea
-                                rows={4}
-                                value={dadosManuais.observacoes}
-                                onChange={(e) => setDadosManuais({ ...dadosManuais, observacoes: e.target.value })}
-                                placeholder="Digite aqui detalhes relevantes sobre a situação da empresa ou do Radar..."
-                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 focus:ring-2 focus:ring-orange-500 focus:bg-white outline-none transition-all resize-none placeholder:text-gray-300"
-                            />
-                            <p className="text-[9px] text-gray-400 mt-1 italic">
-                                * Este texto aparecerá na seção final do documento PDF.
-                            </p>
-                        </div>
+                    <div className="mt-6">
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+                            Observações
+                        </label>
+                        <textarea
+                            rows={4}
+                            value={dadosManuais.observacoes}
+                            onChange={(e) => setDadosManuais({ ...dadosManuais, observacoes: e.target.value })}
+                            placeholder="Digite aqui detalhes relevantes sobre a situação da empresa ou do Radar..."
+                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 focus:ring-2 focus:ring-orange-500 focus:bg-white outline-none transition-all resize-none placeholder:text-gray-300"
+                        />
+                        <p className="text-[9px] text-gray-400 mt-1 italic">
+                            * Este texto aparecerá na seção final do documento PDF.
+                        </p>
+                    </div>
                 </div>
 
                 <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-4">

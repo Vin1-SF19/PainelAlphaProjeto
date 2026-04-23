@@ -4,31 +4,54 @@ import AlphaSkillsClient from "./AlphaSkillsClient";
 
 export default async function AlphaSkillsPage() {
   const session = await auth();
-  
-  const [mods, vids, progress] = await Promise.all([
+  const userId = session?.user?.id || "";
+
+  const [mods, vids, progressRaw] = await Promise.all([
     getModulos(),
     getVideos(),
-    getUserProgresso(session?.user?.id || "")
+    getUserProgresso(userId)
   ]);
 
+  const progress = (progressRaw || []).map((p: any) => ({
+    aulaId: String(p.aulaId),
+    concluido: Boolean(p.concluido)
+  }));
+
+  const todosModulosOrdenados = [...mods].sort((a: any, b: any) => (a.ordem || 0) - (b.ordem || 0));
+
   const modulosProcessados = mods.map(mod => {
-    if (!mod.bloqueado || !mod.requerModuloId) {
+    if (!mod.bloqueado) {
       return { ...mod, isLiberado: true };
     }
 
-    const aulasRequisito = vids.filter(v =>
-      v.modulo?.some((m: any) => m.id === mod.requerModuloId)
+    let idRequisito = mod.requerModuloId;
+
+    if (!idRequisito) {
+      const idxGlobal = todosModulosOrdenados.findIndex((m: any) => m.id === mod.id);
+      if (idxGlobal > 0) {
+        idRequisito = todosModulosOrdenados[idxGlobal - 1].id;
+      }
+    }
+
+    if (!idRequisito) {
+      return { ...mod, isLiberado: true };
+    }
+
+    const aulasRequisito = vids.filter((v: any) =>
+      v.modulo?.some((m: any) => String(m.id) === String(idRequisito))
     );
 
-    const concluidas = progress.filter(p =>
-      aulasRequisito.some(a => a.id === p.aulaId)
+    const concluidas = progress.filter((p: any) =>
+      aulasRequisito.some((a: any) => String(a.id) === String(p.aulaId)) && p.concluido
     );
 
     const pct = aulasRequisito.length > 0 ? (concluidas.length / aulasRequisito.length) * 100 : 0;
+    const meta = mod.percentualMinimo || 100;
 
     return {
       ...mod,
-      isLiberado: pct >= (mod.percentualMinimo || 100)
+      isLiberado: pct >= meta,
+      nomeAnterior: mods.find((m: any) => String(m.id) === String(idRequisito))?.nome
     };
   });
 
@@ -36,7 +59,8 @@ export default async function AlphaSkillsPage() {
     <AlphaSkillsClient 
       session={session} 
       initialModulos={modulosProcessados} 
-      initialVideos={vids} 
+      initialVideos={vids}
+      initialProgresso={progress}
     />
   );
 }

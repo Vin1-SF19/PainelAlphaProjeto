@@ -39,7 +39,8 @@ const MODULOS_BASE = [
   { id: "ServiçosGerais", title: "Serviços Gerais", img: "/cleaning.png", tag: "Serviços Gerais" },
   { id: "NovoRadar", title: "Consulta RADAR", img: "/cargueiro.png", tag: "RADAR" },
   { id: "analise", title: "Sistema Pre Analise", img: "/document.png", tag: "Gerador de ficha de reunião" },
-  { id: "skills", title: "Alpha Skills", img: "/elearning.png", tag: "Alpha Skills" }
+  { id: "skills", title: "Alpha Skills", img: "/elearning.png", tag: "Alpha Skills" },
+  { id: "schools", title: "Alpha Schools", img: "/textbook.png", tag: "Alpha Schools" }
 ];
 
 export default function AtalhosPage() {

@@ -10,10 +10,11 @@ type User = {
   role: string;
   permissoes: string[];
   imagemUrl?: string | null;
-  atalhos?: string | null;           
-  tema_interface?: string | null;     
-  densidade_painel?: string | null;  
-  esconderBloqueados?: boolean;      
+  atalhos?: string | null;
+  tema_interface?: string | null;
+  densidade_painel?: string | null;
+  esconderBloqueados?: boolean;
+  presetId?: string | null;
 };
 
 export async function findUserByCredentials(
@@ -22,9 +23,14 @@ export async function findUserByCredentials(
 ): Promise<User | null> {
   const user = await db.usuarios.findFirst({
     where: { email },
+    include: {
+      presets: true,
+    }
   });
-  
+
   if (!user) return null;
+
+  const presetId = (user as any).presets?.[0]?.id || null;
 
   const passwordMatch = compareSync(senha, user.senha);
   if (!passwordMatch) return null;
@@ -35,6 +41,7 @@ export async function findUserByCredentials(
     usuario: user.usuario,
     nome: user.nome,
     role: user.role,
+    presetId: presetId,
     permissoes: user.permissoes?.split(",") ?? [],
     imagemUrl: (user as any).imagemUrl ?? null,
     atalhos: (user as any).atalhos ?? null,

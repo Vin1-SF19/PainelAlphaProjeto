@@ -51,7 +51,8 @@ const MODULOS_SISTEMA = [
   { id: "ServiçosGerais", label:"Serviços Gerais", desc: "Painel de conferencia de tarefas" },
   { id: "NovoRadar", label: "Consulta RADAR", desc: "Novo painel de consulta RADAR"},
   { id: "analise", label: "Sistema de pré análise", desc: "Sistema de pré análise e gerador ficha"},
-  { id: "skills", label: "Alpha Skills", desc: "Alpha Skills"}
+  { id: "skills", label: "Alpha Skills", desc: "Alpha Skills"},
+  { id: "schools", label: "Alpha Schools", desc: "Alpha Schools"}
 ];
 
 const SETORES_LISTA = [

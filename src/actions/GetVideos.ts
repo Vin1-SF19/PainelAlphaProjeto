@@ -6,6 +6,9 @@ import { revalidatePath } from "next/cache";
 export async function getVideos() {
     try {
         const videos = await db.videos.findMany({
+            orderBy: {
+                ordem: 'asc'
+            },
             include: {
                 modulo: {
                     include: {
@@ -17,10 +20,12 @@ export async function getVideos() {
 
         return videos.map(v => ({
             ...v,
-            modulo: v.modulo.map(m => m.modulo)
+            ordem: v.ordem ?? 0,
+            modulo: v.modulo ? v.modulo.map(m => m.modulo) : []
         }));
+
     } catch (error) {
-        console.error("Erro ao buscar vídeos:", error);
+        console.error("Erro Crítico ao buscar vídeos no banco:", error);
         return [];
     }
 }
@@ -149,10 +154,10 @@ export async function updateVideoData(id: string, data: any) {
     }
 }
 
-export async function createModulo(nome: string, setor: string, imagemUrl: string, descricao: string, aprendizado: string, bloqueado: boolean, percentualMinimo: number) {
+export async function createModulo(nome: string, setor: string, imagemUrl: string, descricao: string, aprendizado: string, bloqueado: boolean, requerModuloId: string | null = null, percentualMinimo: number = 100) {
     try {
         await db.modulos.create({
-            data: { nome, setor, imagemUrl, descricao, aprendizado, bloqueado, percentualMinimo }
+            data: { nome, setor, imagemUrl, descricao, aprendizado, bloqueado, percentualMinimo, requerModuloId }
         });
         revalidatePath("/PainelAlpha/AlphaSkills/Gerenciamento");
         return { success: true };
@@ -172,11 +177,11 @@ export async function getModulos() {
     }
 }
 
-export async function updateModulo(id: string, nome: string, setor: string, imagemUrl: string, descricao?: string, aprendizado?: string) {
+export async function updateModulo(id: string, nome: string, setor: string, imagemUrl: string, descricao?: string, aprendizado?: string, bloqueado?: boolean, requerModuloId: string | null = null, percentualMinimo: number = 100) {
     try {
         await db.modulos.update({
             where: { id },
-            data: { nome, setor, imagemUrl, descricao, aprendizado }
+            data: { nome, setor, imagemUrl, descricao, aprendizado, bloqueado, requerModuloId, percentualMinimo }
         });
         revalidatePath("/PainelAlpha/AlphaSkills/Gerenciamento");
         return { success: true };
@@ -215,4 +220,23 @@ export async function salvarProgresso(userId: string, aulaId: string) {
         update: { concluido: true },
         create: { userId, aulaId, concluido: true }
     });
+}
+
+export async function getVideosAction() {
+    try {
+        const videos = await db.videos.findMany({
+            select: {
+                id: true,
+                titulo: true,
+                setor: true,
+            },
+            orderBy: {
+                titulo: 'asc'
+            }
+        });
+        return videos;
+    } catch (error) {
+        console.error("Erro ao buscar vídeos:", error);
+        return [];
+    }
 }

@@ -21,7 +21,7 @@ export default function TrilhaCarrossel({ setor, onSelectModulo }: any) {
     const node = scrollRef.current;
     if (node) {
       node.addEventListener('scroll', checkScroll);
-      checkScroll(); 
+      checkScroll();
     }
     return () => node?.removeEventListener('scroll', checkScroll);
   }, []);
@@ -31,18 +31,18 @@ export default function TrilhaCarrossel({ setor, onSelectModulo }: any) {
       if (scrollRef.current) {
         const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
         const isAtEnd = scrollLeft + clientWidth >= scrollWidth - 10;
-        scrollRef.current.scrollBy({ 
-          left: isAtEnd ? -scrollWidth : 320, 
-          behavior: 'smooth' 
+        scrollRef.current.scrollBy({
+          left: isAtEnd ? -scrollWidth : 320,
+          behavior: 'smooth'
         });
       }
-    }, 6000); 
+    }, 6000);
     return () => clearInterval(interval);
   }, []);
 
   const scroll = (dir: 'l' | 'r') => {
     if (scrollRef.current) {
-      const offset = scrollRef.current.clientWidth * 0.8; 
+      const offset = scrollRef.current.clientWidth * 0.8;
       scrollRef.current.scrollBy({ left: dir === 'l' ? -offset : offset, behavior: 'smooth' });
     }
   };
@@ -61,14 +61,14 @@ export default function TrilhaCarrossel({ setor, onSelectModulo }: any) {
 
         {/* Controles (Escondidos em mobile) */}
         <div className="hidden md:flex gap-3">
-          <button 
-            onClick={() => scroll('l')} 
+          <button
+            onClick={() => scroll('l')}
             disabled={!canScrollLeft}
             className={`p-3 rounded-2xl border transition-all ${canScrollLeft ? 'bg-white/5 border-white/10 hover:bg-orange-600 text-white' : 'opacity-20 text-slate-500 cursor-not-allowed'}`}
           >
             <ChevronLeft size={20} />
           </button>
-          <button 
+          <button
             onClick={() => scroll('r')}
             disabled={!canScrollRight}
             className={`p-3 rounded-2xl border transition-all ${canScrollRight ? 'bg-white/5 border-white/10 hover:bg-orange-600 text-white' : 'opacity-20 text-slate-500 cursor-not-allowed'}`}
@@ -83,8 +83,8 @@ export default function TrilhaCarrossel({ setor, onSelectModulo }: any) {
         <div className={`absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-[#050505] to-transparent z-20 pointer-events-none transition-opacity duration-300 ${canScrollLeft ? 'opacity-100' : 'opacity-0'}`} />
         <div className={`absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-[#050505] to-transparent z-20 pointer-events-none transition-opacity duration-300 ${canScrollRight ? 'opacity-100' : 'opacity-0'}`} />
 
-        <div 
-          ref={scrollRef} 
+        <div
+          ref={scrollRef}
           className="flex gap-4 md:gap-6 overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-smooth pb-8 px-1"
         >
           {setor.items.map((mod: any) => (
@@ -101,27 +101,33 @@ export default function TrilhaCarrossel({ setor, onSelectModulo }: any) {
               `}
             >
               {!mod.isLiberado && (
-                <div className="absolute inset-0 z-40 bg-black/70 backdrop-blur-[6px] rounded-[2.5rem] flex flex-col items-center justify-center border border-white/5 p-6 text-center">
-                  <div className="bg-[#111] p-4 rounded-full border border-orange-500/20 mb-4 shadow-2xl shadow-orange-500/10">
+                <div className="absolute inset-0 z-40 bg-black/80 backdrop-blur-[6px] rounded-[2.5rem] flex flex-col items-center justify-center border border-white/5 p-6 text-center">
+                  <div className="bg-[#111] p-4 rounded-full border border-orange-500/20 mb-4 shadow-2xl">
                     <Lock size={24} className="text-orange-500" />
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/80">Módulo Bloqueado</span>
-                  <p className="text-[8px] text-slate-500 uppercase mt-2">Conclua o requisito anterior</p>
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/80">Acesso Restrito</span>
+
+                  {/* Aviso dinâmico */}
+                  <p className="text-[8px] text-orange-500/80 uppercase mt-3 font-bold leading-relaxed max-w-[180px]">
+                    Conclua o módulo <br />
+                    <span className="text-white">"{mod.nomeAnterior}"</span> <br />
+                    para liberar este conteúdo.
+                  </p>
                 </div>
               )}
 
               <div className={`
                 relative w-full aspect-[16/10] rounded-[2.5rem] overflow-hidden border transition-all duration-500 shadow-2xl
-                ${mod.isLiberado 
-                  ? 'border-white/5 bg-[#0F0F0F] group-hover/card:border-orange-500/40 shadow-orange-500/5' 
+                ${mod.isLiberado
+                  ? 'border-white/5 bg-[#0F0F0F] group-hover/card:border-orange-500/40 shadow-orange-500/5'
                   : 'border-transparent grayscale'
                 }
               `}>
                 {mod.imagemUrl ? (
-                  <img 
-                    src={mod.imagemUrl} 
-                    alt={mod.nome} 
-                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" 
+                  <img
+                    src={mod.imagemUrl}
+                    alt={mod.nome}
+                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                   />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center bg-orange-950/10">
@@ -130,14 +136,22 @@ export default function TrilhaCarrossel({ setor, onSelectModulo }: any) {
                 )}
 
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-90 z-10" />
-                
+
                 <div className="absolute bottom-8 left-8 right-8 z-20">
-                  <div className="flex items-center gap-2 mb-2">
-                     <span className="w-8 h-[2px] bg-orange-500" />
-                     <span className="text-[8px] font-black text-orange-500 uppercase tracking-widest">Alpha Module</span>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="w-8 h-[2px] bg-orange-500" />
+                    <span className="text-[12px] font-black text-orange-500 uppercase tracking-[0.2em]">
+                      Alpha Cursos
+                    </span>
                   </div>
-                  <h3 className={`text-lg md:text-2xl font-black uppercase tracking-tight line-clamp-2 transition-colors ${mod.isLiberado ? 'text-white' : 'text-slate-600'}`}>
-                    {mod.nome}
+
+                  <h3 className={`text-lg md:text-2xl font-black uppercase tracking-tight transition-colors ${mod.isLiberado ? 'text-white' : 'text-white/20'}`}>
+                    <div className="text-[16px] opacity-70 mb-1">
+                      {mod.nomeExibicao}
+                    </div>
+                    <div className="line-clamp-2 leading-none">
+                      {mod.nome}
+                    </div>
                   </h3>
                 </div>
 

@@ -32,6 +32,7 @@ export default function ModuloDetalhesClient({ session, modulo, aulasIniciais, p
         if (result.success) {
             toast.success("Progresso Alpha atualizado!");
             setAulasConcluidas(prev => [...prev, videoAtivo.id]);
+            router.refresh();
         } else {
             toast.error("Erro ao salvar progresso.");
         }
