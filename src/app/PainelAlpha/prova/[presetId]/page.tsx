@@ -41,7 +41,7 @@ export default function PaginaProva({ params, userId }: { params: Promise<{ pres
 
                     const shuffled = [...poolTotal].sort(() => Math.random() - 0.5);
 
-                    const tentativasAnteriores = preset.resultadosProva?.filter((r: any) => r.userId === userId).length || 0;
+                    const tentativasAnteriores = preset.ResultadoProva?.filter((r: any) => r.userId === userId).length || 0;
 
                     const offset = (tentativasAnteriores % 2 === 0) ? 0 : 10;
 

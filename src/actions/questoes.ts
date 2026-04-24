@@ -122,18 +122,15 @@ export async function getPresetCompletoAction(presetId: string) {
       where: { id: presetId },
       include: {
         videos: {
-          orderBy: { ordem: 'asc' }
-        },
-        tags: {
-          include: {
-
-            perguntas: true
+          orderBy: {
+            ordem: 'asc' 
           }
         },
-        resultadosProva: true,
-        usuarios: {
-          select: { id: true, usuario: true, nome: true }
-        }
+        tags: {
+          include: { perguntas: true }
+        },
+        ResultadoProva: true, 
+        usuarios: { select: { id: true, usuario: true, nome: true } }
       }
     });
 
@@ -156,39 +153,37 @@ export async function salvarConfiguracoesCompletasAction(
     const usuariosOcupados = await db.usuarios.findMany({
       where: {
         id: { in: idsNumericos },
-        presets: {
-          some: {
-            id: { not: presetId } 
-          }
-        }
+        presets: { some: { id: { not: presetId } } }
       },
       select: { nome: true }
     });
 
     if (usuariosOcupados.length > 0) {
       const nomes = usuariosOcupados.map(u => u.nome).join(", ");
-      return { 
-        success: false, 
-        error: `BLOQUEIO: O(s) usuário(s) [${nomes}] já pertencem a outro preset.` 
-      };
+      return { success: false, error: `BLOQUEIO: O(s) usuário(s) [${nomes}] já pertencem a outro preset.` };
     }
 
-    await db.preset.update({
-      where: { id: presetId },
-      data: {
-        videos: { set: videoIds.map(id => ({ id })) },
-        tags: { set: tagIds.map(id => ({ id })) },
-      }
-    });
+    await db.$transaction([
+      db.preset.update({
+        where: { id: presetId },
+        data: {
+          tags: { set: tagIds.map(id => ({ id })) },
+          usuarios: { set: idsNumericos.map(id => ({ id })) },
+          videos: { set: videoIds.map(id => ({ id })) },
+        }
+      }),
+      
+      ...videoIds.map((id, index) => 
+        db.videos.update({
+          where: { id: id },
+          data: { ordem: index } 
+        })
+      )
+    ]);
 
-    await db.preset.update({
-      where: { id: presetId },
-      data: {
-        usuarios: { set: idsNumericos.map(id => ({ id })) }
-      }
-    });
-
-    revalidatePath('/PainelAlpha/Gerenciador');
+    revalidatePath('/PainelAlpha/AlphaSchools/presets');
+    revalidatePath('/PainelAlpha/AlphaSchools');
+    
     return { success: true };
 
   } catch (error) {

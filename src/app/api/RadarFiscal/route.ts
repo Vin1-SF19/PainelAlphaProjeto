@@ -130,7 +130,6 @@ export async function GET(req: Request) {
             capitalSocial: receita.capitalSocial,
             dataOpcao: receita.data_opcao,
             
-            // Retorna a data de exclusão formatada
             dataExclusao: dataExclusaoSimples && dataExclusaoSimples.length === 8 && !dataExclusaoSimples.includes("/")
                 ? `${dataExclusaoSimples.substring(6, 8)}/${dataExclusaoSimples.substring(4, 6)}/${dataExclusaoSimples.substring(0, 4)}`
                 : dataExclusaoSimples || "---",

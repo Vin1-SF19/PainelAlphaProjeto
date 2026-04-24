@@ -423,10 +423,6 @@ export default function HabilitacaoRadar() {
 
 
 
-
-
-
-
   const formatarDataExibicao = (valor: any) => {
     if (!valor) return "N/A";
     const data = new Date(valor);
@@ -473,7 +469,7 @@ export default function HabilitacaoRadar() {
       });
 
       const resultadosBanco = await Promise.all(promessas);
-      
+
       const jaSincronizados = resultadosBanco.filter(e => e.salvo);
       const paraConsultarExterno = resultadosBanco.filter(e => !e.salvo);
 
@@ -488,7 +484,7 @@ export default function HabilitacaoRadar() {
               const res = await fetch(`/api/ConsultaCompleta?cnpj=${item.cnpj}`);
               if (res.ok) {
                 const dados = await res.json();
-                setEmpresas(prev => prev.map(emp => 
+                setEmpresas(prev => prev.map(emp =>
                   emp.cnpj === item.cnpj ? { ...emp, ...dados, salvo: true } : emp
                 ));
               }
@@ -1008,7 +1004,7 @@ export default function HabilitacaoRadar() {
                       : "border-emerald-500/20"
                   : "border-emerald-500/20"
                   }`}
-              >
+                > 
                 <p className="text-[10px] uppercase font-bold text-gray-500 flex items-center gap-1">
                   Saldo Atual
                   <span
@@ -1068,7 +1064,7 @@ export default function HabilitacaoRadar() {
                       Titular da conta:
                     </p>
                     <p className={`text-sm font-bold text-red-500
-        }`}>
+                      }`}>
                       {infosimples.name}
                     </p>
                   </div>

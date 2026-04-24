@@ -583,7 +583,7 @@ model Preset {
   usuarios  usuarios[]   @relation("PresetTousuarios")
   perguntas Pergunta[]
   tags      TagQuestao[] @relation("PresetTags")
-  resultadosProva       ResultadoProva[]
+  ResultadoProva       ResultadoProva[]
 
   @@map("presets")
 }
@@ -642,5 +642,5 @@ model ResultadoProva {
   user       usuarios @relation(fields: [userId], references: [id], onDelete: Cascade)
   preset     Preset   @relation(fields: [presetId], references: [id], onDelete: Cascade)
 
-  @@map("resultadosProva")
+  @@map("ResultadoProva")
 }

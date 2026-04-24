@@ -19,7 +19,7 @@ export default function PainelRadar() {
     <main className="min-h-screen bg-[#020617]">
       <RadarIntroHeader layout={layout} setLayout={setLayout} />
       
-      <div className="max-w-7xl mx-auto p-8 pt-24">
+      <div className="max-w-7x2 mx-auto p-8 pt-24">
         <header className="mb-10 flex justify-between items-end px-4">
           <div>
             <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-500 italic">

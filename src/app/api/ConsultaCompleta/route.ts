@@ -6,11 +6,9 @@ export const revalidate = 0;
 
 export function parseDateBR(value: any): string | null {
     if (!value || value === "" || value === "N/A" || typeof value === 'undefined') return null;
-
     try {
         const dateObj = new Date(value);
         if (!isNaN(dateObj.getTime())) return dateObj.toISOString();
-
         if (typeof value === 'string' && value.includes("/")) {
             const parts = value.split("/");
             if (parts.length === 3) {
@@ -19,9 +17,7 @@ export function parseDateBR(value: any): string | null {
                 if (!isNaN(d.getTime())) return d.toISOString();
             }
         }
-    } catch (e) {
-        return null;
-    }
+    } catch (e) { return null; }
     return null;
 }
 
@@ -36,65 +32,62 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: "CNPJ inválido" }, { status: 400 });
         }
 
-        if (forcar) {
-            await db.consultas_radar.deleteMany({ where: { cnpj } }).catch(() => null);
-        } else {
+        if (!forcar) {
             const existente = await db.consultas_radar.findUnique({ where: { cnpj } });
             if (existente && existente.razao_social && existente.razao_social !== "NÃO ENCONTRADO") {
                 return NextResponse.json({
                     ...existente,
                     razaoSocial: existente.razao_social,
-                    nomeFantasia: existente.nome_fantasia,
-                    situacao: existente.situacao_radar,
-                    dataSituacao: existente.data_situacao,
-                    submodalidade: existente.submodalidade,
-                    dataConstituicao: existente.data_constituicao,
-                    regimeTributario: existente.regime_tributario,
-                    capitalSocial: existente.capital_social,
-                    dataConsulta: existente.data_consulta,
-                    data_opcao: existente.data_opcao,
                     fonte: "Banco Local"
                 });
             }
         }
 
-        // URL CORRIGIDA PARA LOCALHOST:3000
         const baseUrl = process.env.APP_URL || "http://localhost:3000";
 
-        const receitaRes = await fetch(`${baseUrl}/api/ReceitaFederal?cnpj=${cnpj}`, { 
-            cache: 'no-store'
-        });
-        const receita = await receitaRes.json();
+        const [receitaRes, radarRes] = await Promise.allSettled([
+            fetch(`${baseUrl}/api/ReceitaFederal?cnpj=${cnpj}`, { cache: 'no-store', signal: AbortSignal.timeout(15000) }),
+            fetch(`${baseUrl}/api/ConsultaRadar?cnpj=${cnpj}`, { cache: 'no-store', signal: AbortSignal.timeout(15000) })
+        ]);
 
-        if (!receita || receita.error || !receita.razaoSocial) {
-            return NextResponse.json({ error: receita?.error || "CNPJ não encontrado" }, { status: 404 });
+        if (receitaRes.status === "rejected" || !receitaRes.value.ok) {
+            const status = receitaRes.status === "fulfilled" ? receitaRes.value.status : 504;
+            return NextResponse.json({ error: "Receita Federal fora do ar ou limite excedido" }, { status });
+        }
+
+        const receita = await receitaRes.value.json();
+        if (!receita || receita.error) {
+            return NextResponse.json({ error: receita?.error || "Erro na Receita" }, { status: 404 });
         }
 
         let radar = { situacao: "NÃO HABILITADA", submodalidade: "N/A", contribuinte: "", dataSituacao: "" };
-        try {
-            const radarRes = await fetch(`${baseUrl}/api/ConsultaRadar?cnpj=${cnpj}`, { 
-                cache: 'no-store'
-            });
-            if (radarRes.ok) {
-                const dadosRadar = await radarRes.json();
-                if (dadosRadar && !dadosRadar.error) radar = dadosRadar;
-            }
-        } catch (e) {
+        if (radarRes.status === "fulfilled" && radarRes.value.ok) {
+            try {
+                const dadosRadar = await radarRes.value.json();
+                if (dadosRadar && !dadosRadar.error) {
+                    radar = {
+                        situacao: dadosRadar.situacao || "NÃO HABILITADA",
+                        submodalidade: dadosRadar.submodalidade || "N/A",
+                        contribuinte: dadosRadar.contribuinte || "",
+                        dataSituacao: dadosRadar.dataSituacao || ""
+                    };
+                }
+            } catch (err) { console.error("Radar retornou JSON inválido"); }
         }
 
         const payload = {
             cnpj,
-            razao_social: String(receita.razaoSocial || "NÃO ENCONTRADO").toUpperCase(),
-            nome_fantasia: String(receita.nomeFantasia || "").toUpperCase(),
-            situacao_radar: String(radar.situacao || "NÃO HABILITADA").toUpperCase(),
-            submodalidade: String(radar.submodalidade || "N/A"),
-            data_situacao: parseDateBR(radar.dataSituacao || receita.data_situacao_cadastral || receita.dataSituacao),
+            razao_social: String(receita.razaoSocial || receita.nome || "NÃO ENCONTRADO").toUpperCase(),
+            nome_fantasia: String(receita.nomeFantasia || receita.fantasia || "").toUpperCase(),
+            situacao_radar: String(radar.situacao).toUpperCase(),
+            submodalidade: String(radar.submodalidade),
+            data_situacao: parseDateBR(radar.dataSituacao || receita.data_situacao_cadastral || receita.data_situacao),
             municipio: String(receita.municipio || "").toUpperCase(),
             uf: String(receita.uf || "").toUpperCase(),
             regime_tributario: String(receita.regimeTributario || ""),
-            data_opcao: parseDateBR(receita.data_opcao || receita.DataSimples || receita.dataOpcao),
+            data_opcao: parseDateBR(receita.data_opcao || receita.data_opcao_simples),
             capital_social: String(receita.capitalSocial || "0"),
-            data_constituicao: parseDateBR(receita.dataConstituicao || receita.data_inicio_atividade),
+            data_constituicao: parseDateBR(receita.dataConstituicao || receita.abertura),
             contribuinte: String(radar.contribuinte || receita.razaoSocial || "").toUpperCase(),
             fonte: forcar ? "Reconsulta" : "API Externa",
             json_completo: JSON.stringify({ radar, receita }),
@@ -107,22 +100,10 @@ export async function GET(req: Request) {
             create: payload
         });
 
-        return NextResponse.json({
-            ...salvo,
-            razaoSocial: salvo.razao_social,
-            nomeFantasia: salvo.nome_fantasia,
-            situacao: salvo.situacao_radar,
-            dataSituacao: salvo.data_situacao,
-            submodalidade: salvo.submodalidade,
-            dataConstituicao: salvo.data_constituicao,
-            regimeTributario: salvo.regime_tributario,
-            capitalSocial: salvo.capital_social,
-            data_opcao: salvo.data_opcao,
-            dataConsulta: salvo.data_consulta
-        });
+        return NextResponse.json({ ...salvo, razaoSocial: salvo.razao_social });
 
     } catch (error: any) {
-        console.error("ERRO CRÍTICO NA ROTA:", error.message);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error("ERRO NO BACKEND:", error.message);
+        return NextResponse.json({ error: "Falha interna" }, { status: 500 });
     }
 }
