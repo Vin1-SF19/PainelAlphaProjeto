@@ -105,7 +105,9 @@ export default function PainelAlphaClient({ session, chamadosIniciais, configBan
         { id: "NovoRadar", title: "Consulta RADAR", desc: "Novo painel de consulta RADAR", img: "../cargueiro.png", link: "/PainelAlpha/NovoPainelHabilitacao", color: "from-yellow-600/20", tag: "RADAR" },
         { id: "analise", title: "Sistema de pré análise", desc: "Sistema de pré análise e gerador de ficha de reunião", img: "../document.png", link: "/PainelAlpha/SistemaPreAnalise", color: "from-purple-600/20", tag: "Gerador de ficha de reuniao" },
         { id: "skills", title: "Alpha Skills", desc: "Alpha Skills", img: "../elearning.png", link: "/PainelAlpha/AlphaSkills", color: "from-green-600/20", tag: "Alpha Skills" },
-        { id: "schools", title: "Alpha Schools", desc: "Alpha Schools", img: "../textbook.png", link: "/PainelAlpha/AlphaSchools", color: "from-orange-600/20", tag: "Alpha Schools" }
+        { id: "schools", title: "Alpha Schools", desc: "Alpha Schools", img: "../textbook.png", link: "/PainelAlpha/AlphaSchools", color: "from-orange-600/20", tag: "Alpha Schools" },
+        { id: "leads", title: "Alpha Leads", desc: "Alpha Leads", img: "../security.png", link: "/PainelAlpha/ControleLeads", color: "from-purple-600/20", tag: "Alpha Leads" },
+        { id: "marketing", title: "Alpha Marketing", desc: "Alpha Marketing", img: "../marketing.png", link: "/PainelAlpha/ControleLeads/Marketing", color: "from-rose-600/20", tag: "Alpha Marketing" }
     ];
 
     const { favoritos, restante } = useMemo(() => {

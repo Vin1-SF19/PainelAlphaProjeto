@@ -197,7 +197,8 @@ export default function CadastroUsuarios() {
                       { id: "NovoRadar", label: "Consulta RADAR"},
                       { id: "analise", label: "Sistema de pré análise"},
                       { id: "skills", label: "Alpha Skills"},
-                      { id: "schools", label: "Alpha Schools"}
+                      { id: "schools", label: "Alpha Schools"},
+                      { id: "leads", label: "Alpha Leads"}
                     ].map((item) => (
                       <div key={item.id} className="flex items-center justify-between p-4 rounded-2xl bg-black/40 border border-white/5 hover:border-blue-500/30 transition-all group">
                         <Label htmlFor={item.id} className="text-[9px] font-black uppercase text-slate-500 group-hover:text-white cursor-pointer tracking-tighter">{item.label}</Label>

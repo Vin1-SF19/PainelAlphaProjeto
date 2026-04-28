@@ -40,7 +40,8 @@ const MODULOS_BASE = [
   { id: "NovoRadar", title: "Consulta RADAR", img: "/cargueiro.png", tag: "RADAR" },
   { id: "analise", title: "Sistema Pre Analise", img: "/document.png", tag: "Gerador de ficha de reunião" },
   { id: "skills", title: "Alpha Skills", img: "/elearning.png", tag: "Alpha Skills" },
-  { id: "schools", title: "Alpha Schools", img: "/textbook.png", tag: "Alpha Schools" }
+  { id: "schools", title: "Alpha Schools", img: "/textbook.png", tag: "Alpha Schools" },
+  { id: "leads", title: "Alpha Leads", img: "/security.png", tag: "Alpha Leads" }
 ];
 
 export default function AtalhosPage() {
